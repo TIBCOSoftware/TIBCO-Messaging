@@ -1,0 +1,47 @@
+######################################################################
+# Copyright (c) 2010-$Date: 2017-05-22 09:41:21 -0700 (Mon, 22 May 2017) $ TIBCO Software Inc.
+# Licensed under a BSD-style license. Refer to [LICENSE]
+# For more information, please contact:
+# TIBCO Software Inc., Palo Alto, California, USA
+#
+# TIBCO eFTL
+# Sample linux Makefile
+######################################################################
+
+TIBEFTL_DIR=../../..
+
+CC = gcc
+COMP_FLAGS = -std=gnu99 -m64 -march=core2 -falign-loops=16 -O3
+LDFLAGS=-L$(TIBEFTL_DIR)/lib -Wl,-rpath=\$$ORIGIN/../../../lib,-rpath-link=$(TIBEFTL_DIR)/ftl/lib
+INCFILES=-I$(TIBEFTL_DIR)/include
+CFLAGS=$(COMP_FLAGS) $(INCFILES)
+
+LIBS= -ltibeftl
+
+PROGS = tibeftlpub tibeftlsub tibeftlshared tibeftllastvalue tibeftlkvset tibeftlkvget tibeftlkvremove
+all: $(PROGS)
+
+clean: 	
+	rm -f *.o core*
+	rm -f $(PROGS)
+
+tibeftlpub: tibeftlpub.o 
+	$(CC) $(LDFLAGS) tibeftlpub.o $(LIBS) -o $@
+
+tibeftlsub: tibeftlsub.o 
+	$(CC) $(LDFLAGS) tibeftlsub.o $(LIBS) -o $@
+
+tibeftlshared: tibeftlshared.o 
+	$(CC) $(LDFLAGS) tibeftlshared.o $(LIBS) -o $@
+
+tibeftllastvalue: tibeftllastvalue.o 
+	$(CC) $(LDFLAGS) tibeftllastvalue.o $(LIBS) -o $@
+
+tibeftlkvset: tibeftlkvset.o 
+	$(CC) $(LDFLAGS) tibeftlkvset.o $(LIBS) -o $@
+
+tibeftlkvget: tibeftlkvget.o 
+	$(CC) $(LDFLAGS) tibeftlkvget.o $(LIBS) -o $@
+
+tibeftlkvremove: tibeftlkvremove.o 
+	$(CC) $(LDFLAGS) tibeftlkvremove.o $(LIBS) -o $@

@@ -1,0 +1,46 @@
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif /* Prevents winsock.h from being included in windows.h */
+#include <windows.h> /* Needed for a few definitions, can be excluded if you use values instead. */
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     @EFTL_VERSION_MAJOR@,@EFTL_VERSION_MINOR@,@EFTL_VERSION_UPDATE@,@EFTL_VERSION_BUILD@
+PRODUCTVERSION  @EFTL_VERSION_MAJOR@,@EFTL_VERSION_MINOR@,@EFTL_VERSION_UPDATE@,@EFTL_VERSION_BUILD@
+FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+FILEOS          VOS__WINDOWS32
+FILETYPE        VFT_DLL
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName",      "TIBCO Software Inc.\0"
+            VALUE "FileDescription",  "TIBCO eFTL C API"
+            VALUE "FileVersion",      "@EFTL_VERSION_MAJOR@.@EFTL_VERSION_MINOR@.@EFTL_VERSION_UPDATE@.@EFTL_VERSION_BUILD@\0"
+            VALUE "ProductName",      "TIBCO eFTL\0"
+            VALUE "ProductVersion",   "@EFTL_VERSION_MAJOR@.@EFTL_VERSION_MINOR@.@EFTL_VERSION_UPDATE@.@EFTL_VERSION_BUILD@\0"
+            VALUE "LegalCopyright",   "Copyright (c) @TIB_COPYRIGHT_YEARS@ TIBCO Software Inc.  Licensed under a BSD-style license. Refer to [LICENSE] Confidential & Proprietary\0"
+            VALUE "LegalTrademarks",   "TIB, TIBCO, TIBCO FTL, TIBCO eFTL, and the TIBCO logo are either registered trademarks or trademarks of TIBCO Software Inc. in the United States and/or other countries.\0"           
+            VALUE "OriginalFilename", "tibeftl.dll\0"
+        END
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        /* The following line should only be modified for localized versions.     */
+        /* It consists of any number of WORD,WORD pairs, with each pair           */
+        /* describing a language,codepage combination supported by the file.      */
+        /*                                                                        */
+        /* For example, a file might have values "0x409,1252" indicating that it  */
+        /* supports English language (0x409) in the Windows ANSI codepage (1252). */
+
+        VALUE "Translation", 0x409, 1252
+
+    END
+END
+

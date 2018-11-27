@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Durable</title>
+    <!--
+        This sample requires Twitter bootstrap for CSS. <http://getbootstrap.com/>,
+    -->
+    <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+</head>
+
+<body onload="printVersion();">
+<div class="container">
+    <h1>eFTL Shared Durable Sample</h1>
+
+    <label>eFTL Server URL</label>
+    <form class='form-inline'>
+        <input type="text" name="url" class='span6' value="ws://localhost:9191/channel"/> <button type='button' class="btn" id="connectButton">Connect</button>
+    </form>
+
+    <a class='close log' id="clearLogButton">x</a>
+    <table id='log' class='wide table table-bordered table-striped log'>
+        <tr><th align='center'>Log</th></tr>
+        <tbody id='logbody'></tbody>
+    </table>
+</div>
+
+<script type="text/javascript" src="eftl.js"></script>
+<!--
+ This sample requires jQuery, you can get your own copy of JQuery, at
+ <http://jquery.com/>
+ This sample references a copy of jQuery hosted by Google.
+-->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+<script type="text/javascript">
+
+    var connection = null;
+    var lastURL = null;
+    var counter = 0;
+
+    function printVersion() {
+        addInfo(eFTL.getVersion());
+    }
+
+    function doConnect() {
+        var url = $('input[name="url"]').val();
+
+        // Asynchronously connect to the eFTL server.
+
+        eFTL.connect(url, {
+            username: "user",
+            password: "password",
+            onConnect: function (eFTLConnection) {
+
+                // Successfully connected to the eFTL server.
+
+                connection = eFTLConnection;
+                addSuccess("Connected to eFTL server");
+                setTimeout(updateButtons);
+
+                // Asynchronously subscribe to messages with a content
+                // matcher whose destination field equals "sample".
+                //
+                // To create a shared durable subscription, one where 
+                // messages are load-balanced among multiple instances,
+                // specify a durable name and a shared durable type. 
+                //
+                // When connected to an FTL channel the content matcher 
+                // can be used to match any field in a published message.
+                // Only matching messages will be received by the 
+                // subscription. The content matcher can match on string
+                // and integer fields, or test for the presence or absence
+                // of a field by setting it's value to the boolean true or
+                // false.
+                //
+                // When connected to an EMS channel the content matcher
+                // must only contain the destination field "_dest" set to
+                // the EMS topic on which to subscribe.
+
+                connection.subscribe({
+                    matcher: '{"_dest":"sample"}',
+                    durable: 'sample-shared',
+                    type: 'shared',
+                    onSubscribe: function (id) {
+                        addSuccess("Subscribed");
+                    },
+                    onError: function (id, code, reason) {
+                        addError(reason);
+                        setTimeout(updateButtons);
+                    },
+                    onMessage: function (message) {
+                        addInfo("Got message: " + message.toString());
+                    }
+                });
+            },
+            onDisconnect: function (eFTLConnection, code, reason) {
+
+                // Connection to the eFTL server was lost.
+
+                addWarning("Disconnected: " + reason);
+                setTimeout(updateButtons);
+            },
+            onReconnect: function (eFTLConnection) {
+
+                // Successfully reconnected to the eFTL server.
+
+                addSuccess("Reconnected");
+                setTimeout(updateButtons);
+            },
+            onError: function (eFTLConnection, code, reason) {
+
+                // The eFTL server has reported an error. 
+
+                addError("Error: " + reason);
+            }
+        });
+    }
+
+    function doDisconnect() {
+        if(connection !== null) {
+
+            // Asynchronously disconnect from the eFTL server.
+
+            connection.disconnect();
+        }
+        return false;
+    }
+
+    function addError(message) {
+        addMessage(message, 'error')
+    }
+
+    function addWarning(message) {
+        addMessage(message, 'warning');
+    }
+
+    function addInfo(message) {
+        addMessage(message, 'info');
+    }
+
+    function addSuccess(message) {
+        addMessage(message, 'success');
+    }
+
+    function addMessage(message, type) {
+        $('.log').show();
+        message = $('<div/>').text(message).html();
+        $('#log > tbody > tr:last').after('<tr class="' + type + '"><td>' + message + '</td></tr>');
+    }
+
+    function clearLog() {
+        $('tr.info').remove();
+        $('tr.warning').remove();
+        $('tr.error').remove();
+        $('tr.success').remove();
+        if(connection === null) {
+            $('.log').hide();
+        }
+
+        return false;
+    }
+
+    $('.log').hide();
+
+    function isNewConnection() {
+        var currentURL = $('input[name="url"]').val();
+        return currentURL !== lastURL;
+    }
+
+
+    function updateButtons() {
+        var isConnected = connection !== null && connection.isConnected();
+        var wasConnected = connection !== null && connection.isConnected() === false;
+
+        if(isNewConnection()) {
+            $('#connectButton').text('Connect');
+        } else if(wasConnected) {
+            $('#connectButton').text('Reconnect');
+        } else if(isConnected) {
+            $('#connectButton').text('Disconnect');
+        } else {
+            $('#connectButton').text('Connect');
+        }
+    }
+
+    $('input[name="url"]').keyup(updateButtons);
+
+    $('#clearLogButton').click(clearLog);
+
+    $('#connectButton').click(function() {
+        var isConnected = connection !== null && connection.isConnected();
+        var wasConnected = connection !== null && connection.isConnected() === false;
+
+        if(isConnected && isNewConnection() === false) {
+            doDisconnect();
+        } else if(wasConnected && isNewConnection() === false) {
+            connection.reconnect();
+        } else {
+            // connecting to a different eFTL server
+            doDisconnect();
+            doConnect();
+        }
+
+        lastURL = $('input[name="url"]').val();
+
+        setTimeout(updateButtons);
+
+        return false;
+    });
+
+    $(document).ready(updateButtons);
+
+</script>
+</body>
+</html>

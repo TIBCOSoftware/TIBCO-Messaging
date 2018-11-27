@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>JavaScript eFTL Library Tests</title>
+    <link rel="stylesheet" href="./assets/qunit.css">
+</head>
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<script src="./assets/qunit.js"></script>
+<script src="../eftl.js"></script>
+<script>
+
+    var i = 2;
+    var ia = [1,2,3];
+    var f = 3.1415;
+    var fa = [3.1, 3.14, 3.141];
+    var s = "one,two";
+    var as = ["one", "two", "three"];
+    var d = new Date(0);
+    var da = [new Date("July 4, 1776"), new Date(0), new Date()];
+
+    var na = [1.1,2.2,3.3];
+    var nai = [1,2,3];
+
+
+    var subscriptionId;
+
+    function copy(jo) {
+        return JSON.parse(JSON.stringify(jo));
+    }
+
+    // 9 assertions
+    function validateMessage(message, extra) {
+        if(extra === undefined) extra = "";
+
+        ok(message, "Message reference not null" + extra);
+
+        equal(i, message.get("i"), "Integer value preserved" + extra);
+        deepEqual(ia, message.get("ia"), "Integer array preserved" + extra);
+        equal(3.1415, message.get("f"), "Float value preserved" + extra);
+        deepEqual(fa, message.get("fa"), "Float array preserved" + extra);
+        equal(s, message.get("s"), "String value preserved" + extra);
+        deepEqual(as, message.get("as"), "String array preserved" + extra);
+        equal(d.getTime(), message.get("d").getTime(), "Date value preserved" + extra);
+        deepEqual(da, message.get("da"), "Dates array preserved" + extra);
+
+        equal(nai[0], message.get("l"), "Long value preserved" + extra);
+        deepEqual(nai, message.get("al", "Long values preserved" + extra));
+        equal(na[0], message.get("fd"), "Double value preserved" + extra);
+        deepEqual(na, message.get("ad"), "Double values preserved" + extra);
+
+
+    }
+
+    function initialize(message) {
+        message.set("i", i);
+        message.set("ia", copy(ia));
+        message.set("f", f);
+        message.set("fa", copy(fa));
+        message.set("s", copy(s));
+        message.set("as", copy(as));
+
+        message.setAsLong("l", na[0]);
+        message.setAsLong("al", na);
+        message.setAsDouble("fd", na[0]);
+        message.setAsDouble("ad", na);
+
+
+        // dates are serialized into eFTL format - so value processing is sufficient
+        message.set("d", d);
+        message.set("da", da);
+    }
+
+    // 3 assertions
+    function testBadValues(message) {
+        // these are not supported values
+        throws(function() {
+            message.set("json", {});
+        }, TypeError, "JavaScript objects are not supported");
+
+        throws(function() {
+            message.set("bool", true);
+        }, TypeError, "Booleans are not supported");
+
+        throws(function() {
+            var a = [true];
+            message.set("boolarray", a);
+        }, TypeError, "Arrays with booleans are not supported");
+    }
+
+    function testDeletes(message) {
+        message.set("del", "one");
+        ok(message.getFieldNames().indexOf("del") > -1, "Setting del failed");
+        message.set("del", null);
+        ok(message.getFieldNames().indexOf("del") === -1, "Setting del failed");
+    }
+
+    asyncTest("Message Data", 86, function() {
+
+    eFTL.connect("ws://localhost:9191/requestreply", {
+        user:"guest",
+        password: "guest",
+        onConnect: function(eFTLConnection) {
+            ok(true, "Connected");
+            eFTLConnection.subscribe({
+                loopback: true,
+                onSubscribe: function(id) {
+                    subscriptionId = id;
+
+                    setTimeout(function() {
+                        var message = new eFTLMessage();
+                        initialize(message);
+                        var m = new eFTLMessage();
+                        initialize(m);
+                        message.set("m", m);
+
+                        var ae = new eFTLMessage();
+                        initialize(ae);
+
+                        message.set("ma", [ae]);
+
+                        testDeletes(message);
+
+                        validateMessage(message, " (local)");
+                        testBadValues(message);
+                        validateMessage(message.get("m"), " (local nested message)");
+                        validateMessage(message.get("ma")[0], " (local message array)");
+
+                        eFTLConnection.publish(message);
+                    },0);
+
+                    setTimeout(function() {
+                        eFTLConnection.disconnect();
+                    },1000);
+                },
+                onError: function(id, errCode, reason) {
+                    ok(false, "onError for subscription called id:" + id + " errCode:" + errCode + " reason:" + reason);
+                },
+                onMessage: function(m) {
+                    eFTLConnection.unsubscribe(subscriptionId);
+                    var expected = ["i", "ia", "f", "fa", "s", "as", "d", "da", "m", 'ma', 'ad', 'al', 'fd', 'l'];
+                    var fieldNames = m.getFieldNames();
+                    deepEqual(expected.sort(), fieldNames.sort(), "Message field names matched");
+
+                    validateMessage(m, " (received)");
+                    validateMessage(m.get("m"), " (received nested message)");
+                    validateMessage(m.get("ma")[0], " (received messsage array)");
+                }
+            });
+        },
+        onError: function(eFTLConnection, errCode, reason) {
+            ok(false, "onError for connection called id:" + subscriptionId + " errCode:" + errCode + " reason:" + reason);
+        },
+        onDisconnect: function(eFTLConnection) {
+            ok(true, "Disconnected");
+        }
+    });
+
+    setTimeout(function(){
+        start();
+    }, 2000);
+});
+</script>
+</body>
+</html>

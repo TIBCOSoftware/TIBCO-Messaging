@@ -1,0 +1,21 @@
+#
+# Copyright (c) 2010-2017 TIBCO Software Inc.
+# Licensed under a BSD-style license. Refer to [LICENSE]
+# For more information, please contact:
+# TIBCO Software Inc., Palo Alto, California, USA
+#
+FROM ubuntu:16.04
+
+RUN apt-get update && apt-get -y upgrade
+RUN apt-get install -y openjdk-8-jdk
+
+COPY ftl/*.deb /tmp/
+RUN dpkg -i /tmp/*thirdparty*.deb /tmp/*runtime*.deb /tmp/*development*.deb /tmp/*java*.deb /tmp/*servers*.deb
+
+ENV PATH /opt/tibco/ftl/5.4/bin:$PATH
+ENV PATH /opt/tibco/ftl/5.4/samples/bin:$PATH
+
+LABEL "com.tibco.ftl.image.client" ""
+LABEL "com.tibco.ftl.image.version" "5.4.0"
+
+CMD ["bash"]

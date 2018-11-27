@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>JavaScript eFTL Library Tests</title>
+    <link rel="stylesheet" href="./assets/qunit.css">
+    <link rel="stylesheet" href="./assets/qunit-composite.css">
+</head>
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<script src="./assets/qunit.js"></script>
+<script src="./assets/qunit-composite.js"></script>
+
+<script>
+    QUnit.testSuites("JavaScript eFTL JavaScript Library", [
+            "connection_simple.html"
+            , "connection_reconnect.html"
+            , "message_datatypes.html"
+            , "inbox_subscription.html"
+            , "subscribe_unsubscribe.html"
+//            ,"connection_simple_ssl.html"
+    ]);
+</script>
+</body>
+</html>

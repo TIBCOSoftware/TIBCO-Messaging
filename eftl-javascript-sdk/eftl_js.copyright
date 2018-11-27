@@ -1,0 +1,12 @@
+// TIBCO eFTL JavaScript Library @EFTL_VERSION_MAJOR@.@EFTL_VERSION_MINOR@.@EFTL_VERSION_UPDATE@ @EFTL_VERSION_RELEASE_TYPE@ V@EFTL_VERSION_BUILD@
+// Copyright (c)@EFTL_COPYRIGHT_YEARS@ TIBCO Software Inc. Licensed under a BSD-style license. Refer to [LICENSE]
+// TIBCO Software Inc., Palo Alto, California, USA
+//
+// eFTL internal utility functions to provide cross-browser compatibility inspired
+// by Underscore.js. Original attribution for isArray(), isDate(), isFunction(),
+// isNumber(), isObject(), isString(), isUndefined(), isNull(), each(), map()
+// and extend(): Underscore.js  1.3.1 (c)2009-2012 Jeremy Ashkenas,
+// DocumentCloud Inc.  Underscore is freely distributable under the MIT license.
+// Portions of Underscore are inspired or borrowed from Prototype, Oliver Steele's
+// Functional and John Resig's Micro-Templating.  For all details and documentation:
+// http://documentcloud.github.com/underscore

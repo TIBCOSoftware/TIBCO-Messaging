@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang = "en">
+   <head>
+      <meta charset = utf-8>
+      <title>eFTL Demo</title>
+   </head>               
+   <body>
+       <section id = "wrapper">
+           <header>
+               <h1>eFTL Demo</h1>
+           </header>
+                                
+           <style>
+               #input { 
+                  width: 99%; 
+               }
+
+               #input.message { 
+                  font-weight: bold; 
+               }
+
+               #input.message:before { 
+                   content: ' '; 
+                   color: #bbb; 
+                   font-size: 14px; 
+               }
+                                        
+               #output {
+                  overflow: auto;
+                  max-height: 300px;
+                  list-style: none;
+                  padding: 0;
+               }
+                                        
+               #output li {
+                  border-top: 1px solid #ccc;
+                  margin: 0;
+                  padding: 10px 0;
+               }
+                                        
+               body {
+                  font: normal 16px/20px "Helvetica Neue", Helvetica, sans-serif;
+                  background: rgb(237, 237, 236);
+                  margin: 0;
+                  margin-top: 40px;
+                  padding: 0;
+               }
+                                        
+               section, header {
+                  display: block;
+               }
+                                        
+               #wrapper {
+                  width: 600px;
+                  margin: 0 auto;
+                  background: #fff;
+                  border-radius: 10px;
+                  border-top: 1px solid #fff;
+                  padding-bottom: 16px;
+               }
+                                        
+               h1 {
+                  padding-top: 10px;
+               }
+                                        
+               header, article > * {
+                  margin: 20px;
+               }
+                                        
+               #status {
+                  padding: 5px;
+                  color: #fff;
+                  background: #ccc;
+               }
+                                        
+               #status.offline {
+                  background: #c00;
+               }
+                                        
+               #status.online {
+                  background: #0c0;
+               }
+           </style>
+                                
+           <article>
+               <div>
+                   <input id="input" placeholder="Type message here and Enter" />
+               </div>
+                                        
+               <p id="status">Not connected</p>
+               <ul id="output"></ul>
+           </article>
+                
+           <script src=eftl.js></script>
+                
+           <script>
+               output = document.getElementById("output");
+               input = document.getElementById("input");
+               state = document.getElementById("status");
+                                        
+               eFTL.connect("ws://bender6:9191/channel", {
+
+                   // connected to the server
+                   onConnect: function(conn) {
+                       state.className = "online";
+                       state.innerHTML = "Connected to server";
+
+                       // subscribe to messages
+                       conn.subscribe({
+                           matcher: '{"_text": true}',
+                           onMessage: function(msg) {
+                               output.innerHTML = '<li class = "message">' + 
+                                   msg["_text"] + "</li>" + output.innerHTML;
+                           }
+                       });
+
+                       // publish messages based upon keyboard events
+                       input.addEventListener('keyup', function(evt) {
+                           if ((evt.keyCode || evt.charCode) === 13) {
+                               conn.publish(new eFTLMessage({"_text": input.value}));
+                               input.value = '';
+                           }
+                       });
+
+                       // disconnect from the server when navigating away
+                       window.addEventListener("unload", function() {
+                           conn.disconnect();
+                       });
+                   },
+
+                   // reconnected to the server
+                   onReconnect: function(conn) {
+                       state.className = "online";
+                       state.innerHTML = "Connected to server";
+                   },
+
+                   // disconnected from the server
+                   onDisconnect: function(conn, code, reason) {
+                       state.className = "offline";
+                       state.innerHTML = "Not connected - " + reason;
+
+                       // attempt to reconnect every 5 seconds
+                       setTimeout(function() { conn.reconnect(); }, 5000);
+                   }
+               });
+           </script>
+       </section>
+   </body>
+</html>

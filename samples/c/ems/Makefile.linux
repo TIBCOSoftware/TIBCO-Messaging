@@ -1,0 +1,98 @@
+######################################################################
+# Copyright (c) 2001-$Date: 2018-07-20 16:23:19 -0500 (Fri, 20 Jul 2018) $ by TIBCO Software Inc.
+# ALL RIGHTS RESERVED
+#
+# $Id: Makefile.linux 102524 2018-07-20 21:23:19Z olivierh $
+#
+# TIBCO Enterprise Message Service
+# Sample Makefile
+#
+######################################################################
+
+
+TIBEMS_DIR=../..
+
+CC = gcc
+OPT_DBG_FLAGS = -g
+LDFLAGS=-L$(TIBEMS_DIR)/lib/64 -L$(TIBEMS_DIR)/lib -m64
+INCFILES=-I$(TIBEMS_DIR)/include
+CFLAGS=$(OPT_DBG_FLAGS) $(INCFILES) -m64
+
+#
+# 64-bit libs
+#
+TIBEMS_LIB64=-ltibems64 -ltibemslookup64
+TIBEMSUFO_LIB64=-ltibemsufo64
+TIBEMSADMIN_LIB64=-ltibemsadmin64
+TIBEMS_SSL_LIB64=-lssl -lcrypto
+TIBEMS_LDAP_LIB64=-lldap -llber
+TIBEMS_XML_LIB64=-lxml2
+TIBEMS_ZLIB64=-lz
+
+TLIBS=-lpthread
+
+LIBS=$(TIBEMS_LIB64) \
+     $(TIBEMSADMIN_LIB64) $(TIBEMS_LDAP_LIB64) $(TIBEMS_XML_LIB64) $(TIBEMS_SSL_LIB64) $(TIBEMS_ZLIB64) $(TLIBS) \
+     $(TIBEMSUFO_LIB64)
+
+all: tibemsDurable tibemsAsyncMsgConsumer tibemsBrowser \
+     tibemsMsgProducer tibemsMsgConsumer tibemsMsg tibemsLookup \
+     tibemsMsgProducerPerf tibemsMsgConsumerPerf tibemsAdmin \
+     tibemsUFOMsgConsumer
+
+xa: tibemsXAMsgProducer tibemsXAMsgConsumer
+
+clean: 	
+	rm -f *.o core
+	rm -f tibemsDurable
+	rm -f tibemsAsyncMsgConsumer
+	rm -f tibemsBrowser
+	rm -f tibemsMsgProducer
+	rm -f tibemsMsgConsumer
+	rm -f tibemsUFOMsgConsumer
+	rm -f tibemsMsg
+	rm -f tibemsLookup
+	rm -f tibemsMsgProducerPerf
+	rm -f tibemsMsgConsumerPerf
+	rm -f tibemsXAMsgProducer
+	rm -f tibemsXAMsgConsumer
+	rm -f tibemsAdmin
+
+tibemsDurable: tibemsDurable.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsDurable.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsAsyncMsgConsumer: tibemsAsyncMsgConsumer.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsAsyncMsgConsumer.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsBrowser: tibemsBrowser.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsBrowser.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsMsgProducer: tibemsMsgProducer.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsMsgProducer.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsMsgConsumer: tibemsMsgConsumer.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsMsgConsumer.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsUFOMsgConsumer: tibemsUFOMsgConsumer.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsUFOMsgConsumer.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsMsg: tibemsMsg.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsMsg.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsLookup: tibemsLookup.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsLookup.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsMsgProducerPerf: tibemsMsgProducerPerf.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsMsgProducerPerf.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsMsgConsumerPerf: tibemsMsgConsumerPerf.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsMsgConsumerPerf.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsXAMsgProducer: tibemsXAMsgProducer.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsXAMsgProducer.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsXAMsgConsumer: tibemsXAMsgConsumer.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsXAMsgConsumer.o tibemsUtilities.o $(LIBS) -o $@
+
+tibemsAdmin: tibemsAdmin.o tibemsUtilities.o
+	$(CC) $(LDFLAGS) tibemsAdmin.o tibemsUtilities.o $(LIBS) -o $@

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>JavaScript eFTL Library Tests</title>
+    <link rel="stylesheet" href="./assets/qunit.css">
+</head>
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<script src="./assets/qunit.js"></script>
+<script src="../eftl.js"></script>
+<script>
+
+    var subscriptionId;
+    var disconnectCount = 0;
+    var reconnectCount = 0;
+    var connectCount = 0;
+    var messages = 0;
+
+    asyncTest("Message Data", 8, function() {
+
+    eFTL.connect("ws://localhost:9191/requestreply", {
+        user:"guest",
+        password: "guest",
+        onConnect: function(eFTLConnection) {
+            connectCount++;
+            ok(true, "Connected " + connectCount);
+
+            eFTLConnection.subscribe({
+                loopback: true,
+                onSubscribe: function(id) {
+                    subscriptionId = id;
+                    var m = new eFTLMessage();
+                    m.set("field", "bar");
+                    eFTLConnection.publish(m);
+                    setTimeout(function() {
+                        eFTLConnection.unsubscribe(subscriptionId);
+                        eFTLConnection.disconnect();
+                    },1000);
+
+                },
+                onError: function(id, errCode, reason) {
+                },
+                onMessage: function(m) {
+                    if(m.get("field") === "bar") {
+                        messages++;
+                        console.log("Received " + messages);
+                    }
+                }
+            });
+        },
+        onError: function(eFTLConnection, errCode, reason) {
+            ok(false, "onError for connection called errCode:" + errCode + " reason: " + reason);
+        },
+        onReconnect: function(eFTLConnection) {
+            reconnectCount++;
+            ok(true, "Reconnected " + reconnectCount);
+
+            eFTLConnection.subscribe({
+                loopback: true,
+                onSubscribe: function(id) {
+                    subscriptionId = id;
+                    var m = new eFTLMessage();
+                    m.set("field", "bar");
+                    eFTLConnection.publish(m);
+                },
+                onError: function(id, errCode, reason) {
+                },
+                onMessage: function(m) {
+                    if(m.get("field") === "bar") {
+                        messages++;
+                        console.log("Received " + messages);
+                    }
+                }
+            });
+        },
+        onDisconnect: function(eFTLConnection) {
+            disconnectCount++;
+            ok(true, "Disconnected: " + disconnectCount);
+
+            setTimeout(function() {
+                if(connectCount < 2) {
+                    ok(true, "Requested reconnect");
+                    eFTLConnection.reconnect();
+                }
+            },0);
+        }
+    });
+
+    setTimeout(function(){
+        start();
+        equal(connectCount, 1, "Connected once.");
+        equal(reconnectCount, 1, "Reconnected once.");
+        equal(disconnectCount, 1, "Disconnected once.");
+        equal(messages, 2, "Received two messages");
+    }, 5000);
+});
+</script>
+</body>
+</html>

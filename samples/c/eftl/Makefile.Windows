@@ -1,0 +1,51 @@
+######################################################################
+# Copyright (c) 2010-$Date: 2017-05-22 09:41:21 -0700 (Mon, 22 May 2017) $ TIBCO Software Inc.
+# Licensed under a BSD-style license. Refer to [LICENSE]
+# For more information, please contact:
+# TIBCO Software Inc., Palo Alto, California, USA
+#
+# TIBCO eFTL
+# Sample Windows Makefile
+######################################################################
+
+TIBEFTL_DIR =../../..
+
+CC = cl.exe
+LINK = link.exe
+LDFLAGS=/nologo /incremental:no /subsystem:console /OPT:NOREF
+INCFILES=/I$(TIBEFTL_DIR)/include
+CFLAGS=/MD /O2 /DNDEBUG /nologo /GF /W3 /EHsc -D_WINDOWS /c
+
+LIBS= $(TIBEFTL_DIR)\lib\tibeftl.lib ws2_32.lib
+
+PROGS = tibeftlpub.exe tibeftlsub.exe tibeftlshared.exe tibeftllastvalue.exe tibeftlkvset.exe tibeftlkvget.exe tibeftlkvremove.exe
+all: $(PROGS)
+
+clean: 	
+	-@erase /Q "*.obj"
+	-@erase /Q "*.exe"
+
+.c{}.obj:
+   $(CC) $(CFLAGS) $(INCFILES) $<
+
+tibeftlpub.exe: tibeftlpub.obj 
+	$(LINK) $(LDFLAGS) tibeftlpub.obj $(LIBS) /out:$@
+
+tibeftlsub.exe: tibeftlsub.obj 
+	$(LINK) $(LDFLAGS) tibeftlsub.obj $(LIBS) /out:$@
+
+tibeftlshared.exe: tibeftlshared.obj 
+	$(LINK) $(LDFLAGS) tibeftlshared.obj $(LIBS) /out:$@
+
+tibeftllastvalue.exe: tibeftllastvalue.obj 
+	$(LINK) $(LDFLAGS) tibeftllastvalue.obj $(LIBS) /out:$@
+
+tibeftlkvset.exe: tibeftlkvset.obj 
+	$(LINK) $(LDFLAGS) tibeftlkvset.obj $(LIBS) /out:$@
+
+tibeftlkvget.exe: tibeftlkvget.obj 
+	$(LINK) $(LDFLAGS) tibeftlkvget.obj $(LIBS) /out:$@
+
+tibeftlkvremove.exe: tibeftlkvremove.obj 
+	$(LINK) $(LDFLAGS) tibeftlkvremove.obj $(LIBS) /out:$@
+

@@ -1,0 +1,649 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2017-$Date: 2018-05-24 14:04:26 -0500 (Thu, 24 May 2018) $ by TIBCO Software Inc.
+# ALL RIGHTS RESERVED
+#
+# $Id: tibemscreateimage 101416 2018-05-24 19:04:26Z olivierh $
+#
+# Create a Docker image for running TIBCO EMS servers on Kubernetes
+#
+die()
+{
+    echo "$@"
+    echo ""
+    usage
+    exit 1
+}
+
+######
+
+usage()
+{
+    echo "Syntax: $0 <EMS installation zip file> [-f <EMS feature>]* [-h <EMS hotfix zip file>]* [-j <Java installation tar.gz file>] [-d <Docker image ouput directory>] [-u <user ID>] [-g <group ID>] [-t <tag name>]"
+    echo ""
+    echo "        where the required argument is:"
+    echo "          <EMS installation zip file>"
+    echo ""
+    echo "        and the [optional arguments] are:"
+    echo "          -f <EMS feature: server, client, emsca, dev, source, hibernate>."
+    echo "             Default is server."
+    echo "          -h <EMS hotfix zip file> Install this hotfix. Default is no hotfix."
+    echo "          -p <probes zip file>. Install Kubernetes probes."
+    echo "          -j <Java installation tar.gz file> Install Java. Default is no Java."
+    echo "          -d <Docker image ouput directory>. Create a Docker image file there."
+    echo "             Default is no Docker image file is created."
+    echo "          -u <user ID> set in the image."
+    echo "          -g <group ID> set in the image."
+    echo "          -t <tag name> used to tag the image."
+    echo "          -s Use experimental \"docker build --squash\"."
+    echo "             *: Multiple -f and -h entries allowed."
+}
+
+docker_image_summary()
+{
+    if [[ ${#EMS_FEATURES[@]} -eq 1 ]]; then
+        FEATURE_TITLE=" EMS feature:    "
+    else
+        FEATURE_TITLE=" EMS features:   "
+    fi
+    if [[ ${#HOTFIX_FILES[@]} -eq 1 ]]; then
+        HOTFIX_TITLE=" EMS hotfix:     "
+    else
+        HOTFIX_TITLE=" EMS hotfixes:   "
+    fi
+    [[ -n ${SQUASH} ]] && summary_squash=true || summary_squash=false
+
+    echo ""
+    echo "================================================================================"
+    echo " Building EMS Docker image"
+    echo ""
+    echo " EMS package:    ${EMS_FILE}"
+    echo "${FEATURE_TITLE}${EMS_FEATURES[@]}"
+    echo "${HOTFIX_TITLE}${HOTFIX_FILES_LIST[@]}"
+    echo " Probes package: $summary_probes"
+    echo " Java package:   $summary_java"
+    echo " Output folder:  ${DOCKER_IMAGE_DIR}"
+    echo " Image file:     ${DOCKER_IMAGE_FILE_NAME}"
+    echo " Image name:tag: ems:${TAG_NAME}"
+    echo " Image UID:      ${USER_ID}"
+    echo " Image GID:      ${GROUP_ID}"
+    echo " Docker squash:  ${summary_squash}"
+    echo "================================================================================"
+    echo ""
+}
+
+set_feature()
+{
+    EMS_FEATURES+=("$1")
+
+    case "$1" in
+        "server")
+            server=true ;;
+        "client")
+            client=true ;;
+        "emsca")
+            emsca=true ;;
+        "dev")
+            dev=true ;;
+        "source")
+            source=true ;;
+        "hibernate")
+            hibernate=true ;;
+        *)
+            die $1 is not a valid EMS feature
+            ;;
+    esac
+}
+
+set_environment()
+{
+    if [[ $# -lt 1 ]]; then
+        usage
+        exit 1
+    fi
+
+    DOCKER_IMAGE_DIR=""
+    JAVA_DOWNLOAD=""
+    USER_ID=1000
+    GROUP_ID=1000
+    DOCKER_IMAGE_FILE_NAME=None
+
+    EMS_FEATURES=()
+    HOTFIX_DOWNLOADS=()
+    HOTFIX_FILES=()
+    HOTFIX_NUMS=()
+    summary_probes="None"
+    summary_java="None"
+    server=false
+    client=false
+    emsca=false
+    dev=false
+    source=false
+    hibernate=false
+
+    EMS_DOWNLOAD=${1}
+    [[ -r ${EMS_DOWNLOAD} ]] || die EMS distribution zip file not found or not readable
+
+    shift
+    OPTIND=1
+    while getopts f:h:p:j:d:u:g:t:s ARGS
+    do
+        case $ARGS in
+            f)
+                set_feature $OPTARG
+                ;;
+            h)
+                [[ -r ${OPTARG} ]] || die EMS hotfix zip file ${OPTARG} not found or not readable
+                HOTFIX_DOWNLOADS+=($OPTARG)
+                HOTFIX_FILE=($(basename ${OPTARG}))
+                HOTFIX_FILES+=(${HOTFIX_FILE})
+                HOTFIX_NUMS+=(`expr "$HOTFIX_FILE" : '[A-Za-z0-9._]*\(_HF-[0-9]*\)'`)
+                ;;
+            p)
+                PROBES_DOWNLOAD=$OPTARG
+                [[ -r ${PROBES_DOWNLOAD} ]] || die Probes zip file not found or not readable
+                PROBES_FILE=$(basename ${PROBES_DOWNLOAD})
+                ;;
+            j)
+                JAVA_DOWNLOAD=$OPTARG
+                [[ -r ${JAVA_DOWNLOAD} ]] || die Java tar.gz file not found or not readable
+                JAVA_PATH=$(dirname $(tar tf $JAVA_DOWNLOAD | grep bin/java$ | grep -v jre/bin))
+                JAVA_DIR=${JAVA_PATH%/bin}
+                JAVA_FILE=$(basename ${JAVA_DOWNLOAD})
+                ;;
+            d)
+                DOCKER_IMAGE_DIR=$OPTARG
+                CREATE_IMAGE_FILE=true
+                ;;
+            u)
+                USER_ID=$OPTARG
+                ;;
+            g)
+                GROUP_ID=$OPTARG
+                ;;
+            t)
+                EXPLICIT_TAG_NAME=$OPTARG
+                ;;
+            s)
+                SQUASH=--squash=true
+                ;;
+            *)
+                die
+                ;;
+        esac
+    done
+
+    DOCKER_BUILD_DIR=$(pwd)
+
+    [[ -z ${DOCKER_IMAGE_DIR} ]] && DOCKER_IMAGE_DIR=None
+
+    [[ "${#EMS_FEATURES[@]}" -eq 0 ]] && server=true && EMS_FEATURES+=('server')
+
+    EMS_FILE=$(basename ${EMS_DOWNLOAD})
+    EMS_NAME=$(basename  ${EMS_FILE} .zip)
+    MAJOR_MINOR=`expr "$EMS_NAME" : '[A-Za-z_]*\([0-9]*\.[0-9]*\)'`
+    MAJOR_MINOR_SPACK=`expr "$EMS_NAME" : '[A-Za-z_]*\([0-9]*\.[0-9]*\.[0-9]*\)'`
+    TAG_NAME=${MAJOR_MINOR_SPACK}
+
+    install_hotfix_instructions="echo Not installing a hotfix"
+    install_probes_instructions="echo Not installing Probes"
+    install_java_instructions="RUN echo Not installing Java"
+
+    if [[ -r ${JAVA_DOWNLOAD} ]]
+    then
+        summary_java=${JAVA_FILE}
+        install_java_instructions="RUN cd /opt; tar xzf /install/${JAVA_FILE}"
+    fi
+
+    if [[ -r ${PROBES_DOWNLOAD} ]]
+    then
+        summary_probes=${PROBES_FILE}
+        install_probes_instructions="cd /opt/tibco/ems; unzip /install/${PROBES_FILE}; mv kubernetes/probes/bin/{tibemsstate,tibemslive,tibemsready} /opt/tibco/ems/${MAJOR_MINOR}/bin"
+    fi
+
+    if [[ ${#HOTFIX_DOWNLOADS[@]} -gt 0 ]]
+    then
+        install_hotfix_instructions="cd /opt/tibco/ems/${MAJOR_MINOR}"
+        IFS=$'\n'
+        HOTFIX_FILES_LIST=($(sort <<<"${HOTFIX_FILES[*]}"))
+        HOTFIX_NUMS_LIST=($(sort <<<"${HOTFIX_NUMS[*]}"))
+        unset IFS
+        for hf_file in ${HOTFIX_FILES_LIST[@]}
+        do
+            install_hotfix_instructions+="; unzip -o /install/${hf_file}"
+        done
+        TAG_NAME=${MAJOR_MINOR_SPACK}${HOTFIX_NUMS_LIST[-1]}
+    else
+        HOTFIX_FILES_LIST+=("None")
+    fi    
+
+    if [[ $EXPLICIT_TAG_NAME ]]
+    then
+        TAG_NAME=$EXPLICIT_TAG_NAME
+    fi
+}
+
+######
+
+set_environment $@
+
+rm -rf ${DOCKER_BUILD_DIR}/tmp || die Could not remove old temp directory
+mkdir -p ${DOCKER_BUILD_DIR}/tmp || die Could not create new temp directory
+
+if [[ -r ${JAVA_DOWNLOAD} ]]
+then
+    cp ${JAVA_DOWNLOAD} ${DOCKER_BUILD_DIR}/tmp || die Unable to copy java distribution
+fi
+
+if [[ -r ${PROBES_DOWNLOAD} ]]
+then
+    cp ${PROBES_DOWNLOAD} ${DOCKER_BUILD_DIR}/tmp || die Unable to copy probes package
+fi
+
+if [[ ${#HOTFIX_DOWNLOADS[@]} -gt 0 ]]
+then
+    for hotfix in ${HOTFIX_DOWNLOADS[@]}
+    do
+        cp ${hotfix} ${DOCKER_BUILD_DIR}/tmp || die Unable to copy EMS hotfix ${hotfix}
+    done
+fi
+
+cat > ${DOCKER_BUILD_DIR}/tmp/Dockerfile <<DOCKERFILE
+FROM centos:7
+MAINTAINER TIBCO Software Inc.
+ARG JAVA_DIR
+VOLUME /shared
+EXPOSE 7222
+EXPOSE 8080
+ENTRYPOINT [ "tibems.sh" ]
+CMD []
+WORKDIR /install
+
+RUN mkdir -p /home/user /opt/tibco/ems/docker/{jdbc,security,ftl,rv} /shared /opt/\${JAVA_DIR}
+RUN groupadd -g ${GROUP_ID} tibgroup && useradd -d /home/user/tibuser -g tibgroup -u ${USER_ID} tibuser
+RUN chown -R tibuser:tibgroup /opt/tibco /home/user/tibuser /install /shared /opt/\${JAVA_DIR}
+RUN chmod a+w /install /shared
+
+ENV EMS_SERVICE_NAME=tibemsd
+ENV EMSCA_SERVICE_NAME=emsca
+ENV EMS_NODE_NAME=localhost
+ENV EMS_PUBLIC_PORT=7222
+
+RUN yum -q -y update && \
+    yum -q -y upgrade && \
+    yum -q -y install unzip && \
+    yum -q -y clean all
+
+COPY --chown=tibuser:tibgroup . /install
+
+USER tibuser
+
+RUN mv /install/*configbase.* /opt/tibco/ems/docker
+RUN mv /install/tibems.sh /opt/tibco/ems/docker
+
+${install_java_instructions}
+
+RUN /install/ems_install.sh
+
+ENV PATH=".:/opt/tibco/ems/${MAJOR_MINOR}/bin:/opt/tibco/ems/kubernetes/probes:/opt/\${JAVA_DIR}/bin:/opt/tibco/ems/docker:\${PATH}"
+
+WORKDIR /shared
+DOCKERFILE
+
+cat > ${DOCKER_BUILD_DIR}/tmp/ems_install.sh <<INSTALLER
+#!/bin/bash
+cd /install
+unzip ${EMS_FILE}
+
+./TIBCOUniversalInstaller-lnx-x86-64.bin -silent -V responseFile="/install/install.silent"
+
+${install_hotfix_instructions}
+${install_probes_instructions}
+
+rm -rf /home/user/tibuser/.TIBCO /home/user/tibuser/.TIBCOEnvInfo \
+       /home/user/tibuser/InstallShield /opt/tibco/_installInfo \
+       /opt/tibco/components /opt/tibco/tools
+rm -rf /install/*
+INSTALLER
+
+chmod +x ${DOCKER_BUILD_DIR}/tmp/ems_install.sh
+
+cat > ${DOCKER_BUILD_DIR}/tmp/install.silent <<SILENT
+<?xml  version="1.0"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<entry key="acceptLicense">true</entry>
+<entry key="installationRoot">/opt/tibco</entry>
+<entry key="environmentName">TIBCO-HOME</entry>
+<entry key="environmentDesc">Docker EMS environment</entry>
+<entry key="configDirectoryRoot">/home/user/tibuser</entry>
+<entry key="LGPLAssemblyLicenseAccepted">true</entry>
+<entry key="LGPLAssemblyDownload">true</entry>
+<entry key="LGPLAssemblyPath">/opt/tibco/thirdpartydownload</entry>
+<entry key="feature_EMS Server Baseline_ems">${server}</entry>
+<entry key="feature_Development Kit_ems">${dev}</entry>
+<entry key="feature_EMS Client Baseline_ems">${client}</entry>
+<entry key="feature_EMS Source_ems">${source}</entry>
+<entry key="feature_Hibernate (For Database Stores)_ems">${hibernate}</entry>
+<entry key="feature_EMS Central Administration_ems">${emsca}</entry>
+<entry key="setUID">false</entry>
+</properties>
+SILENT
+
+cat > ${DOCKER_BUILD_DIR}/tmp/tibemsd-configbase.json <<TIBEMSDCONFIG
+{
+  "acls":[
+    {
+      "type":"admin",
+      "user":"probeuser",
+      "view_server":true
+    }
+  ],
+  "factories":[
+    {
+      "name":"ConnectionFactory",
+      "type":"generic",
+      "url":"tcp://localhost:7222"
+    },
+    {
+      "name":"FTConnectionFactory",
+      "reconnect_attempt_count":"120",
+      "reconnect_attempt_delay":"500",
+      "type":"generic",
+      "url":"tcp://localhost:7222,tcp://localhost:7222"
+    },
+    {
+      "name":"SSLConnectionFactory",
+      "ssl":
+      {
+        "ssl_verify_host":false,
+        "ssl_verify_hostname":false
+      },
+      "type":"generic",
+      "url":"ssl://localhost:7222"
+    },
+    {
+      "name":"SSLFTConnectionFactory",
+      "reconnect_attempt_count":"120",
+      "reconnect_attempt_delay":"500",
+      "ssl":
+      {
+        "ssl_verify_host":false,
+        "ssl_verify_hostname":false
+      },
+      "type":"generic",
+      "url":"ssl://localhost:7222,ssl://localhost:7222"
+    },
+    {
+      "name":"GenericConnectionFactory",
+      "type":"generic",
+      "url":"tcp://localhost:7222"
+    },
+    {
+      "name":"TopicConnectionFactory",
+      "type":"topic",
+      "url":"tcp://localhost:7222"
+    },
+    {
+      "name":"QueueConnectionFactory",
+      "type":"queue",
+      "url":"tcp://localhost:7222"
+    },
+    {
+      "name":"FTTopicConnectionFactory",
+      "reconnect_attempt_count":"120",
+      "reconnect_attempt_delay":"500",
+      "type":"topic",
+      "url":"tcp://localhost:7222,tcp://localhost:7222"
+    },
+    {
+      "name":"FTQueueConnectionFactory",
+      "reconnect_attempt_count":"120",
+      "reconnect_attempt_delay":"500",
+      "type":"queue",
+      "url":"tcp://localhost:7222,tcp://localhost:7222"
+    },
+    {
+      "name":"SSLQueueConnectionFactory",
+      "ssl":
+      {
+        "ssl_verify_host":false,
+        "ssl_verify_hostname":false
+      },
+      "type":"generic",
+      "url":"ssl://localhost:7222"
+    },
+    {
+      "name":"SSLTopicConnectionFactory",
+      "ssl":
+      {
+        "ssl_verify_host":false,
+        "ssl_verify_hostname":false
+      },
+      "type":"generic",
+      "url":"ssl://localhost:7222"
+    }
+  ],
+  "groups":[
+    {
+      "description":"Administrators",
+      "members":[
+        {
+          "name":"admin"
+        }
+      ],
+      "name":"\$admin"
+    }
+  ],
+  "model_version":"1.0",
+  "queues":[
+    {
+      "name":">"
+    },
+    {
+      "name":"sample",
+      "flowControl":"512MB"
+    },
+    {
+      "name":"queue.sample",
+      "flowControl":"512MB"
+    }
+  ],
+  "stores":[
+    {
+      "file":"meta.db",
+      "file_crc":true,
+      "mode":"async",
+      "name":"\$sys.meta",
+      "type":"file"
+    },
+    {
+      "file":"async-msgs.db",
+      "file_crc":true,
+      "mode":"async",
+      "name":"\$sys.nonfailsafe",
+      "type":"file"
+    },
+    {
+      "file":"sync-msgs.db",
+      "file_crc":true,
+      "mode":"sync",
+      "name":"\$sys.failsafe",
+      "type":"file"
+    }
+  ],
+  "tibemsd":{
+    "always_exit_on_disk_error":true,
+    "authorization":false,
+    "client_heartbeat_server":5,
+    "client_timeout_server_connection":20,
+    "console_trace":"DEFAULT",
+    "detailed_statistics":"NONE",
+    "flow_control":true,
+    "handshake_timeout":3,
+    "log_trace":"DEFAULT",
+    "logfile":"/shared/ems/logs/tibemsd.log",
+    "logfile_max_size":"1MB",
+    "max_msg_memory":"512MB",
+    "max_stat_memory":"64MB",
+    "primary_listens":[
+      {
+        "url":"tcp://7222"
+      }
+    ],
+    "reserve_memory":"64MB",
+    "server":"EMS-SERVER",
+    "server_heartbeat_client":5,
+    "server_heartbeat_server":5,
+    "server_timeout_client_connection":20,
+    "server_timeout_server_connection":20,
+    "server_rate_interval":1,
+    "statistics":true,
+    "statistics_cleanup_interval":30,
+    "store":"/shared/ems/datastore"
+  },
+  "topics":[
+    {
+      "name":">"
+    },
+    {
+      "name":"sample",
+      "flowControl":"512MB"
+    },
+    {
+      "name":"topic.sample",
+      "flowControl":"512MB"
+    }
+  ],
+  "users":[
+    {
+      "description":"Administrator",
+      "name":"admin"
+    },
+    {
+      "description":"Main Server",
+      "name":"EMS-SERVER"
+    },
+    {
+      "description":"Container Probe User",
+      "name":"probeuser",
+      "password":"\$2\$pYURmRqC\$nmcEJJMf58ZFM43Sx0zhqnry"
+    }
+  ]
+}
+TIBEMSDCONFIG
+
+cat > ${DOCKER_BUILD_DIR}/tmp/emsca-configbase.properties <<TIBEMSCACONFIG
+com.tibco.emsca.data.dir=/shared/emsca/emsca_data
+com.tibco.emsca.http.hostport=*:8080
+TIBEMSCACONFIG
+
+cat > ${DOCKER_BUILD_DIR}/tmp/tibems.sh <<TIBEMS
+#!/bin/bash
+
+tibemsd_seed()
+{
+    if [ ! -f "/shared/ems/config/\$EMS_SERVICE_NAME.json" ]; then
+        echo Creating EMS configuration file and folders:
+        echo "  /shared/ems/config"
+        echo "  /shared/ems/config/\$EMS_SERVICE_NAME.json"
+        echo "  /shared/ems/datastore-\$EMS_SERVICE_NAME"
+        echo "  /shared/ems/logs"
+
+        mkdir -p /shared/ems/config
+        mkdir -p /shared/ems/datastore-\$EMS_SERVICE_NAME
+        mkdir -p /shared/ems/logs
+
+        cp /opt/tibco/ems/docker/tibemsd-configbase.json /shared/ems/config/\$EMS_SERVICE_NAME.json
+        sed -i "s/localhost:7222/\$EMS_NODE_NAME:\$EMS_PUBLIC_PORT/g; \\
+                s/tibemsd\.log/\$EMS_SERVICE_NAME\.log/; \\
+                s/datastore/datastore-\$EMS_SERVICE_NAME/; \\
+                s/EMS-SERVER/\$EMS_SERVICE_NAME/" \\
+            /shared/ems/config/\$EMS_SERVICE_NAME.json
+    fi
+}
+
+tibemsca_seed()
+{
+    if [ ! -f "/shared/emsca/config/\$EMSCA_SERVICE_NAME.properties" ]; then
+        echo Creating EMS Central Administration configuration file and folders:
+        echo "  /shared/emsca/config"
+        echo "  /shared/emsca/config/\$EMSCA_SERVICE_NAME.properties"
+        echo "  /shared/emsca/\${EMSCA_SERVICE_NAME}_data"
+
+        mkdir -p /shared/emsca/config
+        mkdir -p /shared/emsca/\${EMSCA_SERVICE_NAME}_data
+
+        cp /opt/tibco/ems/docker/emsca-configbase.properties /shared/emsca/config/\$EMSCA_SERVICE_NAME.properties
+        sed -i "s/emsca_data/\${EMSCA_SERVICE_NAME}_data/" \\
+            /shared/emsca/config/\$EMSCA_SERVICE_NAME.properties
+    fi
+}
+
+tibemsd_run()
+{
+    shift
+    if [[ \$# -ge 1 ]]; then
+        PARAMS=\$*
+    else
+        tibemsd_seed
+        PARAMS="-config /shared/ems/config/\$EMS_SERVICE_NAME.json"
+    fi
+
+    echo tibemsd \$PARAMS
+    exec tibemsd \$PARAMS
+}
+
+tibemsca_run()
+{
+    shift
+    if [[ \$# -ge 1 ]]; then
+        PARAMS=\$*
+    else
+        tibemsca_seed
+        PARAMS="--config /shared/emsca/config/\$EMSCA_SERVICE_NAME.properties"
+    fi
+
+    echo tibemsca \$PARAMS
+    exec tibemsca \$PARAMS
+}
+
+case "\$1" in
+    "")
+        tibemsd_run \$*
+        ;;
+    "tibemsd")
+        tibemsd_run \$*
+        ;;
+    "tibemsca")
+        tibemsca_run \$*
+        ;;
+    *)
+        echo \$1 is not a valid EMS component
+        exit 1
+        ;;
+esac
+TIBEMS
+
+chmod +x ${DOCKER_BUILD_DIR}/tmp/*.sh
+
+[[ "${CREATE_IMAGE_FILE}" = "true" ]] && DOCKER_IMAGE_FILE_NAME=ems-${TAG_NAME}.dockerimage.xz
+docker_image_summary
+
+echo Copying the EMS installation zip file
+cp ${EMS_DOWNLOAD} ${DOCKER_BUILD_DIR}/tmp || die Unable to copy EMS installer
+
+docker build ${SQUASH} --build-arg=JAVA_DIR=${JAVA_DIR} -t ems:${TAG_NAME} ${DOCKER_BUILD_DIR}/tmp || die docker build failed
+docker tag ems:${TAG_NAME} ems:latest || die unable to tag docker build
+
+if [[ "${CREATE_IMAGE_FILE}" == "true" ]]
+then
+    mkdir -p ${DOCKER_IMAGE_DIR}
+    echo -n Saving the image...
+    docker save ems:${TAG_NAME} | xz -9 > ${DOCKER_IMAGE_DIR}/${DOCKER_IMAGE_FILE_NAME} \
+      || die Could not save docker image
+    echo " done."
+fi
+
+rm -rf ${DOCKER_BUILD_DIR}/tmp || die Could not remove old temp directory

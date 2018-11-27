@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>JavaScript eFTL Library Tests</title>
+    <link rel="stylesheet" href="./assets/qunit.css">
+</head>
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+
+<script src="./assets/qunit.js"></script>
+<script src="../eftl.js"></script>
+<script>
+asyncTest("SSL Connection Tests", 3, function() {
+    var didConnect = false;
+    var hadError = "";
+    var didClose = false;
+
+    eFTL.connect("wss://localhost:9291/requestreply", {
+        user:"guest",
+        password: "guest",
+        onConnect: function(eFTLConnection) {
+            didConnect = true;
+            eFTLConnection.disconnect();
+        },
+        onError: function(eFTLConnection, errCode, reason) {
+            hadError = "Had an error on connection: " + errCode + " " + reason;
+        },
+        onDisconnect: function(eFTLConnection) {
+            didClose = true;
+        }
+    });
+    setTimeout(function(){
+        start();
+        ok(didConnect, "Connected");
+        ok(didClose, "Closed");
+        equal(hadError, "", "Had no errors");
+    }, 1000);
+});
+</script>
+</body>
+</html>

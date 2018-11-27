@@ -1,0 +1,40 @@
+#!/usr/bin/perl -w
+
+#
+# Copyright (c) 2001-$Date: 2013-08-21 15:28:23 -0500 (Wed, 21 Aug 2013) $ by TIBCO Software Inc.
+# ALL RIGHTS RESERVED
+#
+# $Id: msgmodes.prl 68846 2013-08-21 20:28:23Z rkutter $
+#
+# simple perl script which takes the output of msgmodes.sh (as stdin)
+# and creates a file (as stdout) suitable for importing to excel
+#
+
+$foundxaxis = 0;
+$i = 0;
+@labels = ("Reliable Publisher","Reliable Subscriber",
+	   "Non-Persist Publisher","Non-Persist Subscriber",
+	   "Persistent Publisher", "Persistent Subscriber",
+	   "Failsafe Publisher", "Failsafe Subscriber",
+	   "Transact Publisher", "Transact Subscriber");
+
+#
+# main function
+#
+
+do {
+
+    $line = <STDIN>;
+
+    if ($line =~ /Producer threads/ && !$foundxaxis)
+      {
+	printf("Threads           \t%s\n", substr($line, 28));
+	$foundxaxis = 1;
+      }
+    if ($line =~ /msgs\/sec/)
+      {
+	printf("%s\t%s\n", $labels[$i], substr($line, 28));
+	$i++;
+      }
+    
+  } until eof();

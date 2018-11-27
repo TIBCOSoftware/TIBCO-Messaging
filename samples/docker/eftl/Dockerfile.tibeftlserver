@@ -1,0 +1,19 @@
+FROM ubuntu:16.04
+RUN apt-get update && apt-get -y upgrade
+
+LABEL vendor="TIBCO"
+LABEL product="TIBCO eFTL"
+LABEL version=@CPACK_PACKAGE_VERSION_SHORT@
+
+RUN mkdir /tmp/ftl
+RUN mkdir /tmp/eftl
+COPY ftl/*.deb /tmp/ftl/
+COPY eftl/*.deb /tmp/eftl/
+
+RUN dpkg -i /tmp/ftl/*.deb
+RUN dpkg -i /tmp/eftl/*.deb 
+
+ENV PATH=/opt/tibco/eftl/@CPACK_PACKAGE_VERSION_SHORT@/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/tibco/ftl/@CPACK_PACKAGE_VERSION_SHORT@/lib:$LD_LIBRARY_PATH
+
+ENTRYPOINT ["tibeftlserver"]

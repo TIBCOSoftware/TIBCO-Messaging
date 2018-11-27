@@ -1,0 +1,44 @@
+/*
+ * Copyright (c) 2009-$Date: 2012-03-13 09:35:50 -0700 (Tue, 13 Mar 2012) $ TIBCO Software Inc.
+ * Licensed under a BSD-style license. Refer to [LICENSE]
+ * For more information, please contact:
+ * TIBCO Software Inc., Palo Alto, California, USA
+ *
+ * $Id: $
+ */
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+[assembly: AssemblyTitle("TIBCO.EFTL.WINRT")]
+[assembly: AssemblyDescription("TIBCO.EFTL Messaging for Windows Mobile")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("TIBCO Software Inc.")]
+[assembly: AssemblyProduct("TIBCO.EFTL")]
+[assembly: AssemblyCopyright("Copyright © TIBCO Software Inc. ${TIB_COPYRIGHT_YEARS}")]
+[assembly: AssemblyTrademark("${EFTL_TRADE}")]
+[assembly: AssemblyCulture("")]
+
+// Setting ComVisible to false makes the types in this assembly not visible 
+// to COM components.  If you need to access a type in this assembly from 
+// COM, set the ComVisible attribute to true on that type.
+[assembly: ComVisible(false)]
+
+// The following GUID is for the ID of the typelib if this project is exposed to COM
+[assembly: Guid("dfec1716-faff-4172-aab2-089376487258")]
+
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Build and Revision Numbers 
+// by using the '*' as shown below:
+// [assembly: AssemblyVersion("1.0.*")]
+[assembly: AssemblyVersion("${EFTL_ASSEMBLY_VERSION}")]
+[assembly: AssemblyFileVersion("${EFTL_ASSEMBLY_VERSION}")]

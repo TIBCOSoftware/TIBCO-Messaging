@@ -1,0 +1,118 @@
+######################################################################
+# Copyright (c) 2001-$Date: 2018-07-20 16:23:19 -0500 (Fri, 20 Jul 2018) $ by TIBCO Software Inc.
+# ALL RIGHTS RESERVED
+#
+# $Id: Makefile.w32 102524 2018-07-20 21:23:19Z olivierh $
+#
+# TIBCO Enterprise Message Service
+# Sample Makefile
+#
+######################################################################
+
+!IF "$(OS)" == "Windows_NT"
+NULL=
+!ELSE 
+NULL=nul
+!ENDIF 
+
+TIBEMS_DIR = ../..
+OUTDIR     = .
+INTDIR     = .\objs
+
+INCFILES   = /I$(TIBEMS_DIR)/include
+CL         = cl.exe
+CFLAGS     = /MT /O2 /DNDEBUG /nologo /GF /W3 /EHsc -D_WINDOWS -D_CRT_SECURE_NO_WARNINGS /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /c
+LINK       = link.exe
+LFLAGS     = /nologo /incremental:no /subsystem:console /OPT:NOREF
+WINLIBS    = kernel32.lib user32.lib winspool.lib gdi32.lib advapi32.lib shell32.lib uuid.lib ws2_32.lib
+EMSLIBS    = $(TIBEMS_DIR)\lib\tibems.lib $(TIBEMS_DIR)\lib\tibemslookup.lib \
+             $(TIBEMS_DIR)\lib\tibemsadmin.lib \
+             $(TIBEMS_DIR)\lib\tibemsufo.lib \
+             $(TIBEMS_DIR)\lib\libxml2.lib \
+	     $(TIBEMS_DIR)\lib\libeay32mt.lib $(TIBEMS_DIR)\lib\ssleay32mt.lib \
+	     $(TIBEMS_DIR)\lib\zlib.lib
+EXTOBJS    = "$(INTDIR)\tibemsUtilities.obj"
+
+all:	$(INTDIR) \
+	$(OUTDIR) \
+	tibemsDurable.exe		\
+	tibemsAsyncMsgConsumer.exe	\
+	tibemsBrowser.exe		\
+	tibemsMsgProducer.exe		\
+	tibemsMsgConsumer.exe		\
+	tibemsUFOMsgConsumer.exe	\
+	tibemsMsg.exe			\
+	tibemsMsgProducerPerf.exe	\
+	tibemsMsgConsumerPerf.exe	\
+	tibemsAdmin.exe
+
+xa:	$(INTDIR) \
+	$(OUTDIR) \
+	tibemsXAMsgProducer.exe		\
+	tibemsXAMsgConsumer.exe
+
+clean:
+	-@erase /Q "$(INTDIR)\*.*"
+	-@erase /Q tibemsDurable.exe
+	-@erase /Q tibemsAsyncMsgConsumer.exe
+	-@erase /Q tibemsBrowser.exe
+	-@erase /Q tibemsMsgProducer.exe
+	-@erase /Q tibemsMsgConsumer.exe
+	-@erase /Q tibemsUFOMsgConsumer.exe
+	-@erase /Q tibemsMsg.exe
+	-@erase /Q tibemsMsgProducerPerf.exe
+	-@erase /Q tibemsMsgConsumerPerf.exe
+	-@erase /Q tibemsXAMsgProducer.exe
+	-@erase /Q tibemsXAMsgConsumer.exe
+	-@erase /Q tibemsAdmin.exe
+
+"$(OUTDIR)" :
+    if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
+
+"$(INTDIR)" :
+    if not exist "$(INTDIR)/$(NULL)" mkdir "$(INTDIR)"
+
+
+.c{$(INTDIR)}.obj:
+   $(CL) $(CFLAGS) $(INCFILES) $<
+
+tibemsDurable.exe: $(INTDIR)\tibemsDurable.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsAsyncMsgConsumer.exe: $(INTDIR)\tibemsAsyncMsgConsumer.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsBrowser.exe: $(INTDIR)\tibemsBrowser.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsMsgProducer.exe: $(INTDIR)\tibemsMsgProducer.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsMsgConsumer.exe: $(INTDIR)\tibemsMsgConsumer.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsUFOMsgConsumer.exe: $(INTDIR)\tibemsUFOMsgConsumer.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsMsg.exe: $(INTDIR)\tibemsMsg.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+# This Makefile links all programs statically, but tibemsLookup.exe can only
+# be linked dynamically on Windows. Thus, we skip building tibemsLookup.exe.
+#tibemsLookup.exe: $(INTDIR)\tibemsLookup.obj $(EXTOBJS)
+#    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsMsgProducerPerf.exe: $(INTDIR)\tibemsMsgProducerPerf.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsMsgConsumerPerf.exe: $(INTDIR)\tibemsMsgConsumerPerf.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsXAMsgProducer.exe: $(INTDIR)\tibemsXAMsgProducer.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsXAMsgConsumer.exe: $(INTDIR)\tibemsXAMsgConsumer.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
+
+tibemsAdmin.exe: $(INTDIR)\tibemsAdmin.obj $(EXTOBJS)
+    $(LINK) $(LFLAGS) $(EXTOBJS) $(INTDIR)\$*.obj $(WINLIBS) $(EMSLIBS) /out:$@
