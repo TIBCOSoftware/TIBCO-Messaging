@@ -6,7 +6,7 @@ Each repository held in the TIBCO Messaging Repo is structured such that the com
 technology is listed second.  For example if you are looking for the eftl javascript sdk, you would find that
 listed as eftl-javascript-sdk.
 
-* NOTE the all eftl-*-sdk repositories provide both eFTL and TIBCO Cloud Messaging (TCM) development kits for
+* NOTE that all eftl-*-sdk repositories provide both eFTL and TIBCO Cloud Messaging (TCM) development kits for
 connecting applications to eFTL or TIBCO Cloud Messaging
 
 In addition you can find the TIBCO Messaging component samples under the samples repository.
