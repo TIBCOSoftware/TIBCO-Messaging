@@ -22,7 +22,7 @@ All the sample code and build instructions is maintained under this hierarchy.
    * eftl-nodejs-sdk (TCM nodejs SDK)
    * eftl-c-sdk (TCM c SDK)
    * eftl-cs-sdk (TCM cs SDK)
-   * eftl-golang-sdk (TCM goland SDK)
+   * eftl-golang-sdk (TCM golang SDK)
    * eftl-objc-sdk (TCM objc SDK)
 
 # TIBCO-Messaging/Samples Repository List (Examples)
