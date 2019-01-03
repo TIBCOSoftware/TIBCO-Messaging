@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+
 # Replace version tokens
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/eftl.js
                ${CMAKE_CURRENT_BINARY_DIR}/eftl_v.js)
@@ -6,9 +8,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/eftl_js.copyright
                ${CMAKE_CURRENT_BINARY_DIR}/eftl_js.copyright)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(COMMAND_STR "${TIB_THIRDPARTY}/all/${CMAKE_BUILD_TYPE_FIXED}/uglifyjs.cmd")
+    set(COMMAND_STR "uglifyjs.cmd")
 else()
-    set(COMMAND_STR "${TIB_THIRDPARTY}/all/${CMAKE_BUILD_TYPE_FIXED}/node_modules/uglify-js/bin/uglifyjs")
+    set(COMMAND_STR "uglifyjs")
 endif()
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/eftl_minimized
