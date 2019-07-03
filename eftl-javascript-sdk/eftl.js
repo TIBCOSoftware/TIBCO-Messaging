@@ -191,8 +191,11 @@ var WebSocket = WebSocket || require('ws');
       // Node.js
       var url = require('url');
       return url.parse(str);
+    } else if ("function" == typeof URL) {
+        // modern browser and web worker thread
+        return new URL(str);
     } else {
-      // browser
+      // fallback for older browser
       var url = document.createElement('a');
       url.href = str;
       url.query = (url.search && url.search.charAt(0) === '?' ? url.search.substring(1) : url.search);
