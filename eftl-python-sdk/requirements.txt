@@ -1,0 +1,5 @@
+jsonpickle
+autobahn
+pyOpenSSL
+twisted
+service_identity
