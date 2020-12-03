@@ -1,0 +1,3597 @@
+<!doctype html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+
+    <title>connection API documentation</title>
+    <meta name="description" content="Documentation of the TIBCO eFTL™ Python application programming interface." />
+
+  <link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300' rel='stylesheet' type='text/css'>
+  
+  <style type="text/css">
+  
+* {
+  box-sizing: border-box;
+}
+/*! normalize.css v1.1.1 | MIT License | git.io/normalize */
+
+/* ==========================================================================
+   HTML5 display definitions
+   ========================================================================== */
+
+/**
+ * Correct `block` display not defined in IE 6/7/8/9 and Firefox 3.
+ */
+
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+main,
+nav,
+section,
+summary {
+    display: block;
+}
+
+/**
+ * Correct `inline-block` display not defined in IE 6/7/8/9 and Firefox 3.
+ */
+
+audio,
+canvas,
+video {
+    display: inline-block;
+    *display: inline;
+    *zoom: 1;
+}
+
+/**
+ * Prevent modern browsers from displaying `audio` without controls.
+ * Remove excess height in iOS 5 devices.
+ */
+
+audio:not([controls]) {
+    display: none;
+    height: 0;
+}
+
+/**
+ * Address styling not present in IE 7/8/9, Firefox 3, and Safari 4.
+ * Known issue: no IE 6 support.
+ */
+
+[hidden] {
+    display: none;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+/**
+ * 1. Prevent system color scheme's background color being used in Firefox, IE,
+ *    and Opera.
+ * 2. Prevent system color scheme's text color being used in Firefox, IE, and
+ *    Opera.
+ * 3. Correct text resizing oddly in IE 6/7 when body `font-size` is set using
+ *    `em` units.
+ * 4. Prevent iOS text size adjust after orientation change, without disabling
+ *    user zoom.
+ */
+
+html {
+    background: #fff; /* 1 */
+    color: #000; /* 2 */
+    font-size: 100%; /* 3 */
+    -webkit-text-size-adjust: 100%; /* 4 */
+    -ms-text-size-adjust: 100%; /* 4 */
+}
+
+/**
+ * Address `font-family` inconsistency between `textarea` and other form
+ * elements.
+ */
+
+html,
+button,
+input,
+select,
+textarea {
+    font-family: sans-serif;
+}
+
+/**
+ * Address margins handled incorrectly in IE 6/7.
+ */
+
+body {
+    margin: 0;
+}
+
+/* ==========================================================================
+   Links
+   ========================================================================== */
+
+/**
+ * Address `outline` inconsistency between Chrome and other browsers.
+ */
+
+a:focus {
+    outline: thin dotted;
+}
+
+/**
+ * Improve readability when focused and also mouse hovered in all browsers.
+ */
+
+a:active,
+a:hover {
+    outline: 0;
+}
+
+/* ==========================================================================
+   Typography
+   ========================================================================== */
+
+/**
+ * Address font sizes and margins set differently in IE 6/7.
+ * Address font sizes within `section` and `article` in Firefox 4+, Safari 5,
+ * and Chrome.
+ */
+
+h1 {
+    font-size: 2em;
+    margin: 0.67em 0;
+}
+
+h2 {
+    font-size: 1.5em;
+    margin: 0.83em 0;
+}
+
+h3 {
+    font-size: 1.17em;
+    margin: 1em 0;
+}
+
+h4 {
+    font-size: 1em;
+    margin: 1.33em 0;
+}
+
+h5 {
+    font-size: 0.83em;
+    margin: 1.67em 0;
+}
+
+h6 {
+    font-size: 0.67em;
+    margin: 2.33em 0;
+}
+
+/**
+ * Address styling not present in IE 7/8/9, Safari 5, and Chrome.
+ */
+
+abbr[title] {
+    border-bottom: 1px dotted;
+}
+
+/**
+ * Address style set to `bolder` in Firefox 3+, Safari 4/5, and Chrome.
+ */
+
+b,
+strong {
+    font-weight: bold;
+}
+
+blockquote {
+    margin: 1em 40px;
+}
+
+/**
+ * Address styling not present in Safari 5 and Chrome.
+ */
+
+dfn {
+    font-style: italic;
+}
+
+/**
+ * Address differences between Firefox and other browsers.
+ * Known issue: no IE 6/7 normalization.
+ */
+
+hr {
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+    height: 0;
+}
+
+/**
+ * Address styling not present in IE 6/7/8/9.
+ */
+
+mark {
+    background: #ff0;
+    color: #000;
+}
+
+/**
+ * Address margins set differently in IE 6/7.
+ */
+
+p,
+pre {
+    margin: 1em 0;
+}
+
+/**
+ * Correct font family set oddly in IE 6, Safari 4/5, and Chrome.
+ */
+
+code,
+kbd,
+pre,
+samp {
+    font-family: monospace, serif;
+    _font-family: 'courier new', monospace;
+    font-size: 1em;
+}
+
+/**
+ * Improve readability of pre-formatted text in all browsers.
+ */
+
+pre {
+    white-space: pre;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/**
+ * Address CSS quotes not supported in IE 6/7.
+ */
+
+q {
+    quotes: none;
+}
+
+/**
+ * Address `quotes` property not supported in Safari 4.
+ */
+
+q:before,
+q:after {
+    content: '';
+    content: none;
+}
+
+/**
+ * Address inconsistent and variable font size in all browsers.
+ */
+
+small {
+    font-size: 80%;
+}
+
+/**
+ * Prevent `sub` and `sup` affecting `line-height` in all browsers.
+ */
+
+sub,
+sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+}
+
+sup {
+    top: -0.5em;
+}
+
+sub {
+    bottom: -0.25em;
+}
+
+/* ==========================================================================
+   Lists
+   ========================================================================== */
+
+/**
+ * Address margins set differently in IE 6/7.
+ */
+
+dl,
+menu,
+ol,
+ul {
+    margin: 1em 0;
+}
+
+dd {
+    margin: 0 0 0 40px;
+}
+
+/**
+ * Address paddings set differently in IE 6/7.
+ */
+
+menu,
+ol,
+ul {
+    padding: 0 0 0 40px;
+}
+
+/**
+ * Correct list images handled incorrectly in IE 7.
+ */
+
+nav ul,
+nav ol {
+    list-style: none;
+    list-style-image: none;
+}
+
+/* ==========================================================================
+   Embedded content
+   ========================================================================== */
+
+/**
+ * 1. Remove border when inside `a` element in IE 6/7/8/9 and Firefox 3.
+ * 2. Improve image quality when scaled in IE 7.
+ */
+
+img {
+    border: 0; /* 1 */
+    -ms-interpolation-mode: bicubic; /* 2 */
+}
+
+/**
+ * Correct overflow displayed oddly in IE 9.
+ */
+
+svg:not(:root) {
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Figures
+   ========================================================================== */
+
+/**
+ * Address margin not present in IE 6/7/8/9, Safari 5, and Opera 11.
+ */
+
+figure {
+    margin: 0;
+}
+
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+
+/**
+ * Correct margin displayed oddly in IE 6/7.
+ */
+
+form {
+    margin: 0;
+}
+
+/**
+ * Define consistent border, margin, and padding.
+ */
+
+fieldset {
+    border: 1px solid #c0c0c0;
+    margin: 0 2px;
+    padding: 0.35em 0.625em 0.75em;
+}
+
+/**
+ * 1. Correct color not being inherited in IE 6/7/8/9.
+ * 2. Correct text not wrapping in Firefox 3.
+ * 3. Correct alignment displayed oddly in IE 6/7.
+ */
+
+legend {
+    border: 0; /* 1 */
+    padding: 0;
+    white-space: normal; /* 2 */
+    *margin-left: -7px; /* 3 */
+}
+
+/**
+ * 1. Correct font size not being inherited in all browsers.
+ * 2. Address margins set differently in IE 6/7, Firefox 3+, Safari 5,
+ *    and Chrome.
+ * 3. Improve appearance and consistency in all browsers.
+ */
+
+button,
+input,
+select,
+textarea {
+    font-size: 100%; /* 1 */
+    margin: 0; /* 2 */
+    vertical-align: baseline; /* 3 */
+    *vertical-align: middle; /* 3 */
+}
+
+/**
+ * Address Firefox 3+ setting `line-height` on `input` using `!important` in
+ * the UA stylesheet.
+ */
+
+button,
+input {
+    line-height: normal;
+}
+
+/**
+ * Address inconsistent `text-transform` inheritance for `button` and `select`.
+ * All other form control elements do not inherit `text-transform` values.
+ * Correct `button` style inheritance in Chrome, Safari 5+, and IE 6+.
+ * Correct `select` style inheritance in Firefox 4+ and Opera.
+ */
+
+button,
+select {
+    text-transform: none;
+}
+
+/**
+ * 1. Avoid the WebKit bug in Android 4.0.* where (2) destroys native `audio`
+ *    and `video` controls.
+ * 2. Correct inability to style clickable `input` types in iOS.
+ * 3. Improve usability and consistency of cursor style between image-type
+ *    `input` and others.
+ * 4. Remove inner spacing in IE 7 without affecting normal text inputs.
+ *    Known issue: inner spacing remains in IE 6.
+ */
+
+button,
+html input[type="button"], /* 1 */
+input[type="reset"],
+input[type="submit"] {
+    -webkit-appearance: button; /* 2 */
+    cursor: pointer; /* 3 */
+    *overflow: visible;  /* 4 */
+}
+
+/**
+ * Re-set default cursor for disabled elements.
+ */
+
+button[disabled],
+html input[disabled] {
+    cursor: default;
+}
+
+/**
+ * 1. Address box sizing set to content-box in IE 8/9.
+ * 2. Remove excess padding in IE 8/9.
+ * 3. Remove excess padding in IE 7.
+ *    Known issue: excess padding remains in IE 6.
+ */
+
+input[type="checkbox"],
+input[type="radio"] {
+    box-sizing: border-box; /* 1 */
+    padding: 0; /* 2 */
+    *height: 13px; /* 3 */
+    *width: 13px; /* 3 */
+}
+
+/**
+ * 1. Address `appearance` set to `searchfield` in Safari 5 and Chrome.
+ * 2. Address `box-sizing` set to `border-box` in Safari 5 and Chrome
+ *    (include `-moz` to future-proof).
+ */
+
+input[type="search"] {
+    -webkit-appearance: textfield; /* 1 */
+    -moz-box-sizing: content-box;
+    -webkit-box-sizing: content-box; /* 2 */
+    box-sizing: content-box;
+}
+
+/**
+ * Remove inner padding and search cancel button in Safari 5 and Chrome
+ * on OS X.
+ */
+
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+}
+
+/**
+ * Remove inner padding and border in Firefox 3+.
+ */
+
+button::-moz-focus-inner,
+input::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+}
+
+/**
+ * 1. Remove default vertical scrollbar in IE 6/7/8/9.
+ * 2. Improve readability and alignment in all browsers.
+ */
+
+textarea {
+    overflow: auto; /* 1 */
+    vertical-align: top; /* 2 */
+}
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+
+/**
+ * Remove most spacing between table cells.
+ */
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+  </style>
+
+  <style type="text/css">
+  
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+  }
+  body {
+    background: #fff;
+    font-family: "Source Sans Pro", "Helvetica Neueue", Helvetica, sans;
+    font-weight: 300;
+    font-size: 16px;
+    line-height: 1.6em;
+  }
+  #content {
+    width: 70%;
+    max-width: 850px;
+    float: left;
+    padding: 30px 60px;
+    border-left: 1px solid #ddd;
+  }
+  #sidebar {
+    width: 25%;
+    float: left;
+    padding: 30px;
+    overflow: hidden;
+  }
+  #nav {
+    font-size: 130%;
+    margin: 0 0 15px 0;
+  }
+
+  #top {
+    display: block;
+    position: fixed;
+    bottom: 5px;
+    left: 5px;
+    font-size: .85em;
+    text-transform: uppercase;
+  }
+
+  #footer {
+    font-size: .75em;
+    padding: 5px 30px;
+    border-top: 1px solid #ddd;
+    text-align: right;
+  }
+    #footer p {
+      margin: 0 0 0 30px;
+      display: inline-block;
+    }
+
+  h1, h2, h3, h4, h5 {
+    font-weight: 300;
+  }
+  h1 {
+    font-size: 2.5em;
+    line-height: 1.1em;
+    margin: 0 0 .50em 0;
+  }
+
+  h2 {
+    font-size: 1.75em;
+    margin: 1em 0 .50em 0;
+  }
+
+  h3 {
+    margin: 25px 0 10px 0;
+  }
+
+  h4 {
+    margin: 0;
+    font-size: 105%;
+  }
+
+  a {
+    color: #058;
+    text-decoration: none;
+    transition: color .3s ease-in-out;
+  }
+
+  a:hover {
+    color: #e08524;
+    transition: color .3s ease-in-out;
+  }
+
+  pre, code, .mono, .name {
+    font-family: "Ubuntu Mono", "Cousine", "DejaVu Sans Mono", monospace;
+  }
+
+  .title .name {
+    font-weight: bold;
+  }
+  .section-title {
+    margin-top: 2em;
+  }
+  .ident {
+    color: #900;
+  }
+
+  code {
+    background: #f9f9f9;
+  } 
+
+  pre {
+    background: #fefefe;
+    border: 1px solid #ddd;
+    box-shadow: 2px 2px 0 #f3f3f3;
+    margin: 0 30px;
+    padding: 15px 30px;
+  }
+
+  .codehilite {
+    margin: 0 30px 10px 30px;
+  }
+
+    .codehilite pre {
+      margin: 0;
+    }
+    .codehilite .err { background: #ff3300; color: #fff !important; } 
+
+  table#module-list {
+    font-size: 110%;
+  }
+
+    table#module-list tr td:first-child {
+      padding-right: 10px;
+      white-space: nowrap;
+    }
+
+    table#module-list td {
+      vertical-align: top;
+      padding-bottom: 8px;
+    }
+
+      table#module-list td p {
+        margin: 0 0 7px 0;
+      }
+
+  .def {
+    display: table;
+  }
+
+    .def p {
+      display: table-cell;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .def p:first-child {
+      white-space: nowrap;
+    }
+
+    .def p:last-child {
+      width: 100%;
+    }
+
+
+  #index {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+  }
+    ul#index .class_name {
+      /* font-size: 110%; */
+      font-weight: bold;
+    }
+    #index ul {
+      margin: 0;
+    }
+
+  .item {
+    margin: 0 0 15px 0;
+  }
+
+    .item .class {
+      margin: 0 0 25px 30px;
+    }
+
+      .item .class ul.class_list {
+        margin: 0 0 20px 0;
+      }
+
+    .item .name {
+      background: #fafafa;
+      margin: 0;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 3px;
+      display: inline-block;
+      min-width: 40%;
+    }
+      .item .name:hover {
+        background: #f6f6f6;
+      }
+
+    .item .empty_desc {
+      margin: 0 0 5px 0;
+      padding: 0;
+    }
+
+    .item .inheritance {
+      margin: 3px 0 0 30px;
+    }
+
+    .item .inherited {
+      color: #666;
+    }
+
+    .item .desc {
+      padding: 0 8px;
+      margin: 0;
+    }
+
+      .item .desc p {
+        margin: 0 0 10px 0;
+      }
+
+    .source_cont {
+      margin: 0;
+      padding: 0;
+    }
+
+    .source_link a {
+      background: #ffc300;
+      font-weight: 400;
+      font-size: .75em;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 1px 1px 0 #f4b700;
+      
+      padding: 3px 8px;
+      border-radius: 2px;
+      transition: background .3s ease-in-out;
+    }
+      .source_link a:hover {
+        background: #FF7200;
+        text-shadow: none;
+        transition: background .3s ease-in-out;
+      }
+
+    .source {
+      display: none;
+      max-height: 600px;
+      overflow-y: scroll;
+      margin-bottom: 15px;
+    }
+
+      .source .codehilite {
+        margin: 0;
+      }
+
+  .desc h1, .desc h2, .desc h3 {
+    font-size: 100% !important;
+  }
+  .clear {
+    clear: both;
+  }
+
+  @media all and (max-width: 950px) {
+    #sidebar {
+      width: 35%;
+    }
+    #content {
+      width: 65%;
+    }
+  }
+  @media all and (max-width: 650px) {
+    #top {
+      display: none;
+    }
+    #sidebar {
+      float: none;
+      width: auto;
+    }
+    #content {
+      float: none;
+      width: auto;
+      padding: 30px;
+    }
+
+    #index ul {
+      padding: 0;
+      margin-bottom: 15px;
+    }
+    #index ul li {
+      display: inline-block;
+      margin-right: 30px;
+    }
+    #footer {
+      text-align: left;
+    }
+    #footer p {
+      display: block;
+      margin: inherit;
+    }
+  }
+
+  /*****************************/
+
+  </style>
+
+
+  <style type="text/css">
+  
+/* ==========================================================================
+   EXAMPLE Media Queries for Responsive Design.
+   These examples override the primary ('mobile first') styles.
+   Modify as content requires.
+   ========================================================================== */
+
+@media only screen and (min-width: 35em) {
+    /* Style adjustments for viewports that meet the condition */
+}
+
+@media print,
+       (-o-min-device-pixel-ratio: 5/4),
+       (-webkit-min-device-pixel-ratio: 1.25),
+       (min-resolution: 120dpi) {
+    /* Style adjustments for high resolution devices */
+}
+
+/* ==========================================================================
+   Print styles.
+   Inlined to avoid required HTTP connection: h5bp.com/r
+   ========================================================================== */
+
+@media print {
+    * {
+        background: transparent !important;
+        color: #000 !important; /* Black prints faster: h5bp.com/s */
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    a,
+    a:visited {
+        text-decoration: underline;
+    }
+
+    a[href]:after {
+        content: " (" attr(href) ")";
+    }
+
+    abbr[title]:after {
+        content: " (" attr(title) ")";
+    }
+
+    /*
+     * Don't show links for images, or javascript/internal links
+     */
+
+    .ir a:after,
+    a[href^="javascript:"]:after,
+    a[href^="#"]:after {
+        content: "";
+    }
+
+    pre,
+    blockquote {
+        border: 1px solid #999;
+        page-break-inside: avoid;
+    }
+
+    thead {
+        display: table-header-group; /* h5bp.com/t */
+    }
+
+    tr,
+    img {
+        page-break-inside: avoid;
+    }
+
+    img {
+        max-width: 100% !important;
+    }
+
+    @page {
+        margin: 0.5cm;
+    }
+
+    p,
+    h2,
+    h3 {
+        orphans: 3;
+        widows: 3;
+    }
+
+    h2,
+    h3 {
+        page-break-after: avoid;
+    }
+}
+
+  </style>
+
+  <script type="text/javascript">
+  function toggle(id, $link) {
+    $node = document.getElementById(id);
+    if (!$node)
+    return;
+    if (!$node.style.display || $node.style.display == 'none') {
+    $node.style.display = 'block';
+    $link.innerHTML = 'Hide source &nequiv;';
+    } else {
+    $node.style.display = 'none';
+    $link.innerHTML = 'Show source &equiv;';
+    }
+  }
+  </script>
+</head>
+<body>
+<a href="#" id="top">Top</a>
+
+<div id="container">
+    
+  
+  <div id="sidebar">
+    <h1>Index</h1>
+    <ul id="index">
+    <li class="set"><h3><a href="#header-variables">Module variables</a></h3>
+      
+  <ul>
+    <li class="mono"><a href="#connection.ACKNOWLEDGE_MODE">ACKNOWLEDGE_MODE</a></li>
+    <li class="mono"><a href="#connection.ACKNOWLEDGE_MODE_AUTO">ACKNOWLEDGE_MODE_AUTO</a></li>
+    <li class="mono"><a href="#connection.ACKNOWLEDGE_MODE_CLIENT">ACKNOWLEDGE_MODE_CLIENT</a></li>
+    <li class="mono"><a href="#connection.ACKNOWLEDGE_MODE_NONE">ACKNOWLEDGE_MODE_NONE</a></li>
+    <li class="mono"><a href="#connection.ACK_FIELD">ACK_FIELD</a></li>
+    <li class="mono"><a href="#connection.BODY_FIELD">BODY_FIELD</a></li>
+    <li class="mono"><a href="#connection.CLIENT_ID_FIELD">CLIENT_ID_FIELD</a></li>
+    <li class="mono"><a href="#connection.CLIENT_TYPE_FIELD">CLIENT_TYPE_FIELD</a></li>
+    <li class="mono"><a href="#connection.CLIENT_VERSION_FIELD">CLIENT_VERSION_FIELD</a></li>
+    <li class="mono"><a href="#connection.DELIVERY_COUNT_FIELD">DELIVERY_COUNT_FIELD</a></li>
+    <li class="mono"><a href="#connection.DEL_FIELD">DEL_FIELD</a></li>
+    <li class="mono"><a href="#connection.DOUBLE_FIELD">DOUBLE_FIELD</a></li>
+    <li class="mono"><a href="#connection.DURABLE_FIELD">DURABLE_FIELD</a></li>
+    <li class="mono"><a href="#connection.DURABLE_TYPE_LAST_VALUE">DURABLE_TYPE_LAST_VALUE</a></li>
+    <li class="mono"><a href="#connection.DURABLE_TYPE_SHARED">DURABLE_TYPE_SHARED</a></li>
+    <li class="mono"><a href="#connection.DURABLE_TYPE_STANDARD">DURABLE_TYPE_STANDARD</a></li>
+    <li class="mono"><a href="#connection.EFTL_WS_PROTOCOL">EFTL_WS_PROTOCOL</a></li>
+    <li class="mono"><a href="#connection.ERR_CODE_FIELD">ERR_CODE_FIELD</a></li>
+    <li class="mono"><a href="#connection.ERR_PUBLISH_FAILED">ERR_PUBLISH_FAILED</a></li>
+    <li class="mono"><a href="#connection.HEARTBEAT_FIELD">HEARTBEAT_FIELD</a></li>
+    <li class="mono"><a href="#connection.ID_FIELD">ID_FIELD</a></li>
+    <li class="mono"><a href="#connection.ID_TOKEN_FIELD">ID_TOKEN_FIELD</a></li>
+    <li class="mono"><a href="#connection.KEY_FIELD">KEY_FIELD</a></li>
+    <li class="mono"><a href="#connection.LOGIN_OPTIONS_FIELD">LOGIN_OPTIONS_FIELD</a></li>
+    <li class="mono"><a href="#connection.MAP_FIELD">MAP_FIELD</a></li>
+    <li class="mono"><a href="#connection.MATCHER_FIELD">MATCHER_FIELD</a></li>
+    <li class="mono"><a href="#connection.MAX_PENDING_ACKS_FIELD">MAX_PENDING_ACKS_FIELD</a></li>
+    <li class="mono"><a href="#connection.MAX_SIZE_FIELD">MAX_SIZE_FIELD</a></li>
+    <li class="mono"><a href="#connection.MILLISECOND_FIELD">MILLISECOND_FIELD</a></li>
+    <li class="mono"><a href="#connection.OPAQUE_FIELD">OPAQUE_FIELD</a></li>
+    <li class="mono"><a href="#connection.OP_ACK">OP_ACK</a></li>
+    <li class="mono"><a href="#connection.OP_DISCONNECT">OP_DISCONNECT</a></li>
+    <li class="mono"><a href="#connection.OP_ERROR">OP_ERROR</a></li>
+    <li class="mono"><a href="#connection.OP_EVENT">OP_EVENT</a></li>
+    <li class="mono"><a href="#connection.OP_FIELD">OP_FIELD</a></li>
+    <li class="mono"><a href="#connection.OP_HEARTBEAT">OP_HEARTBEAT</a></li>
+    <li class="mono"><a href="#connection.OP_LOGIN">OP_LOGIN</a></li>
+    <li class="mono"><a href="#connection.OP_MAP_CREATE">OP_MAP_CREATE</a></li>
+    <li class="mono"><a href="#connection.OP_MAP_DESTROY">OP_MAP_DESTROY</a></li>
+    <li class="mono"><a href="#connection.OP_MAP_GET">OP_MAP_GET</a></li>
+    <li class="mono"><a href="#connection.OP_MAP_REMOVE">OP_MAP_REMOVE</a></li>
+    <li class="mono"><a href="#connection.OP_MAP_RESPONSE">OP_MAP_RESPONSE</a></li>
+    <li class="mono"><a href="#connection.OP_MAP_SET">OP_MAP_SET</a></li>
+    <li class="mono"><a href="#connection.OP_MESSAGE">OP_MESSAGE</a></li>
+    <li class="mono"><a href="#connection.OP_REPLY">OP_REPLY</a></li>
+    <li class="mono"><a href="#connection.OP_REQUEST">OP_REQUEST</a></li>
+    <li class="mono"><a href="#connection.OP_REQUEST_REPLY">OP_REQUEST_REPLY</a></li>
+    <li class="mono"><a href="#connection.OP_SUBSCRIBE">OP_SUBSCRIBE</a></li>
+    <li class="mono"><a href="#connection.OP_SUBSCRIBED">OP_SUBSCRIBED</a></li>
+    <li class="mono"><a href="#connection.OP_UNSUBSCRIBE">OP_UNSUBSCRIBE</a></li>
+    <li class="mono"><a href="#connection.OP_UNSUBSCRIBED">OP_UNSUBSCRIBED</a></li>
+    <li class="mono"><a href="#connection.OP_WELCOME">OP_WELCOME</a></li>
+    <li class="mono"><a href="#connection.PASSWORD_FIELD">PASSWORD_FIELD</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_AUTO_RECONNECT_ATTEMPTS">PROPERTY_AUTO_RECONNECT_ATTEMPTS</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_AUTO_RECONNECT_MAX_DELAY">PROPERTY_AUTO_RECONNECT_MAX_DELAY</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_CLIENT_ID">PROPERTY_CLIENT_ID</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_DURABLE_KEY">PROPERTY_DURABLE_KEY</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_DURABLE_TYPE">PROPERTY_DURABLE_TYPE</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_HANDSHAKE_TIMEOUT">PROPERTY_HANDSHAKE_TIMEOUT</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_LOGIN_TIMEOUT">PROPERTY_LOGIN_TIMEOUT</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_MAX_PENDING_ACKS">PROPERTY_MAX_PENDING_ACKS</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_PASSWORD">PROPERTY_PASSWORD</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_POLLING_INTERVAL">PROPERTY_POLLING_INTERVAL</a></li>
+    <li class="mono"><a href="#connection.PROPERTY_USERNAME">PROPERTY_USERNAME</a></li>
+    <li class="mono"><a href="#connection.PROTOCOL_FIELD">PROTOCOL_FIELD</a></li>
+    <li class="mono"><a href="#connection.QOS_FIELD">QOS_FIELD</a></li>
+    <li class="mono"><a href="#connection.REASON_FIELD">REASON_FIELD</a></li>
+    <li class="mono"><a href="#connection.REPLY_TO_FIELD">REPLY_TO_FIELD</a></li>
+    <li class="mono"><a href="#connection.REQUEST_DISALLOWED">REQUEST_DISALLOWED</a></li>
+    <li class="mono"><a href="#connection.REQUEST_FAILED">REQUEST_FAILED</a></li>
+    <li class="mono"><a href="#connection.REQUEST_TIMEOUT">REQUEST_TIMEOUT</a></li>
+    <li class="mono"><a href="#connection.REQ_ID_FIELD">REQ_ID_FIELD</a></li>
+    <li class="mono"><a href="#connection.RESTART">RESTART</a></li>
+    <li class="mono"><a href="#connection.RESUME_FIELD">RESUME_FIELD</a></li>
+    <li class="mono"><a href="#connection.SECOND">SECOND</a></li>
+    <li class="mono"><a href="#connection.SEQ_NUM_FIELD">SEQ_NUM_FIELD</a></li>
+    <li class="mono"><a href="#connection.STORE_MSG_ID_FIELD">STORE_MSG_ID_FIELD</a></li>
+    <li class="mono"><a href="#connection.SUBSCRIPTIONS_DISALLOWED">SUBSCRIPTIONS_DISALLOWED</a></li>
+    <li class="mono"><a href="#connection.SUBSCRIPTION_FAILED">SUBSCRIPTION_FAILED</a></li>
+    <li class="mono"><a href="#connection.SUBSCRIPTION_INVALID">SUBSCRIPTION_INVALID</a></li>
+    <li class="mono"><a href="#connection.SUBSCRIPTION_TYPE">SUBSCRIPTION_TYPE</a></li>
+    <li class="mono"><a href="#connection.TIMEOUT_FIELD">TIMEOUT_FIELD</a></li>
+    <li class="mono"><a href="#connection.TO_FIELD">TO_FIELD</a></li>
+    <li class="mono"><a href="#connection.USER_FIELD">USER_FIELD</a></li>
+    <li class="mono"><a href="#connection.VALUE_FIELD">VALUE_FIELD</a></li>
+    <li class="mono"><a href="#connection.WS_ABNORMAL_CLOSE">WS_ABNORMAL_CLOSE</a></li>
+    <li class="mono"><a href="#connection.WS_NORMAL_CLOSE">WS_NORMAL_CLOSE</a></li>
+    <li class="mono"><a href="#connection.formatter">formatter</a></li>
+    <li class="mono"><a href="#connection.handler">handler</a></li>
+    <li class="mono"><a href="#connection.logger">logger</a></li>
+  </ul>
+
+    </li>
+
+
+    <li class="set"><h3><a href="#header-classes">Classes</a></h3>
+      <ul>
+        <li class="mono">
+        <span class="class_name"><a href="#connection.Eftl">Eftl</a></span>
+        
+          
+  <ul>
+    <li class="mono"><a href="#connection.Eftl.__init__">__init__</a></li>
+    <li class="mono"><a href="#connection.Eftl.connect">connect</a></li>
+    <li class="mono"><a href="#connection.Eftl.get_version">get_version</a></li>
+  </ul>
+
+        </li>
+        <li class="mono">
+        <span class="class_name"><a href="#connection.EftlAlreadyConnected">EftlAlreadyConnected</a></span>
+        
+        </li>
+        <li class="mono">
+        <span class="class_name"><a href="#connection.EftlClientError">EftlClientError</a></span>
+        
+        </li>
+        <li class="mono">
+        <span class="class_name"><a href="#connection.EftlConnection">EftlConnection</a></span>
+        
+          
+  <ul>
+    <li class="mono"><a href="#connection.EftlConnection.__init__">__init__</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.acknowledge">acknowledge</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.acknowledge_all">acknowledge_all</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.close_all_subscriptions">close_all_subscriptions</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.close_subscription">close_subscription</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.create_kv_map">create_kv_map</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.create_message">create_message</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.disconnect">disconnect</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.get_clientId">get_clientId</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.is_connected">is_connected</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.publish">publish</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.reconnect">reconnect</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.remove_kv_map">remove_kv_map</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.send_reply">send_reply</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.send_request">send_request</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.subscribe">subscribe</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.unsubscribe">unsubscribe</a></li>
+    <li class="mono"><a href="#connection.EftlConnection.unsubscribe_all">unsubscribe_all</a></li>
+  </ul>
+
+        </li>
+        <li class="mono">
+        <span class="class_name"><a href="#connection.EftlKVMap">EftlKVMap</a></span>
+        
+          
+  <ul>
+    <li class="mono"><a href="#connection.EftlKVMap.__init__">__init__</a></li>
+    <li class="mono"><a href="#connection.EftlKVMap.get">get</a></li>
+    <li class="mono"><a href="#connection.EftlKVMap.remove">remove</a></li>
+    <li class="mono"><a href="#connection.EftlKVMap.set">set</a></li>
+  </ul>
+
+        </li>
+        <li class="mono">
+        <span class="class_name"><a href="#connection.EftlMessage">EftlMessage</a></span>
+        
+          
+  <ul>
+    <li class="mono"><a href="#connection.EftlMessage.__init__">__init__</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.clear_all_fields">clear_all_fields</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.clear_field">clear_field</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_datetime">get_datetime</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_datetime_array">get_datetime_array</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_delivery_count">get_delivery_count</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_double">get_double</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_double_array">get_double_array</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_field_names">get_field_names</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_field_type">get_field_type</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_long">get_long</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_long_array">get_long_array</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_message">get_message</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_message_array">get_message_array</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_opaque">get_opaque</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_store_message_id">get_store_message_id</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_string">get_string</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.get_string_array">get_string_array</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.is_field_set">is_field_set</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_datetime">set_datetime</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_datetime_array">set_datetime_array</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_double">set_double</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_double_array">set_double_array</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_long">set_long</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_long_array">set_long_array</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_message">set_message</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_message_array">set_message_array</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_opaque">set_opaque</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_string">set_string</a></li>
+    <li class="mono"><a href="#connection.EftlMessage.set_string_array">set_string_array</a></li>
+  </ul>
+
+        </li>
+        <li class="mono">
+        <span class="class_name"><a href="#connection.EftlMessageSizeTooLarge">EftlMessageSizeTooLarge</a></span>
+        
+        </li>
+      </ul>
+    </li>
+
+    </ul>
+  </div>
+
+    <article id="content">
+      
+  
+
+  
+
+
+  <header id="section-intro">
+  <h1 class="title"><span class="name">connection</span> module</h1>
+  <p>Documentation of the TIBCO eFTL™ Python application programming interface.</p>
+  
+
+  </header>
+
+  <section id="section-items">
+    <h2 class="section-title" id="header-variables">Module variables</h2>
+      <div class="item">
+      <p id="connection.ACKNOWLEDGE_MODE" class="name">var <span class="ident">ACKNOWLEDGE_MODE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.ACKNOWLEDGE_MODE_AUTO" class="name">var <span class="ident">ACKNOWLEDGE_MODE_AUTO</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.ACKNOWLEDGE_MODE_CLIENT" class="name">var <span class="ident">ACKNOWLEDGE_MODE_CLIENT</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.ACKNOWLEDGE_MODE_NONE" class="name">var <span class="ident">ACKNOWLEDGE_MODE_NONE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.ACK_FIELD" class="name">var <span class="ident">ACK_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.BODY_FIELD" class="name">var <span class="ident">BODY_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.CLIENT_ID_FIELD" class="name">var <span class="ident">CLIENT_ID_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.CLIENT_TYPE_FIELD" class="name">var <span class="ident">CLIENT_TYPE_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.CLIENT_VERSION_FIELD" class="name">var <span class="ident">CLIENT_VERSION_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.DELIVERY_COUNT_FIELD" class="name">var <span class="ident">DELIVERY_COUNT_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.DEL_FIELD" class="name">var <span class="ident">DEL_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.DOUBLE_FIELD" class="name">var <span class="ident">DOUBLE_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.DURABLE_FIELD" class="name">var <span class="ident">DURABLE_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.DURABLE_TYPE_LAST_VALUE" class="name">var <span class="ident">DURABLE_TYPE_LAST_VALUE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.DURABLE_TYPE_SHARED" class="name">var <span class="ident">DURABLE_TYPE_SHARED</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.DURABLE_TYPE_STANDARD" class="name">var <span class="ident">DURABLE_TYPE_STANDARD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.EFTL_WS_PROTOCOL" class="name">var <span class="ident">EFTL_WS_PROTOCOL</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.ERR_CODE_FIELD" class="name">var <span class="ident">ERR_CODE_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.ERR_PUBLISH_FAILED" class="name">var <span class="ident">ERR_PUBLISH_FAILED</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.HEARTBEAT_FIELD" class="name">var <span class="ident">HEARTBEAT_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.ID_FIELD" class="name">var <span class="ident">ID_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.ID_TOKEN_FIELD" class="name">var <span class="ident">ID_TOKEN_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.KEY_FIELD" class="name">var <span class="ident">KEY_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.LOGIN_OPTIONS_FIELD" class="name">var <span class="ident">LOGIN_OPTIONS_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.MAP_FIELD" class="name">var <span class="ident">MAP_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.MATCHER_FIELD" class="name">var <span class="ident">MATCHER_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.MAX_PENDING_ACKS_FIELD" class="name">var <span class="ident">MAX_PENDING_ACKS_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.MAX_SIZE_FIELD" class="name">var <span class="ident">MAX_SIZE_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.MILLISECOND_FIELD" class="name">var <span class="ident">MILLISECOND_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OPAQUE_FIELD" class="name">var <span class="ident">OPAQUE_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_ACK" class="name">var <span class="ident">OP_ACK</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_DISCONNECT" class="name">var <span class="ident">OP_DISCONNECT</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_ERROR" class="name">var <span class="ident">OP_ERROR</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_EVENT" class="name">var <span class="ident">OP_EVENT</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_FIELD" class="name">var <span class="ident">OP_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_HEARTBEAT" class="name">var <span class="ident">OP_HEARTBEAT</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_LOGIN" class="name">var <span class="ident">OP_LOGIN</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_MAP_CREATE" class="name">var <span class="ident">OP_MAP_CREATE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_MAP_DESTROY" class="name">var <span class="ident">OP_MAP_DESTROY</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_MAP_GET" class="name">var <span class="ident">OP_MAP_GET</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_MAP_REMOVE" class="name">var <span class="ident">OP_MAP_REMOVE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_MAP_RESPONSE" class="name">var <span class="ident">OP_MAP_RESPONSE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_MAP_SET" class="name">var <span class="ident">OP_MAP_SET</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_MESSAGE" class="name">var <span class="ident">OP_MESSAGE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_REPLY" class="name">var <span class="ident">OP_REPLY</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_REQUEST" class="name">var <span class="ident">OP_REQUEST</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_REQUEST_REPLY" class="name">var <span class="ident">OP_REQUEST_REPLY</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_SUBSCRIBE" class="name">var <span class="ident">OP_SUBSCRIBE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_SUBSCRIBED" class="name">var <span class="ident">OP_SUBSCRIBED</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_UNSUBSCRIBE" class="name">var <span class="ident">OP_UNSUBSCRIBE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_UNSUBSCRIBED" class="name">var <span class="ident">OP_UNSUBSCRIBED</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.OP_WELCOME" class="name">var <span class="ident">OP_WELCOME</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PASSWORD_FIELD" class="name">var <span class="ident">PASSWORD_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_AUTO_RECONNECT_ATTEMPTS" class="name">var <span class="ident">PROPERTY_AUTO_RECONNECT_ATTEMPTS</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_AUTO_RECONNECT_MAX_DELAY" class="name">var <span class="ident">PROPERTY_AUTO_RECONNECT_MAX_DELAY</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_CLIENT_ID" class="name">var <span class="ident">PROPERTY_CLIENT_ID</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_DURABLE_KEY" class="name">var <span class="ident">PROPERTY_DURABLE_KEY</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_DURABLE_TYPE" class="name">var <span class="ident">PROPERTY_DURABLE_TYPE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_HANDSHAKE_TIMEOUT" class="name">var <span class="ident">PROPERTY_HANDSHAKE_TIMEOUT</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_LOGIN_TIMEOUT" class="name">var <span class="ident">PROPERTY_LOGIN_TIMEOUT</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_MAX_PENDING_ACKS" class="name">var <span class="ident">PROPERTY_MAX_PENDING_ACKS</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_PASSWORD" class="name">var <span class="ident">PROPERTY_PASSWORD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_POLLING_INTERVAL" class="name">var <span class="ident">PROPERTY_POLLING_INTERVAL</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROPERTY_USERNAME" class="name">var <span class="ident">PROPERTY_USERNAME</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.PROTOCOL_FIELD" class="name">var <span class="ident">PROTOCOL_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.QOS_FIELD" class="name">var <span class="ident">QOS_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.REASON_FIELD" class="name">var <span class="ident">REASON_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.REPLY_TO_FIELD" class="name">var <span class="ident">REPLY_TO_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.REQUEST_DISALLOWED" class="name">var <span class="ident">REQUEST_DISALLOWED</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.REQUEST_FAILED" class="name">var <span class="ident">REQUEST_FAILED</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.REQUEST_TIMEOUT" class="name">var <span class="ident">REQUEST_TIMEOUT</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.REQ_ID_FIELD" class="name">var <span class="ident">REQ_ID_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.RESTART" class="name">var <span class="ident">RESTART</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.RESUME_FIELD" class="name">var <span class="ident">RESUME_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.SECOND" class="name">var <span class="ident">SECOND</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.SEQ_NUM_FIELD" class="name">var <span class="ident">SEQ_NUM_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.STORE_MSG_ID_FIELD" class="name">var <span class="ident">STORE_MSG_ID_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.SUBSCRIPTIONS_DISALLOWED" class="name">var <span class="ident">SUBSCRIPTIONS_DISALLOWED</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.SUBSCRIPTION_FAILED" class="name">var <span class="ident">SUBSCRIPTION_FAILED</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.SUBSCRIPTION_INVALID" class="name">var <span class="ident">SUBSCRIPTION_INVALID</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.SUBSCRIPTION_TYPE" class="name">var <span class="ident">SUBSCRIPTION_TYPE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.TIMEOUT_FIELD" class="name">var <span class="ident">TIMEOUT_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.TO_FIELD" class="name">var <span class="ident">TO_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.USER_FIELD" class="name">var <span class="ident">USER_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.VALUE_FIELD" class="name">var <span class="ident">VALUE_FIELD</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.WS_ABNORMAL_CLOSE" class="name">var <span class="ident">WS_ABNORMAL_CLOSE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.WS_NORMAL_CLOSE" class="name">var <span class="ident">WS_NORMAL_CLOSE</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.formatter" class="name">var <span class="ident">formatter</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.handler" class="name">var <span class="ident">handler</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="connection.logger" class="name">var <span class="ident">logger</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+
+
+    <h2 class="section-title" id="header-classes">Classes</h2>
+      
+      <div class="item">
+      <p id="connection.Eftl" class="name">class <span class="ident">Eftl</span></p>
+      
+  
+    <div class="desc"><p>Programs use Eftl Class to connect to an eFTL server.</p></div>
+  <div class="source_cont">
+</div>
+
+
+      <div class="class">
+          <h3>Ancestors (in MRO)</h3>
+          <ul class="class_list">
+          <li><a href="#connection.Eftl">Eftl</a></li>
+          <li>builtins.object</li>
+          </ul>
+          <h3>Class variables</h3>
+            <div class="item">
+            <p id="connection.Eftl.CONNECTED" class="name">var <span class="ident">CONNECTED</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.Eftl.CONNECTING" class="name">var <span class="ident">CONNECTING</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.Eftl.DISCONNECTED" class="name">var <span class="ident">DISCONNECTED</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.Eftl.DISCONNECTING" class="name">var <span class="ident">DISCONNECTING</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.Eftl.RECONNECTING" class="name">var <span class="ident">RECONNECTING</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+          <h3>Static methods</h3>
+            
+  <div class="item">
+    <div class="name def" id="connection.Eftl.__init__">
+    <p>def <span class="ident">__init__</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Initialize the Eftl instance.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.Eftl.connect">
+    <p>def <span class="ident">connect</span>(</p><p>self, url, **kwargs)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Connect to an eFTL server.</p>
+<p>This call returns immediately; connecting continues asynchronously.
+When the connection is ready to use, the eFTL library calls your
+on_connect method, passing a EftlConnection object that you can
+use to publish and subscribe.</p>
+<p>When a pipe-separated list of URLs is specified this call will attempt
+a connection to each in turn, in a random order, until one is connected.
+A program that uses more than one server channel must connect
+separately to each channel.</p>
+<p>:param:
+url:
+    The call connects to the eFTL server at this URL. This can be
+    a single URL, or a pipe ('|') separated list of URLs. URLs can
+    be in either of these forms</p>
+<pre><code>    ws://host:port/channel
+    wss://host:port/channel
+
+Optionally, the URLs can contain the username, password,
+and/or client identifier
+
+    ws://username:password@host:port/channel?clientId=&lt;identifier&gt;
+    wss://username:password@host:port/channel?clientId=&lt;identifier
+</code></pre>
+<p>:param:
+kwargs
+    auto_reconnect_attempts : int, optional
+        Maximum number of reconnect attempts. The default is 
+        256 attempts.
+   auto_reconnect_max_delay : optional
+        Maximum reconnect delay in milliseconds. The default is
+        30 seconds.
+   user : optional
+        Login credentials to use if not found in the url.
+   password : optional
+        Login credentials to use if not found in the url.
+   client_id : optional
+        User-specified client identifier.
+   handshake_timeout : optional
+        Seconds to wait for websocket handshake to complete.
+   login_timeout : optional
+        Seconds to halt waiting for a login message reply. If a
+        reply is not received in time, raise an EftlClientError.
+   polling_interval : optional
+        Seconds to wait between each message reply check.
+   trust_all : true/false (optional)
+   trust_store :  certificate path (optional)
+   loop : event loop provided by user (optional)
+   Callbacks :
+        on_connect(connection):
+        on_disconnect(connection, loop, code, reason):
+        on_reconnect(connection):
+        on_error(connection, code, reason):
+        on_state_change(connection, state):
+:return:
+    The EftlConnection object that can used to publish and subscribe
+Raises</p>
+<hr />
+<p>ValueError
+    If any provided urls lack a host name or the correct scheme.
+EftlClientError
+    If the connection is not established in time.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.Eftl.get_version">
+    <p>def <span class="ident">get_version</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Return the eFTL Python library version.</p>
+<p>Returns:
+str: The eFTL Python library version</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+          <h3>Instance variables</h3>
+            <div class="item">
+            <p id="connection.Eftl.ec" class="name">var <span class="ident">ec</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+      </div>
+      </div>
+      
+      <div class="item">
+      <p id="connection.EftlAlreadyConnected" class="name">class <span class="ident">EftlAlreadyConnected</span></p>
+      
+  
+    <div class="desc"><p>Raise when connect method is called but connection is already connected.</p></div>
+  <div class="source_cont">
+</div>
+
+
+      <div class="class">
+          <h3>Ancestors (in MRO)</h3>
+          <ul class="class_list">
+          <li><a href="#connection.EftlAlreadyConnected">EftlAlreadyConnected</a></li>
+          <li>builtins.Exception</li>
+          <li>builtins.BaseException</li>
+          <li>builtins.object</li>
+          </ul>
+          <h3>Class variables</h3>
+            <div class="item">
+            <p id="connection.EftlAlreadyConnected.args" class="name">var <span class="ident">args</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+      </div>
+      </div>
+      
+      <div class="item">
+      <p id="connection.EftlClientError" class="name">class <span class="ident">EftlClientError</span></p>
+      
+  
+    <div class="desc"><p>Raise when establishing a connection to the server fails.</p></div>
+  <div class="source_cont">
+</div>
+
+
+      <div class="class">
+          <h3>Ancestors (in MRO)</h3>
+          <ul class="class_list">
+          <li><a href="#connection.EftlClientError">EftlClientError</a></li>
+          <li>builtins.Exception</li>
+          <li>builtins.BaseException</li>
+          <li>builtins.object</li>
+          </ul>
+          <h3>Class variables</h3>
+            <div class="item">
+            <p id="connection.EftlClientError.args" class="name">var <span class="ident">args</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+      </div>
+      </div>
+      
+      <div class="item">
+      <p id="connection.EftlConnection" class="name">class <span class="ident">EftlConnection</span></p>
+      
+  
+    <div class="desc"><p>A websocket wrapper exchanging eftl protocol messages with a server.</p>
+<p>Different functions implement each of the types of protocol messages
+(e.g. publish, subscribe, disconnect). The messages are sent
+asynchronously, but by default these functions halt waiting for a
+reponse. The user may set a timeout for this waiting period if they
+desire.</p>
+<p>Users also may specify callbacks to trigger when messages get
+delivered, fail to get delivered, etc.</p></div>
+  <div class="source_cont">
+</div>
+
+
+      <div class="class">
+          <h3>Ancestors (in MRO)</h3>
+          <ul class="class_list">
+          <li><a href="#connection.EftlConnection">EftlConnection</a></li>
+          <li>builtins.object</li>
+          </ul>
+          <h3>Static methods</h3>
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.__init__">
+    <p>def <span class="ident">__init__</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Initialize the connection object, which is unconnected.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.acknowledge">
+    <p>def <span class="ident">acknowledge</span>(</p><p>self, message)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Acknowledge this message.</p>
+<p>Messages consumed from subscriptions with a client acknowledgment mode
+must be explicitly acknowledged. The eFTL server will stop delivering
+messages to the client once the server's configured maximum number of
+unacknowledged messages is reached.</p>
+<p>:param message: The message being acknowledged
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.acknowledge_all">
+    <p>def <span class="ident">acknowledge_all</span>(</p><p>self, message)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Acknowledge all messages up to and including this message.</p>
+<p>Messages consumed from subscriptions with a client acknowledgment mode
+must be explicitly acknowledged. The eFTL server will stop delivering
+messages to the client once the server's configured maximum number of
+unacknowledged messages is reached.</p>
+<p>:param message: The message being acknowledged1
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.close_all_subscriptions">
+    <p>def <span class="ident">close_all_subscriptions</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Close all the subscriptions on this connection.</p>
+<p>For durable subscriptions, this call will cause the persistence
+service to stop delivering messages while leaving the durable
+subscriptions to continue accumulating messages. Any unacknowledged
+messages will be made available for redelivery.</p>
+<p>Programs receive subscription identifiers through their
+on_subscribe method.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.close_subscription">
+    <p>def <span class="ident">close_subscription</span>(</p><p>self, subscription_id)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Close subscription for specified subscription identifier.</p>
+<p>For durable subscriptions, this call will cause the persistence
+service to stop delivering messages while leaving the durable
+subscriptions to continue accumulating messages. Any unacknowledged
+messages will be made available for redelivery.</p>
+<p>Programs receive subscription identifiers through their
+on_subscribe method.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.create_kv_map">
+    <p>def <span class="ident">create_kv_map</span>(</p><p>self, name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Return a new EftlKVMap associated with this connection.</p>
+<p>:param name: name of the KVMap
+:return:  The KVmap object</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.create_message">
+    <p>def <span class="ident">create_message</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Create an EftlMessage that can be used to publish or send request/replies.</p>
+<p>:return: The EftlMessage object</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.disconnect">
+    <p>def <span class="ident">disconnect</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Disconnect from the eFTL server.</p>
+<p>Programs may disconnect to free server resources.</p>
+<p>This call returns immediately; disconnecting continues
+asynchronously.</p>
+<p>When the connection has closed, the eFTL library calls your
+on_disconnect callback.</p>
+<p>:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.get_clientId">
+    <p>def <span class="ident">get_clientId</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the client identifier for this connection.</p>
+<p>:return: The client's identifier.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.is_connected">
+    <p>def <span class="ident">is_connected</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Determine whether this connection to the eFTL server is open or closed.</p>
+<p>:return: True if this connection is open, False otherwise</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.publish">
+    <p>def <span class="ident">publish</span>(</p><p>self, message, **kwargs)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Publish a one-to-many message to all subscribing clients.</p>
+<p>This call returns immediately; publishing continues
+asynchronously.  When the publish completes successfully,
+the eFTL library calls your</p>
+<p>:param message: Publish this message.
+:param kwargs:
+       callbacks:
+       on_publish
+       on_error
+:return:</p>
+<p>ValueError
+    If the message size exceeds the maximum.
+TypeError
+    If the message is not of type EftlMessage
+ConnectionError
+    If the connection is closed.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.reconnect">
+    <p>def <span class="ident">reconnect</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Reopen a closed connection.</p>
+<p>You may call this method within your on_disconnect method.</p>
+<p>This call returns immediately; connecting continues asynchronously.
+When the connection is ready to use, the eFTL library calls your
+on_reconnect callback</p>
+<p>Reconnecting automatically re-activates all subscriptions
+on the connection. The eFTL library invokes your
+on_subscribe callback for each successful resubscription.</p>
+<p>:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.remove_kv_map">
+    <p>def <span class="ident">remove_kv_map</span>(</p><p>self, name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Remove a EftlKVMap object.</p>
+<p>:param name: the name of the map
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.send_reply">
+    <p>def <span class="ident">send_reply</span>(</p><p>self, requestMessage, replyMessage, **kwargs)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Send a reply message in response to a request message.</p>
+<p>This call returns immediately. When the send completes successfully
+the eFTL library calls your {@link CompletionListener#onCompletion}
+callback.</p>
+<p>:param requestMessage: The reply message to send
+:param replyMessage: The request msg
+:param kwargs:
+       callbacks
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.send_request">
+    <p>def <span class="ident">send_request</span>(</p><p>self, message, timeout, **kwargs)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Publish a request message.</p>
+<p>This call returns immediately. When the reply is received
+the eFTL library calls your {@link RequestListener#onReply}
+callback.</p>
+<p>:param message: The request message to publish.
+:param timeout: timeout seconds to wait for reply
+:param kwargs:
+      callbacks:
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.subscribe">
+    <p>def <span class="ident">subscribe</span>(</p><p>self, **kwargs)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Send a message to register a matcher-based subscription.</p>
+<h2>Parameters</h2>
+<p>timeout : optional
+    Number of seconds to halt waiting on acknowledgement from
+    the server (default set in EftlConnection.connect()).
+matcher : str, optional
+    JSON content matcher to subscribe to.
+type : {"standard", "shared", "last-value"}, optional
+    Durable type.
+key : optional
+    The last-value index key, if <code>type</code> is "last-value".
+durable : str, optional
+    Name to give the durable.
+ack_mode: client, None. Default is auto</p>
+<h2>Returns</h2>
+<p>sub_id
+    The subcription identifier of the new subscription.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.unsubscribe">
+    <p>def <span class="ident">unsubscribe</span>(</p><p>self, sub_id)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Unsubscribe from messages on a subscription.</p>
+<p>For durable subscriptions, this call will cause the persistence
+service to remove the durable subscription, along with any
+persisted messages.</p>
+<p>Programs receive subscription identifiers through their
+methods.</p>
+<p>:param sub_id:  Subscription identifier of the subscription to delete.
+timeout`
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlConnection.unsubscribe_all">
+    <p>def <span class="ident">unsubscribe_all</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Unsubscribe from all subscriptions.</p>
+<h2>Parameters</h2>
+<p>timeout : optional
+    Number of seconds to halt waiting on acknowledgement from
+    the server (default set in EftlConnection.connect()).</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+          <h3>Instance variables</h3>
+            <div class="item">
+            <p id="connection.EftlConnection.attempt_manual_reconnect" class="name">var <span class="ident">attempt_manual_reconnect</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.auto_reconnect_attempts" class="name">var <span class="ident">auto_reconnect_attempts</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.auto_reconnect_max_delay" class="name">var <span class="ident">auto_reconnect_max_delay</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.client_factory" class="name">var <span class="ident">client_factory</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.client_id" class="name">var <span class="ident">client_id</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.client_protocol" class="name">var <span class="ident">client_protocol</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.code" class="name">var <span class="ident">code</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.connection_closed" class="name">var <span class="ident">connection_closed</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.first_retry_delay" class="name">var <span class="ident">first_retry_delay</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.got_login_reply" class="name">var <span class="ident">got_login_reply</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.kv_pair" class="name">var <span class="ident">kv_pair</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.login_timeout" class="name">var <span class="ident">login_timeout</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.polling_interval" class="name">var <span class="ident">polling_interval</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.previously_connected" class="name">var <span class="ident">previously_connected</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.reason" class="name">var <span class="ident">reason</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.reconnect_counter" class="name">var <span class="ident">reconnect_counter</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.reconnect_timer" class="name">var <span class="ident">reconnect_timer</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.reconnect_token" class="name">var <span class="ident">reconnect_token</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.requests" class="name">var <span class="ident">requests</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.sequence_counter" class="name">var <span class="ident">sequence_counter</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.status" class="name">var <span class="ident">status</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.subscription_counter" class="name">var <span class="ident">subscription_counter</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.subscriptions" class="name">var <span class="ident">subscriptions</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.timeout" class="name">var <span class="ident">timeout</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.trust_all" class="name">var <span class="ident">trust_all</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.trust_store" class="name">var <span class="ident">trust_store</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.url_index" class="name">var <span class="ident">url_index</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.url_list" class="name">var <span class="ident">url_list</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlConnection.user_event_loop" class="name">var <span class="ident">user_event_loop</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+      </div>
+      </div>
+      
+      <div class="item">
+      <p id="connection.EftlKVMap" class="name">class <span class="ident">EftlKVMap</span></p>
+      
+  
+    <div class="desc"><p>A key-value map  object represents a program's connection to an FTL map.</p>
+<p>Programs use key-value map objects to set, get, and remove key-value
+pairs in an FTL map.</p></div>
+  <div class="source_cont">
+</div>
+
+
+      <div class="class">
+          <h3>Ancestors (in MRO)</h3>
+          <ul class="class_list">
+          <li><a href="#connection.EftlKVMap">EftlKVMap</a></li>
+          <li>builtins.object</li>
+          </ul>
+          <h3>Static methods</h3>
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlKVMap.__init__">
+    <p>def <span class="ident">__init__</span>(</p><p>self, connection, name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Initialize self.  See help(type(self)) for accurate signature.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlKVMap.get">
+    <p>def <span class="ident">get</span>(</p><p>self, key, **kwargs)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a key from the map, or <c>null</c> if the key is not set.</p>
+<p>:param key: Get the value for this key
+:param kwargs:
+    Callbacks:
+        on_success:
+        on_error:
+:return: The value as a EftlMessage</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlKVMap.remove">
+    <p>def <span class="ident">remove</span>(</p><p>self, key, **kwargs)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Remove a key-value pair from the map.</p>
+<p>This call returns immediately; removing continues
+asynchronously.  When the remove completes successfully,
+the eFTL library calls your on_success callback.</p>
+<p>:param key:  Revove the value for this key.
+:param kwargs:
+       on_success
+       on_error
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlKVMap.set">
+    <p>def <span class="ident">set</span>(</p><p>self, key, value, **kwargs)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a key-value pair in the map, overwriting any existing value.</p>
+<p>This call returns immediately; setting continues
+asynchronously.  When the set completes successfully,
+the eFTL library calls your on_success callback.</p>
+<p>:param key: Set the value for this key.
+:param value: Set this value for the key.
+:param kwargs:
+      on_success
+      on_error
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+          <h3>Instance variables</h3>
+            <div class="item">
+            <p id="connection.EftlKVMap.connection" class="name">var <span class="ident">connection</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="connection.EftlKVMap.name" class="name">var <span class="ident">name</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+      </div>
+      </div>
+      
+      <div class="item">
+      <p id="connection.EftlMessage" class="name">class <span class="ident">EftlMessage</span></p>
+      
+  
+    <div class="desc"><p>Programs use message objects to publish messages on an eFTL connection or receive messages for a given subscription.</p>
+<p>Message objects contain typed fields that map names to values.</p></div>
+  <div class="source_cont">
+</div>
+
+
+      <div class="class">
+          <h3>Ancestors (in MRO)</h3>
+          <ul class="class_list">
+          <li><a href="#connection.EftlMessage">EftlMessage</a></li>
+          <li>builtins.object</li>
+          </ul>
+          <h3>Static methods</h3>
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.__init__">
+    <p>def <span class="ident">__init__</span>(</p><p>self, obj=None)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Initialize the EftlMessage instance properties.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.clear_all_fields">
+    <p>def <span class="ident">clear_all_fields</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Remove all the fields in this message.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.clear_field">
+    <p>def <span class="ident">clear_field</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Remove the given field from this message.</p>
+<p>:param field_name:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_datetime">
+    <p>def <span class="ident">get_datetime</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type datetime</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_datetime_array">
+    <p>def <span class="ident">get_datetime_array</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type datetime array</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_delivery_count">
+    <p>def <span class="ident">get_delivery_count</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Message's delivery count assigned by the persistence service.</p>
+<p>:return:
+      The message delivery count.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_double">
+    <p>def <span class="ident">get_double</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type double</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_double_array">
+    <p>def <span class="ident">get_double_array</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type double array</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_field_names">
+    <p>def <span class="ident">get_field_names</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Return the list of field names.</p>
+<p>:return: The field names of this message as a list object.</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_field_type">
+    <p>def <span class="ident">get_field_type</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Return the type of value of this field.</p>
+<p>:param field_name: The name of the field
+:return: type of value of this field.</p>
+<pre><code>Possible return values : 
+        'int' represents Integer
+        'str' represents String
+        'float' represents Float
+        'datetime.datetime' represents datetime.datetime 
+        'message' represents EftlMessage object type
+        'opaque' represents opaque type (bytes)
+        'unknown'
+</code></pre></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_long">
+    <p>def <span class="ident">get_long</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type long</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_long_array">
+    <p>def <span class="ident">get_long_array</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a long array field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type long array</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_message">
+    <p>def <span class="ident">get_message</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type message</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_message_array">
+    <p>def <span class="ident">get_message_array</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a message array field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type message array (list of messages)</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_opaque">
+    <p>def <span class="ident">get_opaque</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of opaque field from a message.</p>
+<p>:param field_name: The name of the field
+:return: The value of the field if the field is present</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_store_message_id">
+    <p>def <span class="ident">get_store_message_id</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Message's unique store identifier assigned by the persistence service.</p>
+<p>:return:
+      A monotonically increasing long value that represents
+      message's unique store identifier</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_string">
+    <p>def <span class="ident">get_string</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a string field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type string</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.get_string_array">
+    <p>def <span class="ident">get_string_array</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Get the value of a string array field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+         and has type string array</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.is_field_set">
+    <p>def <span class="ident">is_field_set</span>(</p><p>self, field_name)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Return True if the field is set, False otherwise.</p>
+<p>:param field_name: The name of the field
+:return: True if the field is set, False otherwise</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_datetime">
+    <p>def <span class="ident">set_datetime</span>(</p><p>self, field_name, value)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a datetime field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_datetime_array">
+    <p>def <span class="ident">set_datetime_array</span>(</p><p>self, field_name, values)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a datetime array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_double">
+    <p>def <span class="ident">set_double</span>(</p><p>self, field_name, value)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a double field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_double_array">
+    <p>def <span class="ident">set_double_array</span>(</p><p>self, field_name, values)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a double array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_long">
+    <p>def <span class="ident">set_long</span>(</p><p>self, field_name, value)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a long field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_long_array">
+    <p>def <span class="ident">set_long_array</span>(</p><p>self, field_name, values)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a long array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_message">
+    <p>def <span class="ident">set_message</span>(</p><p>self, field_name, value)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a message field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_message_array">
+    <p>def <span class="ident">set_message_array</span>(</p><p>self, field_name, values)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a message array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_opaque">
+    <p>def <span class="ident">set_opaque</span>(</p><p>self, field_name, value)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set an opaque field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_string">
+    <p>def <span class="ident">set_string</span>(</p><p>self, field_name, value)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a string field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="connection.EftlMessage.set_string_array">
+    <p>def <span class="ident">set_string_array</span>(</p><p>self, field_name, values)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Set a string array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param values: The call sets this value, to remove
+              the field, supply None.
+:return:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+      </div>
+      </div>
+      
+      <div class="item">
+      <p id="connection.EftlMessageSizeTooLarge" class="name">class <span class="ident">EftlMessageSizeTooLarge</span></p>
+      
+  
+    <div class="desc"><p>Raise when EftlMesssage size is larger than the maximum allowed size.</p></div>
+  <div class="source_cont">
+</div>
+
+
+      <div class="class">
+          <h3>Ancestors (in MRO)</h3>
+          <ul class="class_list">
+          <li><a href="#connection.EftlMessageSizeTooLarge">EftlMessageSizeTooLarge</a></li>
+          <li>builtins.Exception</li>
+          <li>builtins.BaseException</li>
+          <li>builtins.object</li>
+          </ul>
+          <h3>Class variables</h3>
+            <div class="item">
+            <p id="connection.EftlMessageSizeTooLarge.args" class="name">var <span class="ident">args</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+      </div>
+      </div>
+
+  </section>
+
+    </article>
+  <div class="clear"> </div>
+  <footer id="footer">
+    <p>
+      Documentation generated by
+      <a href="https://github.com/BurntSushi/pdoc">pdoc 0.3.2</a>
+    </p>
+
+    <p>pdoc is in the public domain with the
+      <a href="http://unlicense.org">UNLICENSE</a></p>
+
+    <p>Design by <a href="http://nadh.in">Kailash Nadh</a></p>
+  </footer>
+</div>
+</body>
+</html>

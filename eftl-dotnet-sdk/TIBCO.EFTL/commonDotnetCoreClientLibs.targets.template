@@ -1,0 +1,28 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Platforms>AnyCPU;x64</Platforms>
+    <Configuration>Release</Configuration>
+    <OutputType>Library</OutputType>
+    <AssemblyVersion>@TIB_VERSION_MAJOR@.@TIB_VERSION_MINOR@.@TIB_VERSION_UPDATE@.@TIB_VERSION_BUILD@</AssemblyVersion>
+    <FileVersion>@TIB_VERSION_MAJOR@.@TIB_VERSION_MINOR@.@TIB_VERSION_UPDATE@.@TIB_VERSION_BUILD@</FileVersion>
+    <InformationalVersion>@TIB_VERSION_MAJOR@.@TIB_VERSION_MINOR@.@TIB_VERSION_UPDATE@</InformationalVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>false</DelaySign>
+    <OutDir>netstandard2.0</OutDir>
+    <Company>TIBCO Software Inc.</Company>
+    <AssemblyTitle>@TITLE@</AssemblyTitle>
+    <Copyright>Copyright @TIB_COPYRIGHT_YEARS@ TIBCO Software Inc. ALL RIGHTS RESERVED</Copyright>
+    <DocumentationFile>TIBCO.EFTL.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyTrademarkAttribute">
+          <_Parameter1>@EFTL_TRADE@</_Parameter1>
+      </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>
