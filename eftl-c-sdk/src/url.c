@@ -1,9 +1,10 @@
- /*
+/*
+ * Copyright (c) $Date: 2020-03-31 10:23:10 -0700 (Tue, 31 Mar 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: url.c 101317 2018-05-16 00:16:40Z bpeterse $
+ * $Id: url.c 123342 2020-03-31 17:23:10Z bpeterse $
  *
  */
 
@@ -216,6 +217,35 @@ url_destroy(
     free(url);
 }
 
+url_t*
+url_copy(
+    url_t*      url)
+{
+    url_t*      cpy;
+
+    if (!url)
+        return NULL;
+
+    cpy = calloc(1, sizeof(*cpy));
+
+    if (url->scheme)
+        cpy->scheme = strdup(url->scheme);
+    if (url->username)
+        cpy->username = strdup(url->username);
+    if (url->password)
+        cpy->password = strdup(url->password);
+    if (url->host)
+        cpy->host = strdup(url->host);
+    if (url->port)
+        cpy->port = strdup(url->port);
+    if (url->path)
+        cpy->path = strdup(url->path);
+
+    cpy->secure = url->secure;
+
+    return cpy;
+}
+
 const char*
 url_scheme(
     url_t*      url)
@@ -311,4 +341,103 @@ url_query_next(
     url_query_t *query)
 {
     return (query ? query->next : NULL);
+}
+
+url_t**
+url_list_parse(
+    const char* str)
+{
+    int         size;
+    url_t**     list;
+    char*       copy;
+    char*       ptr;
+    int         i;
+
+    if (!str)
+        return NULL;
+
+    size = 1;
+
+    for (i = 0; str[i]; i++)
+    {
+        size += (str[i] == '|');
+    }
+
+    list = (url_t**)calloc(size + 1, sizeof(url_t*));
+
+    copy = strdup(str);
+
+    ptr = copy;
+
+    for (i = 0; i < size && ptr; i++)
+    {
+        char* next = strchr(ptr, '|');
+        if (next)
+        {
+            *next = '\0';
+            ++next;
+        }
+
+        list[i] = url_parse(ptr);
+
+        ptr = next;
+    }
+
+    free(copy);
+
+    return list;
+}
+
+void
+url_list_destroy(
+    url_t**     list)
+{
+    url_t*      url;
+    int         i = 0;
+
+    if (!list)
+        return;
+
+    while ((url = list[i++]))
+    {
+        url_destroy(url);
+    }
+
+    free(list);
+}
+
+int
+url_list_count(
+    url_t**     list)
+{
+    int         i, cnt = 0;
+
+    if (!list)
+        return 0;
+
+    for (i = 0; list[i]; i++)
+        ++cnt;
+
+    return cnt;
+}
+
+void
+url_list_shuffle(
+    url_t**     list)
+{
+    int         n, i, j;
+    url_t*      u;
+
+    if (!list)
+        return;
+
+    n = url_list_count(list);
+
+    for (i = n - 1; i > 0; i--)
+    {
+        j = rand() % (i + 1);
+        u = list[j];
+        list[j] = list[i];
+        list[i] = u;
+    }
 }

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009-$Date: 2017-06-16 15:38:34 -0500 (Fri, 16 Jun 2017) $ TIBCO Software Inc.
+ * Copyright (c) 2009-$Date: 2020-08-13 15:46:21 -0700 (Thu, 13 Aug 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: base64.c 94080 2017-06-16 20:38:34Z bpeterse $
+ * $Id: base64.c 127846 2020-08-13 22:46:21Z bpeterse $
  *
  */
 
@@ -13,7 +13,7 @@
 static const char* base64chars_rfc2045 =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-static char char_to_num_rfc2045[] = {
+static unsigned char char_to_num_rfc2045[] = {
     0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00, 
     0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00, 
     0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x3e,  0x00,  0x00,  0x00,  0x3f, 
@@ -40,7 +40,7 @@ base64_encode(
     int                     outlen)
 {
     int                     olen = 0;
-    int                     buff3;   // Contains 3 bytes that will be separated into 4 6-bit numbers
+    unsigned int            buff3;   // Contains 3 bytes that will be separated into 4 6-bit numbers
 
     if (outlen < BASE64_ENC_MAX_LEN(slen)) {
         return -1;
@@ -51,7 +51,7 @@ base64_encode(
         buff3 = *source++ << 16;
         
         if (slen > 1)
-            buff3 |= *source++ << 8;
+            buff3 |= (unsigned int)(*source++ << 8);
         
         if (slen > 2)
             buff3 |= *source++;
@@ -85,7 +85,9 @@ base64_decode(
     const char*             source,
     int                     slen)
 {
-    int                     i, k, pad = 0;
+    int                     i;
+    int                     k;
+    int                     pad = 0;
     unsigned int            n;
     
     if (outlen < BASE64_DEC_MAX_LEN(slen)) {
@@ -94,11 +96,11 @@ base64_decode(
 
     outlen=0;
     
-    while(slen>0) {
+    while (slen > 0) {
         n = 0;
         k = 0;
 
-        while(slen > 0) {
+        while (slen > 0) {
             n <<= 6;
             n |= (((unsigned int)(char_to_num_rfc2045[(int)*source])) & 0x003f); 
             if (*source == '=')
@@ -109,8 +111,8 @@ base64_decode(
                 break;
         }
 
-        for (i=k-2; i>=0; i--) {
-            *output=(n>>(8*i))&0x00ff;
+        for (i = k - 2; i >= 0; i--) {
+            *output = (n >> (unsigned int)(8 * i)) & 0x00ff;
             output++; outlen++;
         }
     }

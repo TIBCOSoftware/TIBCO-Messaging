@@ -14,46 +14,44 @@ namespace TIBCO.EFTL
 {
     internal class MapContext : RequestContext 
     {
-        internal MapContext(Int64 seqNum, String json, String key, IMessage value, IKVMapListener listener) : base (seqNum, json, (listener != null ? new MapListener (key, value, listener) : null)) { }
+        private String key;
+        private IMessage value;
+        private IKVMapListener listener;
 
-        internal MapContext(Int64 seqNum, String json, String key, IKVMapListener listener) : base (seqNum, json, (listener != null ? new MapListener (key, null, listener) : null)) { }
+        internal MapContext(Int64 seqNum, String json, String key, IMessage value, IKVMapListener listener) : base (seqNum, json)
+        { 
+            this.key = key;
+            this.value = value;
+            this.listener = listener;
+        }
 
-        internal class MapListener : IRequestListener 
+        internal MapContext(Int64 seqNum, String json, String key, IKVMapListener listener) : base (seqNum, json)
+        { 
+            this.key = key;
+            this.listener = listener;
+        }
+
+        internal override bool HasListener()
         {
-            private String key;
-            private IMessage value;
-            private IKVMapListener listener;
+            return (listener != null);
+        }
 
-            internal MapListener(String key, IMessage value, IKVMapListener listener) 
-            {
-                this.key = key;
-                this.value = value;
-                this.listener = listener;
-            }
+        internal override void OnSuccess(IMessage response) 
+        {
+            if (listener != null) 
+                listener.OnSuccess(key, (value != null ? value : response));
+        }
 
-            public void OnSuccess(IMessage response) 
-            {
-                if (value != null)
-                    listener.OnSuccess(key, value);
-                else
-                    listener.OnSuccess(key, response);
-            }
+        internal override void OnError(String reason) 
+        {
+            if (listener != null) 
+                listener.OnError(key, value, KVMapListenerConstants.REQUEST_FAILED, reason);
+        }
 
-            public void OnError(String reason) 
-            {
-                if (value != null)
-                    listener.OnError(key, value, KVMapListenerConstants.REQUEST_FAILED, reason);
-                else
-                    listener.OnError(key, null, KVMapListenerConstants.REQUEST_FAILED, reason);
-            }
-
-            public void OnError(int code, String reason) 
-            {
-                if (value != null)
-                    listener.OnError(key, value, code, reason);
-                else
-                    listener.OnError(key, null, code, reason);
-            }
+        internal override void OnError(int code, String reason) 
+        {
+            if (listener != null) 
+                listener.OnError(key, value, code, reason);
         }
     }
 }

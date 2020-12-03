@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2018-09-04 17:57:51 -0500 (Tue, 04 Sep 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-06-22 14:31:05 -0700 (Mon, 22 Jun 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: Constants.cs 103512 2018-09-04 22:57:51Z bpeterse $
+ * $Id: Constants.cs 126482 2020-06-22 21:31:05Z bpeterse $
  *
  */
 using System;
@@ -14,6 +14,47 @@ using System.Text;
 
 namespace TIBCO.EFTL 
 {
+    /// <summary>
+    /// Acknowledgment modes.
+    /// </summary>
+    public static class AcknowledgeMode
+    {
+        /// <summary>
+        /// Auto acknowledgment mode.
+        /// </summary>
+        /// <description>
+        /// Messages consumed from a subscription with this acknowledgment mode
+        /// are automatically acknowledged.
+        /// </description>
+        /// <seealso cref="EFTL.PROPERTY_ACKNOWLEDGE_MODE"/>
+        public static readonly String AUTO = "auto";
+
+        /// <summary>
+        /// Client acknowledgment mode.
+        /// </summary>
+        /// <description>
+        /// Messages consumed from a subscription with this acknowledgment mode
+        /// require explicit acknowledgment by calling either the {see cref="IConnection.Acknowledge"/>
+        /// or {see cref="IConnection.AcknowledgeAll"/> method.
+        /// <p>
+        /// The eFTL server will stop delivering messages to the client once the
+        /// server's configured maximum unacknowledged messages is reached.
+        /// </p>
+        /// </description>
+        /// <seealso cref="EFTL.PROPERTY_ACKNOWLEDGE_MODE"/>
+        public static readonly String CLIENT = "client";
+
+        /// <summary>
+        /// None acknowledgment mode.
+        /// </summary>
+        /// <description>
+        /// Messages consumed from a subscription with this acknowledgment mode
+        /// do not require acknowledgment.
+        /// </description>
+        /// <seealso cref="EFTL.PROPERTY_ACKNOWLEDGE_MODE"/>
+        public static readonly String NONE = "none";
+    }
+
     /// <summary>
     /// Durable subscription types.
     /// </summary>
@@ -79,15 +120,34 @@ namespace TIBCO.EFTL
     /// </description>
     public static class MessageConstants 
     {
-        /// Message field name identifying the destination
+        /// Message field name identifying the EMS destination
         /// of a message.
         /// <p>
-        /// To publish a message on a specific destination include this
-        /// message field using <see cref="IMessage.SetString"/>.
+        /// The destination message field is only required when 
+        /// communicating with EMS.
         /// </p>
         /// <p>
-        /// To subscribe to messages published on a specific destination,
-        /// use a matcher that includes this message field name.
+        /// To publish a message on a specific EMS destination include this
+        /// message field using <see cref="IMessage.SetString"/>.
+        /// <pre>
+        ///     message.SetString(MessageConstants.FIELD_NAME_DESTINATION, "MyDest");
+        /// </pre>
+        /// </p>
+        /// <p>
+        /// To subscribe to messages published on a specific EMS destination
+        /// use a subscription matcher that includes this message field name.
+        /// <pre>
+        ///     String matcher = String.Format("{{\"{0}\":\"{1}\"}}", 
+        ///         MessageConstants.FIELD_NAME_DESTINATION, "MyDest");
+        ///
+        ///     connection.Subscribe(matcher, "MyDurable", null, new SubscriptionListener());
+        /// </pre>
+        /// </p>
+        /// <p>
+        /// To distinguish between topics and queues the destination name
+        /// can be prefixed with either "TOPIC:" or "QUEUE:", for example 
+        /// "TOPIC:MyDest" or "QUEUE:MyDest". A destination name with no prefix is 
+        /// a topic.
         /// </p>
         public static readonly String FIELD_NAME_DESTINATION = "_dest";
     }
@@ -199,6 +259,12 @@ namespace TIBCO.EFTL
         ///
         public static readonly int SERVER_ERROR = 1011; /* RFC6455.CLOSE_SERVER_ERROR */
 
+        /// The server is restarting.
+        /// <p>
+        /// Programs may wait, then attempt to reconnect.
+        /// </p>
+        public static readonly int RESTART = 1012; 
+
         /// SSL handshake failed.
         /// <p>
         /// The client could not establish a secure connection to the eFTL
@@ -264,6 +330,35 @@ namespace TIBCO.EFTL
         /// Administrators configure permission to publish.
         /// </p>
         public static readonly int PUBLISH_DISALLOWED = 12;
+    }
+
+    /// <summary>
+    /// Request errors.
+    /// </summary>
+    /// <description>
+    /// <see cref="IRequestListener.OnError"/>
+    /// returns these constants.
+    /// </description>
+    public static class RequestListenerConstants 
+    {
+        /// The server failed to forward the request message.
+        /// <p>
+        /// You may attempt to publish again.
+        /// </p>
+        ///
+        public static readonly int REQUEST_FAILED = 41;
+
+        /// The server does not allow this user to publish messages.
+        /// <p>
+        /// Administrators configure permission to publish.
+        /// </p>
+        public static readonly int REQUEST_DISALLOWED = 40;
+
+        /// The request timed out.
+        /// <p>
+        /// No reply was received within the specified timeout.
+        /// </p>
+        public static readonly int REQUEST_TIMEOUT = 99;
     }
 
     /// <summary>

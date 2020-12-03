@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-$Date: 2015-01-12 16:18:27 -0600 (Mon, 12 Jan 2015) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2020-08-19 11:55:34 -0700 (Wed, 19 Aug 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocket.java 77132 2015-01-12 22:18:27Z bpeterse $
+ * $Id: WebSocket.java 127983 2020-08-19 18:55:34Z bpeterse $
  *
  */
 package com.tibco.eftl.websocket;
@@ -47,6 +47,7 @@ public class WebSocket implements Runnable {
     private String protocol;
     private Socket socket;
     private TrustManager[] trustManagers;
+    private boolean trustAll;
     private AtomicReference<ReadyState> state = 
             new AtomicReference<ReadyState>(ReadyState.INIT);
     
@@ -94,6 +95,10 @@ public class WebSocket implements Runnable {
         this.trustManagers = trustManagers;
     }
     
+    public void setTrustAll(boolean trustAll) {
+        this.trustAll = trustAll;
+    }
+
     public void open() {
         if (state.compareAndSet(ReadyState.INIT, ReadyState.CONNECTING)) {
             connect();
@@ -120,19 +125,19 @@ public class WebSocket implements Runnable {
     public void send(String text) throws IOException {
         if (!isConnected())
             throw new IllegalStateException("WebSocket is not open");
-        write(WebSocketFrame.text(text));
+        write(WebSocketFrame.textFrame(text));
     }
     
     public void send(byte[] data) throws IOException {
         if (!isConnected())
             throw new IllegalStateException("WebSocket is not open");
-        write(WebSocketFrame.binary(data));
+        write(WebSocketFrame.binaryFrame(data));
     }
     
     public void ping(byte[] data) throws IOException {
         if (!isConnected())
             throw new IllegalStateException("WebSocket is not open");
-        write(WebSocketFrame.ping(data));
+        write(WebSocketFrame.pingFrame(data));
     }
     
     public boolean isConnected() {
@@ -314,7 +319,7 @@ public class WebSocket implements Runnable {
                     notifyClose(frame.getCloseCode(), frame.getCloseReason());
                     break;
                 case WebSocketFrame.PING:
-                    write(WebSocketFrame.pong(frame.getPayload(), 0, frame.getPayloadLength()));
+                    write(WebSocketFrame.pongFrame(frame.getPayload(), 0, frame.getPayloadLength()));
                     break;
                 case WebSocketFrame.PONG:
                     notifyPong(frame);
@@ -339,7 +344,7 @@ public class WebSocket implements Runnable {
     
     private void disconnect(int code) {
         try {
-            write(WebSocketFrame.close(code));
+            write(WebSocketFrame.closeFrame(code));
             socket.shutdownOutput();
         } catch (UnsupportedOperationException e) {
             // socket.shutdownOutput() not supported by SSL
@@ -364,7 +369,7 @@ public class WebSocket implements Runnable {
     private SocketFactory getSocketFactory() throws NoSuchAlgorithmException, KeyManagementException {
         if ("wss".equalsIgnoreCase(uri.getScheme())) {
             SSLContext context = SSLContext.getInstance("TLS");
-            context.init(null, (trustManagers != null ? trustManagers : TRUST_ALL), null);
+            context.init(null, (trustAll ? TRUST_ALL : trustManagers), null);
             return context.getSocketFactory();
         } else {
             return SocketFactory.getDefault();

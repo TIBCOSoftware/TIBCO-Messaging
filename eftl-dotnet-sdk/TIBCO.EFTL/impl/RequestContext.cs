@@ -14,20 +14,18 @@ namespace TIBCO.EFTL
 {
     internal class RequestContext 
     {
-        private IRequestListener listener;
-        private String json;
-        private Int64 seqNum;
+        protected String json;
+        protected Int64 seqNum;
 
         internal RequestContext(String json) 
         {
             this.json = json;
         }
 
-        internal RequestContext(Int64 seqNum, String json, IRequestListener listener) 
+        internal RequestContext(Int64 seqNum, String json) 
         {
             this.seqNum = seqNum;
             this.json = json;
-            this.listener = listener;
         }
 
         internal Int64 GetSeqNum() 
@@ -40,9 +38,15 @@ namespace TIBCO.EFTL
             return json;
         }
 
-        internal IRequestListener GetListener() 
+        internal virtual void OnSuccess(IMessage response) {}
+
+        internal virtual void OnError(String reason) {}
+
+        internal virtual void OnError(int code, String reason) {}
+
+        internal virtual bool HasListener()
         {
-            return listener;
+            return false;
         }
     }
 }

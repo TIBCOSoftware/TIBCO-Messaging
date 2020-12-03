@@ -1,10 +1,10 @@
 /*
- * Copyright (c) $Date: 2017-08-21 11:33:11 -0500 (Mon, 21 Aug 2017) $ TIBCO Software Inc.
+ * Copyright (c) $Date: 2020-09-25 08:29:03 -0700 (Fri, 25 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: msg.h 95502 2017-08-21 16:33:11Z bpeterse $
+ * $Id: msg.h 128828 2020-09-25 15:29:03Z bpeterse $
  *
  */
 
@@ -13,6 +13,30 @@
 
 #include "cJSON.h"
 
+typedef struct tibeftlMessageListStruct
+               tibeftlMessageListRec, 
+              *tibeftlMessageList;
+
+tibeftlMessageList
+tibeftlMessageList_Create(void);
+
+void
+tibeftlMessageList_Destroy(
+    tibeftlMessageList          list);
+
+void
+tibeftlMessageList_Close(
+    tibeftlMessageList          list);
+
+bool
+tibeftlMessageList_Add(
+    tibeftlMessageList          list,
+    tibeftlMessage              message);
+
+tibeftlMessage
+tibeftlMessageList_Next(
+    tibeftlMessageList          list);
+
 tibeftlMessage
 tibeftlMessage_CreateWithJSON(
     _cJSON*                     json);
@@ -20,5 +44,39 @@ tibeftlMessage_CreateWithJSON(
 _cJSON*
 tibeftlMessage_GetJSON(
     tibeftlMessage              message);
+
+void
+tibeftlMessage_SetReceipt(
+    tibeftlMessage              message,
+    int64_t                     seqNum,
+    const char*                 subId);
+
+void
+tibeftlMessage_GetReceipt(
+    tibeftlMessage              message,
+    int64_t*                    seqNum,
+    const char**                subId);
+
+void
+tibeftlMessage_SetReplyTo(
+    tibeftlMessage              message,
+    const char*                 replyTo,
+    int64_t                     reqId);
+
+void
+tibeftlMessage_GetReplyTo(
+    tibeftlMessage              message,
+    const char**                replyTo,
+    int64_t*                    reqId);
+
+void
+tibeftlMessage_SetStoreMessageId(
+    tibeftlMessage              message,
+    int64_t                     msgId);
+
+void
+tibeftlMessage_SetDeliveryCount(
+    tibeftlMessage              message,
+    int64_t                     deliveryCount);
 
 #endif /* INCLUDED_TIBEFTL_MSG_H */

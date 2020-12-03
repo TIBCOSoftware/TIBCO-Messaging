@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2018-02-05 18:15:48 -0600 (Mon, 05 Feb 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: EFTL.cs 99237 2018-02-06 00:15:48Z bpeterse $
+ * $Id: EFTL.cs 128906 2020-09-29 20:29:25Z bpeterse $
  *
  */
 using System;
@@ -101,20 +101,20 @@ namespace TIBCO.EFTL
         public static readonly String PROPERTY_TRUST_ALL = "trust_all";
 
         /// <summary>
-        /// Autoreconnect maximum attempts; property name.
+        /// Auto-reconnect maximum attempts; property name.
         /// </summary>
         /// <description>
-        /// Programs use this property to supply the maximum number of autoreconnect attempts to the
+        /// Programs use this property to supply the maximum number of auto-reconnect attempts to the
         /// <see cref="EFTL.Connect"/> call.
         /// If the connection is lost, the client will attempt to automatically reconnect to the server.
-        /// If the number of autoreconnect attempts exceeds this value,
-        /// it stops trying to autoreconnect and invokes your
+        /// If the number of auto-reconnect attempts exceeds this value,
+        /// it stops trying to auto-reconnect and invokes your
         /// <see cref="IConnectionListener.OnDisconnect"/> method
         /// with a
         /// <see cref="ConnectionListenerConstants.CONNECTION_ERROR"/>
         /// code.
         /// <p>
-        /// If you omit this property, the default number of attempts is 5.
+        /// If you omit this property, the default number of attempts is 256.
         /// </p>
         /// </description>
         ///
@@ -123,10 +123,10 @@ namespace TIBCO.EFTL
         public static readonly String PROPERTY_AUTO_RECONNECT_ATTEMPTS = "auto_reconnect_attempts";
 
         /// <summary>
-        /// Autoreconnect maximum delay; property name.
+        /// Auto-reconnect maximum delay; property name.
         /// </summary>
         /// <description>
-        /// Programs use this property to supply the maximum delay (in seconds) between autoreconnect attempts to the
+        /// Programs use this property to supply the maximum delay (in seconds) between auto-reconnect attempts to the
         /// <see cref="EFTL.Connect"/> call.
         /// If the connection is lost, the client will attempt to automatically reconnect to the server
         /// after a delay of 1 second. For each subsequent attempt, the delay is doubled, to a maximum
@@ -139,6 +139,46 @@ namespace TIBCO.EFTL
         /// <seealso cref="EFTL.Connect"/>
         ///
         public static readonly String PROPERTY_AUTO_RECONNECT_MAX_DELAY = "auto_reconnect_max_delay";
+
+        /// <summary>
+        /// Maximum number of unacknowledged messages allowed for the client; property name.
+        /// </summary>
+        /// <description>
+        /// Programs use this property to specify the maximum number of unacknowledged messages
+        /// allowed for the client. Once the maximum number of unacknowledged messages is reached
+        /// the client will stop receiving additional messages until previously received messages
+        /// are acknowledged.
+        /// <p>
+        /// If you omit this property, the server's configured value will be used.
+        /// </p>
+        /// </description>
+        ///
+        /// <seealso cref="EFTL.Connect"/>
+        ///
+        public static readonly String PROPERTY_MAX_PENDING_ACKS = "max_pending_acks";
+
+        /// <summary>
+        /// Create a subscription with a specific acknowledgment mode.
+        /// </summary>
+        /// <description>
+        /// Programs use this property to specify how messages received by the
+        /// subscription are acknowledged. The following acknowledgment modes are
+        /// supported:
+        ///   <list type="bullet">
+        ///     <item> <see cref="AcknowledgeMode.AUTO"/> </item>
+        ///     <item> <see cref="AcknowledgeMode.CLIENT"/> </item>
+        ///     <item> <see cref="AcknowledgeMode.NONE"/> </item>
+        ///   </list>
+        /// <p>
+        /// If you omit this property, the subscription is created with an
+        /// acknowledgment mode of <see cref="AcknowledgeMode.AUTO"/>.
+        /// </p>
+        /// </description>
+        /// <seealso cref="IConnection.Subscribe(String, String, Hashtable, ISubscriptionListener)"/>
+        /// <seealso cref="AcknowledgeMode.AUTO"/>
+        /// <seealso cref="AcknowledgeMode.CLIENT"/>
+        /// <seealso cref="AcknowledgeMode.NONE"/>
+        public static readonly String PROPERTY_ACKNOWLEDGE_MODE = "ack";
 
         /// <summary>
         /// Create a durable subscription of this type; property name.
@@ -186,13 +226,18 @@ namespace TIBCO.EFTL
         /// <see cref="IConnectionListener.OnConnect"/> method, passing an
         /// <see cref="IConnection"/> object that you can use to publish and subscribe.
         /// <p>
+        /// When a pipe-separated list of URLs is specified this call will attempt
+        /// a connection to each in turn, in a random order, until one is connected.
+        /// </p>
+        /// <p>
         /// A program that uses more than one server channel must connect
         /// separately to each channel.
         /// </p>
         ///
         /// <param name="url">
-        /// The call connects to the eFTL server at this URL.
-        ///   The URL can be in either of these forms:
+        /// The call connects to the eFTL server at this URL. This can be a single
+        ///   URL, or a pipe ('|') separated list of URLs. URLs can be in either of
+        ///   these forms:
         ///   <list type="bullet">
         ///     <item> <c> ws://host:port/channel </c> </item>
         ///     <item> <c> wss://host:port/channel </c> </item>

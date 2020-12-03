@@ -1,10 +1,10 @@
 //
-//  Copyright (c) 2001-$Date: 2018-02-07 15:17:24 -0600 (Wed, 07 Feb 2018) $ TIBCO Software Inc.
+//  Copyright (c) 2001-$Date: 2020-07-06 14:24:42 -0700 (Mon, 06 Jul 2020) $ TIBCO Software Inc.
 //  Licensed under a BSD-style license. Refer to [LICENSE]
 //  For more information, please contact:
 //  TIBCO Software Inc., Palo Alto, California USA
 //
-//  $Id: eFTLConnection.m 99274 2018-02-07 21:17:24Z bpeterse $
+//  $Id: eFTLConnection.m 126926 2020-07-06 21:24:42Z bpeterse $
 //
 
 #include <libkern/OSAtomic.h>
@@ -31,6 +31,7 @@ NSInteger const eFTLConnectionBadPayload = 1007;
 NSInteger const eFTLConnectionPolicyViolation = 1008;
 NSInteger const eFTLConnectionMessageTooLarge = 1009;
 NSInteger const eFTLConnectionServerError = 1011;
+NSInteger const eFTLConnectionRestart = 1012;
 NSInteger const eFTLConnectionFailedSSLHandshake = 1015;
 NSInteger const eFTLConnectionForceClose = 4000;
 NSInteger const eFTLConnectionNotAuthenticated = 4002;
@@ -195,7 +196,6 @@ static NSInteger const eFTLOpGoodbye         = 12;
     BOOL _connected;
     BOOL _qos;
     BOOL _debug;
-    BOOL _voip;
     BOOL _reconnecting;
     id<eFTLConnectionListener> _listener;
 }
@@ -246,9 +246,6 @@ static NSInteger const eFTLOpGoodbye         = 12;
                 if ([key isEqualToString:@"debug"]) {
                     _debug = [properties[@"debug"] boolValue];
                 }
-                else if ([key isEqualToString:@"voip"]) {
-                    _voip = [properties[@"voip"] boolValue];
-                }
                 else if ([key isEqualToString:eFTLPropertyTimeout]) {
                     timeout = [properties[eFTLPropertyTimeout] doubleValue];
                 }
@@ -284,7 +281,6 @@ static NSInteger const eFTLOpGoodbye         = 12;
             _webSocket = [[SRWebSocket alloc] initWithURLRequest:urlRequest
                                                        protocols:[NSArray arrayWithObject:eFTLWebSocketProtocol]];
             _webSocket.delegate = self;
-            _webSocket.voip = _voip;
             
             [_webSocket open];
             
@@ -608,7 +604,7 @@ static NSInteger const eFTLOpGoodbye         = 12;
     
     // repair the subscriptions
     for (eFTLSubscription *subscription in [_subscriptions allValues])
-        [self subscribe:subscription asPending:didReconnect];
+        [self subscribe:subscription asPending:subscription.pending];
     
     [_writeLock lock];
     
@@ -623,7 +619,7 @@ static NSInteger const eFTLOpGoodbye         = 12;
                 [publish.listener message:publish.message didFailWithCode:eFTLPublishFailed reason:@"Reconnect"];
             }
         }];
-        
+
         // reset the last sequence number
         _lastSequenceNumber = 0;
     }
@@ -668,10 +664,16 @@ static NSInteger const eFTLOpGoodbye         = 12;
     eFTLSubscription *subscription;
     
     subscription = _subscriptions[identifier];
-    [_subscriptions removeObjectForKey:identifier];
-    
-    if (subscription != nil)
+
+    // remove the subscription only if it's untryable
+    if (code == eFTLSubscriptionInvalid) {
+        [_subscriptions removeObjectForKey:identifier];
+    }
+
+    if (subscription != nil) {
+        subscription.pending = YES;
         [subscription.listener subscription:identifier didFailWithCode:code reason:reason];
+    }
 }
 
 - (void)handleEvents:(NSArray *)jsonObj
@@ -921,7 +923,9 @@ static NSInteger const eFTLOpGoodbye         = 12;
     _webSocket.delegate = nil;
     _webSocket = nil;
     
-    if (wasClean || [self scheduleReconnect] == NO) {
+    // Reconnect when the close code reflects a server restart,
+    // or when the close was not clean.
+    if ((code != eFTLConnectionRestart && wasClean) || [self scheduleReconnect] == NO) {
         [self handleCloseWithCode:code reason:reason];
     }
 }

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2018: 2017-06-02 19:29:54 -0500 (Fri, 02 Jun 2017) $ TIBCO Software Inc.
+ * Copyright (c) $Date: 2020-03-11 12:11:05 -0700 (Wed, 11 Mar 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: hashmap.h 93815 2017-06-03 00:29:54Z bpeterse $
+ * $Id: hashmap.h 122649 2020-03-11 19:11:05Z bpeterse $
  *
  */
 
@@ -13,7 +13,7 @@
 
 typedef struct hashmap_s hashmap_t;
 
-hashmap_t* hashmap_create(int initialSize);
+hashmap_t* hashmap_create(size_t initialSize);
 
 void hashmap_destroy(hashmap_t* map);
 
@@ -23,12 +23,14 @@ void* hashmap_get(hashmap_t* map, const char* key);
 
 void* hashmap_remove(hashmap_t* map, const char* key);
 
-int hashmap_size(hashmap_t* map);
+size_t hashmap_size(hashmap_t* map);
 
-int hashmap_collisions(hashmap_t* map);
+size_t hashmap_collisions(hashmap_t* map);
 
 void hashmap_iterate(hashmap_t* map,
         void (*callback)(const char* key, void* value, void* context),
         void* context);
+
+hashmap_t* hashmap_copy(hashmap_t* map);
 
 #endif /* INCLUDED_TIBEFTL_HASHMAP_URL */

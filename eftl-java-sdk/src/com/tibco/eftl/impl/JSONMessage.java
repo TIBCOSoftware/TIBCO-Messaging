@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2017-01-26 20:00:35 -0600 (Thu, 26 Jan 2017) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JSONMessage.java 91044 2017-01-27 02:00:35Z bpeterse $
+ * $Id: JSONMessage.java 128796 2020-09-24 19:20:18Z bpeterse $
  *
  */
 package com.tibco.eftl.impl;
@@ -24,6 +24,12 @@ public class JSONMessage implements Message
     public static final String OPAQUE_FIELD = "_o_";
     
     protected JsonObject json;
+    protected long seqNum;
+    protected long reqId;
+    protected long msgId;
+    protected long deliveryCount;
+    protected String subId;
+    protected String replyTo;
     
     public JSONMessage(JsonObject jsonObject)
     {
@@ -35,11 +41,45 @@ public class JSONMessage implements Message
         this(new JsonObject());
     }
     
+    protected void setReceipt(long seqNum, String subId)
+    {
+        this.seqNum = seqNum;
+        this.subId = subId;
+    }
+
+    protected void setReplyTo(String replyTo, long reqId)
+    {
+        this.replyTo = replyTo;
+        this.reqId = reqId;
+    }
+
+    protected void setStoreMessageId(long msgId)
+    {
+        this.msgId = msgId;
+    }
+
+    protected void setDeliveryCount(long deliveryCount)
+    {
+        this.deliveryCount = deliveryCount;
+    }
+
     protected JsonObject toJsonObject()
     {
         return json;
     }
     
+    @Override
+    public long getStoreMessageId()
+    {
+        return msgId;
+    }
+
+    @Override
+    public long getDeliveryCount()
+    {
+        return deliveryCount;
+    }
+
     @Override
     public boolean isFieldSet(String fieldName)
     {
@@ -165,7 +205,9 @@ public class JSONMessage implements Message
             throw new IllegalArgumentException("field name is null or empty");
 
         Object o = json.get(fieldName);
-        return (Long) (o instanceof Number ? o : null);
+        if (o instanceof Number)
+            return new Long(((Number) o).longValue());
+        return null;
     }
     
     @Override
@@ -202,8 +244,8 @@ public class JSONMessage implements Message
             Object value = ((JsonObject) o).get(DOUBLE_FIELD);
             if (value instanceof String)
                 return Double.parseDouble((String) value);
-            else 
-                return (Double) value;
+            else if (value instanceof Number)
+                return new Double(((Number) value).doubleValue());
         }
         return null;
     }
@@ -456,9 +498,10 @@ public class JSONMessage implements Message
             {
                 Long[] retVal = new Long[arr.size()];
                 
-                for(int i=0,max=arr.size();i<max;i++)
+                for (int i = 0, max=arr.size(); i < max; i++)
                 {
-                    retVal[i] = (Long) arr.get(i);
+                    if (arr.get(i) instanceof Number)
+                        retVal[i] = new Long(((Number) arr.get(i)).longValue());
                 }
                 
                 return retVal;
@@ -494,8 +537,8 @@ public class JSONMessage implements Message
                     
                     if (value instanceof String)
                         retVal[i] = Double.parseDouble((String) value);
-                    else
-                        retVal[i] = (Double) value;
+                    else if (value instanceof Number)
+                        retVal[i] = new Double(((Number) value).doubleValue());
                 }
                 
                 return retVal;

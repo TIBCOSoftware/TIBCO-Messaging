@@ -1,39 +1,68 @@
 #!/usr/bin/env python
 
+import asyncio
 import os
 import time
 import warnings
+import sys
+from pathlib import Path
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 use_twisted = os.environ.get("TIBCO_TEST_TWISTED")
-if not use_twisted or use_twisted == "False" or use_twisted == "0":
-    from eftl.asyncio.connection import EftlConnection
-else:
-    from eftl.twisted.connection import EftlConnection
+from messaging.eftl.connection import Eftl
 
-# Set environment variables TIBCO_TEST_URL and TIBCO_TEST_PASSWORD to test your desired FTL server.
-url = os.environ.get("TIBCO_TEST_URL", "ws://localhost:9191/channel")
-password = os.environ.get("TIBCO_TEST_PASSWORD", "")
+class demo_receive:
+    def __init__(self,loop):
+        # Set environment variables TIBCO_TEST_URL and TIBCO_TEST_PASSWORD to test your desired FTL server.
+        # for map, use correct channel name "wss://localhost:9191/map"
+        self.url = os.environ.get("TIBCO_TEST_URL", "wss://localhost:9191/channel")
+        self.password = os.environ.get("TIBCO_TEST_PASSWORD", "")
 
+        self.loop = loop
+        self.ec = None
+   
+    async def onConnect(self, **kwargs):
+        print("connection has been estabished")
 
-def print_message(**kwargs):
-    message_content = kwargs.get("message", {}).get("demo")
-    if message_content:
-        print("Received message: {}".format(message_content))
+    async def onDisconnect(self, **kwargs):
+        print("onClose has been executed fully")
+        self.loop.stop()
 
-ec = EftlConnection()
-ec.connect(
-    url,
-    client_id='python-demo-receiver',
-    password=password,
-    )
-print("Ready to recieve messages...")
+    async def on_message(self, message):
+        print("in on_message callback")
+        print(message)
+         
+    async def run(self):
+        eftl = Eftl()
+        print(eftl.get_version())
+        
+        try:        
+            self.ec = await eftl.connect(
+                "ws://localhost:9191/channel|ws://localhost:9192/channel",
+                client_id='python-demo-receiver',
+                event_loop=self.loop,
+                username='admin',
+                password='admin-pw',
+                on_connect=self.onConnect,
+                on_disconnect=self.onDisconnect,
+                trust_all=False,
+                trust_store=Path("/Users/nsalwantibco.com/ftlnew/build/install/bin/ftl-trust.pem")
+                )
+            print("ready to recieve messages")
+        
+            await self.ec.subscribe(matcher="""{}""", on_message=self.on_message)
+        except (EOFError, KeyboardInterrupt):
+            print("\nKeyboard interrupt issued; now exiting...")
+            self.loop.close()
+            sys.exit(-1)
 
-ec.subscribe(
-    matcher="""{"demo":true}""",
-    on_message=print_message,
-    )
-try:
-    ec.run_event_loop()
-except KeyboardInterrupt:
-    print("Keyboard interrupt issued; now exiting...")
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    receiver = demo_receive(loop)
+    try:        
+        loop.run_until_complete(receiver.run())
+        loop.run_forever()
+        loop.close()
+    except (EOFError, KeyboardInterrupt):
+        print("\nKeyboard interrupt issued; now exiting ...")
+        sys.exit(-1)

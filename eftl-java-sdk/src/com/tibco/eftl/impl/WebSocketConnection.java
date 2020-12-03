@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2018-05-21 11:55:18 -0500 (Mon, 21 May 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketConnection.java 101362 2018-05-21 16:55:18Z bpeterse $
+ * $Id: WebSocketConnection.java 128906 2020-09-29 20:29:25Z bpeterse $
  */
 package com.tibco.eftl.impl;
 
@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyStore;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,6 +34,7 @@ import javax.net.ssl.TrustManagerFactory;
 import com.tibco.eftl.CompletionListener;
 import com.tibco.eftl.Connection;
 import com.tibco.eftl.ConnectionListener;
+import com.tibco.eftl.RequestListener;
 import com.tibco.eftl.EFTL;
 import com.tibco.eftl.KVMap;
 import com.tibco.eftl.KVMapListener;
@@ -47,20 +49,21 @@ import com.tibco.eftl.websocket.WebSocketListener;
 
 public class WebSocketConnection implements Connection, WebSocketListener, Runnable {
 
-    protected URI uri;
+    protected ArrayList<URI> urlList = new ArrayList<URI>();
+    protected int urlIndex;
     protected Properties props = new Properties();
     protected ConnectionListener listener;
     protected WebSocket webSocket;
     protected TrustManager[] trustManagers;
+    protected boolean trustAll;
     protected String clientId;
     protected String reconnectId;
+    protected int protocol;
     protected int maxMessageSize;
     protected int reconnectAttempts;
-    protected long lastSequenceNumber;
     protected boolean qos;
     protected Thread writer;
-    protected Timer timer = new Timer("EFTL Timer", true);
-    protected TimerTask reconnectTask;
+    protected Timer reconnectTimer;
     protected AtomicBoolean connected = new AtomicBoolean();
     protected AtomicBoolean connecting = new AtomicBoolean();
     protected AtomicBoolean reconnecting = new AtomicBoolean();
@@ -82,7 +85,8 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     {
         try 
         {
-            this.uri = new URI(uri);
+            setURLList(uri);
+
             this.listener = listener;
             
             // default quality of service
@@ -115,6 +119,11 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         }
     }
     
+    public void setTrustAll(boolean trustAll)
+    {
+        this.trustAll = trustAll;
+    }
+
     public void connect(Properties props) 
     {
         if (connecting.compareAndSet(false, true))
@@ -123,10 +132,11 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
                 this.props.putAll(props);
         
             int connectTimeout = getConnectTimeout();
-            
-            webSocket = new WebSocket(uri, this);
+
+            webSocket = new WebSocket(getURL(), this);
             webSocket.setProtocol(ProtocolConstants.EFTL_WS_PROTOCOL);
             webSocket.setTrustManagers(trustManagers);
+            webSocket.setTrustAll(trustAll);
             webSocket.setConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS);
             webSocket.setSocketTimeout(connectTimeout, TimeUnit.MILLISECONDS);
             webSocket.open();
@@ -156,6 +166,9 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         if (isConnected())
             return;
         
+        // cancel auto-reconnects
+        cancelReconnect();
+        
         // set only when auto-reconnecting
         reconnecting.set(false);
         
@@ -170,7 +183,7 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
             if (cancelReconnect())
             {
                 // clear the unacknowledged messages
-                clearRequests("Disconnected");
+                clearRequests(CompletionListener.PUBLISH_FAILED, "Disconnected");
 
                 // a pending reconnect was cancelled, 
                 // tell the user we've disconnected
@@ -306,6 +319,95 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     }
     
     @Override
+    public void removeKVMap(final String name)
+    {
+        if (!isConnected())
+            throw new IllegalStateException("not connected");
+
+        JsonObject envelope = new JsonObject();
+        
+        envelope.put(ProtocolConstants.OP_FIELD, ProtocolConstants.OP_MAP_DESTROY);
+        if (name != null)
+            envelope.put(ProtocolConstants.MAP_FIELD, name);
+        
+        queue(envelope.toString());
+    }
+    
+    @Override
+    public void sendRequest(Message request, double timeout, RequestListener listener)
+    {
+        if (!isConnected())
+            throw new IllegalStateException("not connected");
+
+        JsonObject envelope = new JsonObject();
+        
+        // synchronized to ensure message sequence numbers are ordered
+        synchronized (writeLock)
+        {
+            final long seqNum = messageIdGenerator.incrementAndGet();
+                
+            envelope.put(ProtocolConstants.OP_FIELD, ProtocolConstants.OP_REQUEST);
+            envelope.put(ProtocolConstants.SEQ_NUM_FIELD, seqNum);
+            envelope.put(ProtocolConstants.BODY_FIELD, ((JSONMessage) request).toJsonObject());
+                
+            SendRequest sendRequest = new SendRequest(seqNum, envelope.toString(), request, listener);
+            
+            if (protocol < 1)
+                throw new UnsupportedOperationException("send request is not supported with this server");
+
+            if (maxMessageSize > 0 && sendRequest.getJson().length() > maxMessageSize)
+                throw new IllegalArgumentException("maximum message size exceeded");
+
+            sendRequest.setTimeout((long)(timeout * 1000), new TimerTask() {
+                    @Override
+                    public void run() {
+                        requestTimeout(seqNum);
+                    }
+            });
+
+            requests.put(seqNum, sendRequest);
+                
+            queue(sendRequest);
+        }
+    }
+
+    @Override
+    public void sendReply(Message reply, Message request, CompletionListener listener)
+    {
+        if (!isConnected())
+            throw new IllegalStateException("not connected");
+
+        if (((JSONMessage) request).replyTo == null)
+            throw new IllegalArgumentException("not a request message");
+            
+        JsonObject envelope = new JsonObject();
+        
+        // synchronized to ensure message sequence numbers are ordered
+        synchronized (writeLock)
+        {
+            long seqNum = messageIdGenerator.incrementAndGet();
+                
+            envelope.put(ProtocolConstants.OP_FIELD, ProtocolConstants.OP_REPLY);
+            envelope.put(ProtocolConstants.SEQ_NUM_FIELD, seqNum);
+            envelope.put(ProtocolConstants.TO_FIELD, ((JSONMessage) request).replyTo);
+            envelope.put(ProtocolConstants.REQ_ID_FIELD, ((JSONMessage) request).reqId);
+            envelope.put(ProtocolConstants.BODY_FIELD, ((JSONMessage) reply).toJsonObject());
+                
+            Publish publish = new Publish(seqNum, envelope.toString(), reply, listener);
+            
+            if (protocol < 1)
+                throw new UnsupportedOperationException("send reply is not supported with this server");
+
+            if (maxMessageSize > 0 && publish.getJson().length() > maxMessageSize)
+                throw new IllegalArgumentException("maximum message size exceeded");
+
+            requests.put(seqNum, publish);
+                
+            queue(publish);
+        }
+    }
+
+    @Override
     public void publish(Message message) 
     {
         publish(message, null);
@@ -361,7 +463,7 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         if (!isConnected())
             throw new IllegalStateException("not connected");
 
-        String subscriptionId = clientId + ".s." + subscriptionIdGenerator.getAndIncrement();
+        String subscriptionId = String.valueOf(subscriptionIdGenerator.incrementAndGet());
         subscribe(subscriptionId, matcher, durable, props, listener);
         return subscriptionId;
     }
@@ -369,7 +471,6 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     private void subscribe(String subscriptionId, String matcher, String durable, Properties props, SubscriptionListener listener)
     {
         Subscription subscription = new Subscription(subscriptionId, matcher, durable, props, listener);
-        subscription.setPending(true);
         
         subscriptions.put(subscription.getSubscriptionId(), subscription);
         subscribe(subscription);
@@ -394,6 +495,37 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         
         queue(message.toString());
     } 
+    
+    @Override
+    public void closeSubscription(String subscriptionId) 
+    {
+        if (!isConnected())
+            throw new IllegalStateException("not connected");
+
+        if (protocol < 1)
+            throw new UnsupportedOperationException("close subscription is not supported with this server");
+
+        Subscription subscription = subscriptions.remove(subscriptionId);
+        if (subscription != null)
+        {
+            JsonObject message = new JsonObject();
+            
+            message.put(ProtocolConstants.OP_FIELD, ProtocolConstants.OP_UNSUBSCRIBE);
+            message.put(ProtocolConstants.ID_FIELD, subscription.getSubscriptionId());
+            message.put(ProtocolConstants.DEL_FIELD, false);
+
+            queue(message.toString());
+        }
+    }
+
+    @Override
+    public void closeAllSubscriptions()
+    {
+        for (Enumeration<String> e = subscriptions.keys(); e.hasMoreElements();)
+        {
+            closeSubscription(e.nextElement());
+        }
+    }
     
     @Override
     public void unsubscribe(String subscriptionId) 
@@ -423,13 +555,31 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     }
     
     @Override
+    public void acknowledge(Message message)
+    {
+        if (!isConnected())
+            throw new IllegalStateException("not connected");
+        
+        acknowledge(((JSONMessage) message).seqNum, null);
+    }
+    
+    @Override
+    public void acknowledgeAll(Message message)
+    {
+        if (!isConnected())
+            throw new IllegalStateException("not connected");
+        
+        acknowledge(((JSONMessage) message).seqNum, ((JSONMessage) message).subId);
+    }
+    
+    @Override
     public void onOpen() 
     {
         String user = props.getProperty(EFTL.PROPERTY_USERNAME, null);
         String password = props.getProperty(EFTL.PROPERTY_PASSWORD, null);
         String identifier = props.getProperty(EFTL.PROPERTY_CLIENT_ID, null);
         
-        String userInfo = uri.getUserInfo();
+        String userInfo = getURL().getUserInfo();
         
         if (userInfo != null)
         {
@@ -441,7 +591,7 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
                 password = tokens[1];
         }
         
-        String query = uri.getQuery();
+        String query = getURL().getQuery();
         
         if (query != null)
         {
@@ -459,6 +609,7 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         JsonObject message = new JsonObject();
         
         message.put(ProtocolConstants.OP_FIELD, ProtocolConstants.OP_LOGIN);
+        message.put(ProtocolConstants.PROTOCOL, ProtocolConstants.PROTOCOL_VERSION);
         message.put(ProtocolConstants.CLIENT_TYPE_FIELD, "java");
         message.put(ProtocolConstants.CLIENT_VERSION_FIELD, Version.EFTL_VERSION_STRING_SHORT);
         
@@ -478,6 +629,13 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
             message.put(ProtocolConstants.CLIENT_ID_FIELD, identifier);
         }
         
+        int maxPendingAcks = getMaxPendingAcks();
+
+        if (maxPendingAcks > 0) 
+        {
+            message.put(ProtocolConstants.MAX_PENDING_ACKS, maxPendingAcks);
+        }
+
         JsonObject loginOptions = new JsonObject();
 
         // add resume when auto-reconnecting
@@ -505,6 +663,9 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         {
             // TODO
         }
+        
+        // cancel auto-reconnects
+        cancelReconnect();
     }
 
     @Override
@@ -512,17 +673,27 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     {
         if (connecting.compareAndSet(true, false))
         {
-            // no longer connected
-            connected.set(false);
+            // Reconnect when the close code reflects a server restart.
+            if (code != ConnectionListener.RESTART || !scheduleReconnect())
+            {
+                // no longer connected
+                connected.set(false);
             
-            // stop the writer thread
-            if (writer != null)
-                writer.interrupt();
+                // stop the writer thread
+                if (writer != null)
+                    writer.interrupt();
 
-            // clear the unacknowledged messages
-            clearRequests("Closed");
+                // clear the unacknowledged messages
+                clearRequests(CompletionListener.PUBLISH_FAILED, "Closed");
             
-            listener.onDisconnect(this, code, reason);
+                listener.onDisconnect(this, code, reason);
+            }
+            else
+            { 
+                // stop the writer thread
+                if (writer != null)
+                    writer.interrupt();
+            }
         }
     }
 
@@ -540,8 +711,11 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
                 if (writer != null)
                     writer.interrupt();
 
+                // cancel auto-reconnects
+                cancelReconnect();
+                
                 // clear the unacknowledged messages
-                clearRequests("Error");
+                clearRequests(CompletionListener.PUBLISH_FAILED, "Error");
                 
                 listener.onDisconnect(this, ConnectionListener.CONNECTION_ERROR, cause.getMessage());
             }
@@ -559,11 +733,7 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     {
         Object value = JsonValue.parse(text);
             
-        if (value instanceof JsonArray)
-        {
-            handleMessages((JsonArray) value);
-        }
-        else if (value instanceof JsonObject)
+        if (value instanceof JsonObject)
         {
             JsonObject message = (JsonObject) value;
 
@@ -593,6 +763,9 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
                     break;
                 case ProtocolConstants.OP_ACK:
                     handleAck(message);
+                    break;
+                case ProtocolConstants.OP_REQUEST_REPLY:
+                    handleReply(message);
                     break;
                 case ProtocolConstants.OP_MAP_RESPONSE:
                     handleMapResponse(message);
@@ -625,6 +798,11 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         // a non-null reconnect token indicates a prior connection
         boolean invokeOnReconnect = (reconnectId != null);
 
+        if (message.containsKey(ProtocolConstants.PROTOCOL))
+            protocol = ((Number) message.get(ProtocolConstants.PROTOCOL)).intValue();
+        else
+            protocol = 0;
+
         clientId = (String) message.get(ProtocolConstants.CLIENT_ID_FIELD);
         reconnectId = (String) message.get(ProtocolConstants.ID_TOKEN_FIELD);
         maxMessageSize = ((Number) message.get(ProtocolConstants.MAX_SIZE_FIELD)).intValue();
@@ -640,6 +818,9 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         // reset reconnect attempts
         reconnectAttempts = 0;
 
+        // reset URL list to start auto-reconnect attempts from the beginning
+        resetURLList();
+        
         // synchronized to ensure message sequence numbers are ordered
         synchronized(writeLock)
         {
@@ -653,27 +834,15 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
             // repair subscriptions
             for (Subscription subscription : subscriptions.values())
             {
-                // invoke callback if not auto-reconnecting
-                if (!reconnecting.get())
-                    subscription.setPending(true);
-            
+                if (!resume)
+                    subscription.setLastSeqNum(0);
+                
                 subscribe(subscription);
             }
     
-            if (resume)
-            {
-                // re-send unacknowledged messages
-                for (Request request : requests.values())
-                    queue(request);
-            }
-            else
-            {
-                // clear unacknowledged messages
-                clearRequests("Reconnect");
-            
-                // reset the last sequence number if not a reconnect
-                lastSequenceNumber = 0;
-            }
+            // re-send unacknowledged messages
+            for (Request request : requests.values())
+                queue(request);
         }
         
         // invoke callback if not auto-reconnecting
@@ -709,83 +878,16 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         //   LISTENS_DISALLOWED listens are disabled for this user
         //   SUBSCRIPTION_FAILED an internal error occurred
         
-        Subscription subscription = subscriptions.remove(subscriptionId);
+        Subscription subscription = subscriptions.get(subscriptionId);
+
+        // remove the subscription only if it's untryable
+        if (code == SubscriptionListener.SUBSCRIPTION_INVALID)
+            subscriptions.remove(subscriptionId);
+
         if (subscription != null)
         {
+            subscription.setPending(true);
             subscription.getListener().onError(subscriptionId, code, reason);
-        }
-    }
-    
-    private void handleMessages(JsonArray array)
-    {
-        synchronized (processLock)
-        {
-            ArrayList<Message> messages = new ArrayList<Message>(array.size());
-            Subscription currentSubscription = null;
-            Long lastSeqNum = null;
-
-            for (int i = 0, max = array.size(); i < max; i++)
-            {
-                JsonObject envelope = (JsonObject) array.get(i);
-
-                String to = (String) envelope.get(ProtocolConstants.TO_FIELD);
-                Long seqNum = (Long) envelope.get(ProtocolConstants.SEQ_NUM_FIELD);
-                JsonObject message = (JsonObject) envelope.get(ProtocolConstants.BODY_FIELD);
-
-                // The message will be processed if qos is not enabled, there is no 
-                // sequence number or if the sequence number is greater than the last 
-                // received sequence number.
-
-                if (!qos || seqNum == null || seqNum.longValue() > lastSequenceNumber)
-                {
-                    Subscription subscription = subscriptions.get(to);
-                    if (subscription != null)
-                    {
-                        if (currentSubscription != null && currentSubscription != subscription)
-                        {
-                            try
-                            {
-                                currentSubscription.getListener().onMessages(messages.toArray(new Message[0]));
-                            }
-                            catch (Exception e)
-                            {
-                                // catch and discard exceptions thrown by the listener
-                            }
-                            messages.clear();
-                        }
-
-                        currentSubscription = subscription;
-
-                        messages.add(new JSONMessage(message));
-                    }
-
-                    // track the last received sequence number only if qos is enabled
-                    if (qos && seqNum != null)
-                        lastSequenceNumber = seqNum.longValue();
-                }
-
-                if (seqNum != null)
-                    lastSeqNum = seqNum;
-            }
-
-            if (currentSubscription != null && messages.size() > 0)
-            {
-                try
-                {
-                    currentSubscription.getListener().onMessages(messages.toArray(new Message[0]));
-                }
-                catch (Exception e)
-                {
-                    // catch and discard exceptions thrown by the listener
-                }
-                messages.clear();
-            }
-
-            // Send an acknowledgment for the last sequence number in the array.
-            // The server will acknowledge all messages less than or equal to
-            // this sequence number.
-
-            ack(lastSeqNum);
         }
     }
     
@@ -794,35 +896,50 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         synchronized (processLock)
         {
             String to = (String) envelope.get(ProtocolConstants.TO_FIELD);
+            String replyTo = (String) envelope.get(ProtocolConstants.REPLY_TO_FIELD);
             Long seqNum = (Long) envelope.get(ProtocolConstants.SEQ_NUM_FIELD);
-            JsonObject message = (JsonObject) envelope.get(ProtocolConstants.BODY_FIELD);
+            Long reqId = (Long) envelope.get(ProtocolConstants.REQ_ID_FIELD);
+            Long msgId = (Long) envelope.get(ProtocolConstants.STORE_MSG_ID_FIELD);
+            Long deliveryCount = (Long) envelope.get(ProtocolConstants.DELIVERY_COUNT_FIELD);
+            JsonObject body = (JsonObject) envelope.get(ProtocolConstants.BODY_FIELD);
 
-            // The message will be processed if qos is not enabled, there is no 
-            // sequence number or if the sequence number is greater than the last 
-            // received sequence number.
+            // The message will be processed if there is no sequence number or 
+            // if the sequence number is greater than the last received sequence number.
 
-            if (!qos || seqNum == null || seqNum.longValue() > lastSequenceNumber)
+            Subscription subscription = subscriptions.get(to);
+            if (subscription != null)
             {
-                Subscription subscription = subscriptions.get(to);
-                if (subscription != null)
+                if (seqNum == null || seqNum.longValue() > subscription.getLastSeqNum())
                 {
-                    Message[] messages = {new JSONMessage(message)};
+                    Message message = new JSONMessage(body);
+
+                    if (seqNum != null)
+                        ((JSONMessage) message).setReceipt(seqNum.longValue(), subscription.getSubscriptionId());
+                    if (replyTo != null)
+                        ((JSONMessage) message).setReplyTo(replyTo, (reqId != null ? reqId.longValue() : 0));
+                    if (msgId != null)
+                        ((JSONMessage) message).setStoreMessageId(msgId.longValue());
+                    if (deliveryCount != null)
+                        ((JSONMessage) message).setDeliveryCount(deliveryCount.longValue());
+
                     try
                     {
-                        subscription.getListener().onMessages(messages);
+                        subscription.getListener().onMessages(new Message[] {message});
                     }
                     catch (Exception e)
                     {
                         // catch and discard exceptions thrown by the listener
                     }
+                    
+                    // track the last received sequence number
+                    if (subscription.isAutoAck() && seqNum != null)
+                        subscription.setLastSeqNum(seqNum.longValue());                    
                 }
 
-                // track the last received sequence number only if qos is enabled
-                if (qos && seqNum != null)
-                    lastSequenceNumber = seqNum.longValue();
+                // auto-acknowledge the message
+                if (subscription.isAutoAck() && seqNum != null)
+                    acknowledge(seqNum.longValue(), subscription.getSubscriptionId());
             }
-
-            ack(seqNum);
         }
     }
     
@@ -846,15 +963,28 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         Number code = (Number) message.get(ProtocolConstants.ERR_CODE_FIELD);
         String reason = (String) message.get(ProtocolConstants.REASON_FIELD);
         
-        // Remove all unacknowledged messages with a sequence number equal to
-        // or less than the sequence number contained within the ack message.
-        
         if (seqNum != null)
         {
             if (code != null)
                 requestError(seqNum, code.intValue(), reason);
             else
                 requestSuccess(seqNum, null);
+        }
+    }
+    
+    private void handleReply(JsonObject message)
+    {
+        Long seqNum = (Long) message.get(ProtocolConstants.SEQ_NUM_FIELD);
+        JsonObject body = (JsonObject) message.get(ProtocolConstants.BODY_FIELD);
+        Number code = (Number) message.get(ProtocolConstants.ERR_CODE_FIELD);
+        String reason = (String) message.get(ProtocolConstants.REASON_FIELD);
+        
+        if (seqNum != null)
+        {
+            if (code != null)
+                requestError(seqNum, code.intValue(), reason);
+            else
+                requestSuccess(seqNum, (body != null ? new JSONMessage(body) : null));
         }
     }
     
@@ -877,9 +1007,9 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         }
     }
     
-    private void ack(Long seqNum)
+    private void acknowledge(long seqNum, String subId)
     {
-        if (!qos || seqNum == null)
+        if (seqNum == 0)
             return;
         
         JsonObject message = new JsonObject();
@@ -887,61 +1017,77 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         message.put(ProtocolConstants.OP_FIELD, ProtocolConstants.OP_ACK);
         message.put(ProtocolConstants.SEQ_NUM_FIELD, seqNum);
         
+        if (subId != null)
+            message.put(ProtocolConstants.ID_FIELD, subId);
+        
         // queue message for writer thread
         queue(message.toString());
+    }
+    
+    private void requestTimeout(Long seqNum)
+    {
+        requestError(seqNum, RequestListener.REQUEST_TIMEOUT, "request timeout");
     }
     
     private void requestSuccess(Long seqNum, Message response)
     {
         Request request = requests.remove(seqNum);
-        if (request.getListener() != null)
-            request.getListener().onSuccess(response);
+        if (request != null)
+            request.onSuccess(response);
     }
     
     private void requestError(Long seqNum, int code, String reason)
     {
         Request request = requests.remove(seqNum);
-        if (request.getListener() != null)
-            request.getListener().onError(code, reason);
+        if (request != null && request.hasListener())
+            request.onError(code, reason);
         else
             listener.onError(this, code, reason);
     }
     
-    private void clearRequests(String reason)
+    private void clearRequests(int code, String reason)
     {
         for (Long key : requests.keySet())
         {
             Request request = requests.remove(key);
-            if (request.getListener() != null)
-                request.getListener().onError(0, reason);
+            request.onError(code, reason);
         }
     }
     
     private boolean scheduleReconnect()
     {
         boolean scheduled = false;
-        
+
+        // schedule a connect only if not previously connected
+        // and there are additional URLs to try in the URL list
+        //
         // schedule a reconnect only if previously connected and 
         // the number of reconnect attempts has not been exceeded
-        if (connected.get() && reconnectAttempts < getReconnectAttempts())
+        if (!connected.get() && nextURL())
+        {
+            scheduleReconnect(0);
+            
+            scheduled = true;            
+        }
+        else if (connected.get() && reconnectAttempts < getReconnectAttempts())
         {
             try 
             {
-                // exponential backoff truncated to max delay
-                long backoff = Math.min((long) Math.pow(2.0, reconnectAttempts++) * 1000, getReconnectMaxDelay());
-            
-                reconnectTask = new TimerTask() {
-                    @Override
-                    public void run() 
-                    {
-                        // set only when auto-reconnecting
-                        reconnecting.set(true);
-                        
-                        connect(null);
-                    }
-                };
+                long backoff = 0;
+                
+                // backoff once all URLs have been tried
+                if (!nextURL())
+                {
+                    // add jitter by applying a randomness factor of 0.5
+                    double jitter = Math.random() + 0.5;
+                    // exponential backoff truncated to max delay
+                    backoff = Math.min((long) (Math.pow(2.0, reconnectAttempts++) * 1000 * jitter), getReconnectMaxDelay());
+                }
 
-                timer.schedule(reconnectTask, backoff);
+                // set only when auto-reconnecting
+                reconnecting.set(true);
+
+                scheduleReconnect(backoff);
                 
                 scheduled = true;
             }
@@ -953,13 +1099,32 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         
         return scheduled;
     }
+
+    private synchronized void scheduleReconnect(long delay)
+    {
+        if (reconnectTimer == null)
+            reconnectTimer = new Timer("EFTL Reconnect");
+        
+        reconnectTimer.schedule(new TimerTask() 
+        {
+            @Override
+            public void run() {
+                connect(null);
+            }            
+        }, delay);        
+    }
     
-    private boolean cancelReconnect()
+    private synchronized boolean cancelReconnect()
     {
         boolean cancelled = false;
         
-        if (reconnectTask != null)
-            cancelled = reconnectTask.cancel();
+        if (reconnectTimer != null) 
+        {
+            reconnectTimer.cancel();
+            reconnectTimer = null;
+            
+            cancelled = true;
+        }
         
         return cancelled;
     }
@@ -972,15 +1137,15 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     
     private int getReconnectAttempts()
     {
-        // defaults to 5 attempts
+        // defaults to 256 attempts
         int value = 0;
         try
         {
-            value = Integer.parseInt(props.getProperty(EFTL.PROPERTY_AUTO_RECONNECT_ATTEMPTS, "5"));
+            value = Integer.parseInt(props.getProperty(EFTL.PROPERTY_AUTO_RECONNECT_ATTEMPTS, "256"));
         }
         catch (Exception e)
         {
-            value = 5;
+            value = 256;
         }
         return value;
     }
@@ -996,6 +1161,20 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         catch (Exception e)
         {
             value = 30000;
+        }
+        return value;
+    }
+
+    private int getMaxPendingAcks()
+    {
+        int value = 0;
+        try
+        {
+            value = Integer.parseInt(props.getProperty(EFTL.PROPERTY_MAX_PENDING_ACKS, "0"));
+        }
+        catch (Exception e)
+        {
+            value = 0;
         }
         return value;
     }
@@ -1039,7 +1218,7 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         }
         catch (InterruptedException e)
         {
-            // expected
+            Thread.currentThread().interrupt();
         }
         catch (IllegalStateException e)
         {
@@ -1049,5 +1228,37 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         {
             // TODO
         }
+    }
+
+    private void setURLList(String list) throws URISyntaxException
+    {
+        for (String url : list.split("\\|")) {
+            this.urlList.add(new URI(url));
+        }
+        
+        urlIndex = 0;
+        
+        // randomize the URL list
+        Collections.shuffle(urlList);        
+    }
+
+    private void resetURLList()
+    {
+        urlIndex = 0;
+    }
+    
+    private boolean nextURL()
+    {
+        if (++urlIndex < urlList.size()) {
+            return true;
+        } else {
+            urlIndex = 0;
+            return false;
+        }
+    }
+    
+    private URI getURL()
+    {
+        return urlList.get(urlIndex);
     }
 }

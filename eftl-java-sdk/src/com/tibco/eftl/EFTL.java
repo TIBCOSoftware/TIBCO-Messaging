@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2018-02-05 18:15:48 -0600 (Mon, 05 Feb 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: EFTL.java 99237 2018-02-06 00:15:48Z bpeterse $
+ * $Id: EFTL.java 128906 2020-09-29 20:29:25Z bpeterse $
  *
  */
 package com.tibco.eftl;
@@ -79,11 +79,12 @@ public class EFTL
     public static final String PROPERTY_CLIENT_ID = "client_id";
     
     /**
-     * GCM registration token for push notifications; property name.
+     * Firebase Cloud Messaging registration token for push 
+     * notifications; property name.
      * <p>
-     * Programs use this property to supply a GCM registration token
+     * Programs use this property to supply a FCM registration token
      * to the {@link #connect} call. 
-     * The server uses the registration token to push notifications 
+     * The server uses the token to push notifications 
      * to a disconnected client when messages are available.
      * 
      * @see #connect
@@ -91,23 +92,23 @@ public class EFTL
     public static final String PROPERTY_NOTIFICATION_TOKEN = "notification_token";
 
     /**
-     * Maximum autoreconnect attempts; property name.
+     * Maximum Auto-reconnect attempts; property name.
      * <p>
      * Programs use this property to define the maximum number of times
-     * an attempt to autoreconnect to the server is made.
+     * an attempt to auto-reconnect to the server is made.
      * <p>
-     * If you omit this property, the default value of 5 is used.
+     * If you omit this property, the default value of 256 is used.
      * 
      * @see #connect
      */
     public static final String PROPERTY_AUTO_RECONNECT_ATTEMPTS = "auto_reconnect_attempts";
 
     /**
-     * Maximum autoreconnect delay; property name.
+     * Maximum auto-reconnect delay; property name.
      * <p>
-     * Programs use this property to define the maximum delay between autoreconnect attempts.
-     * Following the loss of connection, the autoreconnect process delays for 1 second
-     * before attempting to autoreconnect. Subsequent attempts double this delay time, up to the maximum
+     * Programs use this property to define the maximum delay between auto-reconnect attempts.
+     * Following the loss of connection, the auto-reconnect process delays for 1 second
+     * before attempting to auto-reconnect. Subsequent attempts double this delay time, up to the maximum
      * defined by this property.
      * <p>
      * If you omit this property, the default value of 30 seconds is used.
@@ -115,7 +116,77 @@ public class EFTL
      * @see #connect
      */
     public static final String PROPERTY_AUTO_RECONNECT_MAX_DELAY = "auto_reconnect_max_delay";
-    
+ 
+    /**
+     * Maximum number of unacknowledged messages allowed for the client; property name.
+     * <p>
+     * Programs use this property to specify the maximum number of unacknowledged messages
+     * allowed for the client. Once the maximum number of unacknowledged messages is reached
+     * the client will stop receiving additional messages until previously received messages
+     * are acknowledged.
+     * <p>
+     * If you omit this property, the server's configured value will be used.
+     *
+     * @see #connect
+     */
+    public static final String PROPERTY_MAX_PENDING_ACKS = "max_pending_acks";
+
+    /**
+     * Create a subscription with a specific acknowledgment mode.
+     * <p>
+     * Programs use this property to specify how messages consumed by the
+     * subscription are acknowledged. The following acknowledgment modes are
+     * supported:
+     *            <ul>
+     *             <li> {@link #ACKNOWLEDGE_MODE_AUTO}
+     *             <li> {@link #ACKNOWLEDGE_MODE_CLIENT}
+     *             <li> {@link #ACKNOWLEDGE_MODE_NONE}
+     *            </ul>
+     * <p>
+     * If you omit this property, the subscription is created with an
+     * acknowledgment mode of {@link #ACKNOWLEDGE_MODE_AUTO}.
+     *
+     * @see Connection#subscribe(String, String, Properties, SubscriptionListener)
+     * @see #ACKNOWLEDGE_MODE_AUTO
+     * @see #ACKNOWLEDGE_MODE_CLIENT
+     * @see #ACKNOWLEDGE_MODE_NONE
+     */
+    public static final String PROPERTY_ACKNOWLEDGE_MODE = "ack";
+
+    /**
+     * Auto acknowledgment mode.
+     * <p>
+     * Messages consumed from a subscription with this acknowledgment mode are
+     * automatically acknowledged.
+     * 
+     * @see #PROPERTY_ACKNOWLEDGE_MODE
+     */
+    public static final String ACKNOWLEDGE_MODE_AUTO = "auto";
+
+    /**
+     * Client acknowledgment mode.
+     * <p>
+     * Messages consumed from a subscription with this acknowledgment mode require
+     * explicit acknowledgment by calling either the {@link Connection#acknowledge} 
+     * or {@link Connection#acknowledgeAll} method.
+     * <p>
+     * The eFTL server will stop delivering messages to the client once the 
+     * server's configured maximum unacknowledged messages is reached.
+     *
+     * @see #PROPERTY_ACKNOWLEDGE_MODE
+     */
+    public static final String ACKNOWLEDGE_MODE_CLIENT = "client";
+
+    /**
+     * None acknowledgment mode.
+     * <p>
+     * Messages consumed from a subscription with this acknowledgment mode do
+     * not require acknowledgment.
+     * 
+     * @see #PROPERTY_ACKNOWLEDGE_MODE
+     */
+    public static final String ACKNOWLEDGE_MODE_NONE = "none";
+
     /**
      * Create a durable subscription of this type; property name.
      * <p>
@@ -171,7 +242,8 @@ public class EFTL
      */
     public static final String DURABLE_TYPE_LAST_VALUE = "last-value";
     
-    private static KeyStore trustStore;
+    private static KeyStore trustStore; 
+    private static boolean trustAll; 
 
     protected EFTL()
     {
@@ -191,9 +263,6 @@ public class EFTL
      * Set the SSL trust store that the client library uses to verify
      * certificates from the eFTL server.
      * <p>
-     * If you do not set the SSL trust store, then the application
-     * trusts any server certificate.
-     * <p> 
      * You cannot set the trust store after the first connect call.
      * 
      * @param trustStore Set this trust store.
@@ -204,24 +273,41 @@ public class EFTL
     }
     
     /**
+     * Set whether or not to skip server certificate authentication.
+     * <p>
+     * Specify {@code true} to accept any server certificate. This 
+     * option should only be used during development and testing.
+     * 
+     * @param trustAll Set whether or not to skip server certificate 
+     * authenticaiton.
+     */
+    public static void setSSLTrustAll(boolean trustAll)
+    {
+        EFTL.trustAll = trustAll;
+    }
+    
+    /**
      * Connect to an eFTL server.
      * <p>
      * This call returns immediately; connecting continues asynchronously.
      * When the connection is ready to use, the eFTL library calls your
      * {@link ConnectionListener#onConnect} method, passing a
      * {@link Connection} object that you can use to publish and subscribe.
-     *
+     * <p>
+     * When a pipe-separated list of URLs is specified this call will attempt
+     * a connection to each in turn, in a random order, until one is connected.
      * <p>
      * A program that uses more than one server channel must connect
      * separately to each channel.
      *
-     * @param url The call connects to the eFTL server at this URL.
-     *            The URL can be in either of these forms:
+     * @param url The call connects to the eFTL server at this URL. This can be 
+     *            a single URL, or a pipe ('|') separated list of URLs. URLs can
+     *            be in either of these forms:
      *            <ul>
      *             <li> {@code ws://host:port/channel}
      *             <li> {@code wss://host:port/channel}
      *            </ul>
-     *            Optionally, the URL can contain the username, password, 
+     *            Optionally, the URLs can contain the username, password, 
      *            and/or client identifier: 
      *            <ul>
      *             <li> {@code ws://username:password@host:port/channel?clientId=<identifier>}
@@ -243,6 +329,7 @@ public class EFTL
     {
         WebSocketConnection connection = new WebSocketConnection(url, listener);
         connection.setTrustStore(trustStore);
+        connection.setTrustAll(trustAll);
         connection.connect(props);
     }
 }

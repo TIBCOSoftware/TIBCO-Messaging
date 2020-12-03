@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-$Date: 2014-05-15 12:37:50 -0500 (Thu, 15 May 2014) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2020-05-05 14:34:09 -0700 (Tue, 05 May 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: UpgradeRequest.java 73712 2014-05-15 17:37:50Z bpeterse $
+ * $Id: UpgradeRequest.java 124749 2020-05-05 21:34:09Z bpeterse $
  *
  */
 package com.tibco.eftl.websocket;
@@ -13,8 +13,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.security.SecureRandom;
 import java.util.List;
-import java.util.Random;
 
 public class UpgradeRequest {
 
@@ -22,7 +22,7 @@ public class UpgradeRequest {
     private final String[] protocols;
     private final String key;
     
-    private static final Random random = new Random();
+    private static final SecureRandom random = new SecureRandom();
     
     private static String generateKey() {
         byte[] bytes = new byte[16];

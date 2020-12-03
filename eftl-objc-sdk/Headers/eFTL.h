@@ -1,10 +1,10 @@
 //
-//  Copyright (c) 2013-$Date: 2018-02-05 18:15:48 -0600 (Mon, 05 Feb 2018) $ TIBCO Software Inc.
+//  Copyright (c) 2013-$Date: 2018-12-03 11:09:59 -0800 (Mon, 03 Dec 2018) $ TIBCO Software Inc.
 //  Licensed under a BSD-style license. Refer to [LICENSE]
 //  For more information, please contact:
 //  TIBCO Software Inc., Palo Alto, California USA
 //
-//  $Id: eFTL.h 99237 2018-02-06 00:15:48Z bpeterse $
+//  $Id: eFTL.h 106132 2018-12-03 19:09:59Z bpeterse $
 //
 
 #import <Foundation/Foundation.h>
@@ -166,9 +166,6 @@ extern NSString *const eFTLDurableTypeLastValue;
  *
  * You cannot set trust certificates after the first
  * \link eFTL::connect:properties:listener: \endlink call.
- *
- * If you do not set the SSL trust certificates, then the application
- * trusts any server certificate.
  *
  * This example illustrates loading a certificate from the
  * application's main bundle:

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-$Date: 2015-01-14 10:42:52 -0600 (Wed, 14 Jan 2015) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2020-05-05 14:34:09 -0700 (Tue, 05 May 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: UpgradeResponse.java 77163 2015-01-14 16:42:52Z bpeterse $
+ * $Id: UpgradeResponse.java 124749 2020-05-05 21:34:09Z bpeterse $
  *
  */
 package com.tibco.eftl.websocket;
@@ -129,7 +129,8 @@ public class UpgradeResponse {
 
     private static String generateKeyHash(String key) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            // websocket protocol requires a SHA-1 hash of the key
+            MessageDigest md = MessageDigest.getInstance("SHA-1"); //NOSONAR
             md.update((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes());
             return Base64.encode(md.digest()).trim();
         } catch (NoSuchAlgorithmException e) {

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2018-04-23 16:00:56 -0500 (Mon, 23 Apr 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-17 09:04:34 -0700 (Thu, 17 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: Connection.java 100979 2018-04-23 21:00:56Z bpeterse $
+ * $Id: Connection.java 128659 2020-09-17 16:04:34Z bpeterse $
  *
  */
 package com.tibco.eftl;
@@ -101,25 +101,60 @@ public interface Connection
     public KVMap createKVMap(String name);
     
     /**
+     * Remove a key-value map.
+     * 
+     * @param name Key-value map name.
+     */
+    public void removeKVMap(String name);
+    
+    /**
+     * Publish a request message.
+     * <p>
+     * This call returns immediately. When the reply is received
+     * the eFTL library calls your {@link RequestListener#onReply} 
+     * callback.
+     * 
+     * @param request The request message to publish.
+     * @param timeout Seconds to wait for a reply.
+     * @param listener This listener defines callback methods for
+     *                 successful completion and for errors.
+     *
+     * @throws IllegalStateException The connection is not open.
+     * @throws IllegalArgumentException The message would exceed the
+     *         eFTL server's maximum message size.
+     *
+     * @see Message#FIELD_NAME_DESTINATION
+     */
+    public void sendRequest(Message request, double timeout, RequestListener listener);
+    
+    /**
+     * Send a reply message in response to a request message.
+     * <p>
+     * This call returns immediately. When the send completes successfully
+     * the eFTL library calls your {@link CompletionListener#onCompletion} 
+     * callback.
+     * 
+     * @param reply The reply messasge to send.
+     * @param request The request messasge.
+     * @param listener This listener defines callback methods for
+     *                 successful completion and for errors.
+     *
+     * @throws IllegalStateException The connection is not open.
+     * @throws IllegalArgumentException The message would exceed the
+     *         eFTL server's maximum message size.
+     */
+    public void sendReply(Message reply, Message request, CompletionListener listener);
+    
+    /**
      * Publish a one-to-many message to all subscribing clients.
-     * <p>
-     * It is good practice to publish each message to a specific
-     * destination by using the message field name
-     * {@link Message#FIELD_NAME_DESTINATION}.
-     * <p>
-     * To direct a message to a specific destination,
-     * add a string field to the message; for example:
-     * <pre>
-     * {@code
-     * message.setString(Message.FIELD_NAME_DESTINATION, "myTopic");
-     * }
-     * </pre>
      *
      * @param message Publish this message.
      *
      * @throws IllegalStateException The connection is not open.
      * @throws IllegalArgumentException The message would exceed the
      *         eFTL server's maximum message size.
+     *
+     * @see Message#FIELD_NAME_DESTINATION
      */
     public void publish(Message message);
     
@@ -130,18 +165,6 @@ public interface Connection
      * asynchronously.  When the publish completes successfully, 
      * the eFTL library calls your {@link CompletionListener#onCompletion} 
      * callback.
-     * <p>
-     * It is good practice to publish each message to a specific
-     * destination by using the message field name
-     * {@link Message#FIELD_NAME_DESTINATION}.
-     * <p>
-     * To direct a message to a specific destination,
-     * add a string field to the message; for example:
-     * <pre>
-     * {@code
-     * message.setString(Message.FIELD_NAME_DESTINATION, "myTopic");
-     * }
-     * </pre>
      * 
      * @param message Publish this message.
      * @param listener This listener defines callback methods for
@@ -150,6 +173,8 @@ public interface Connection
      * @throws IllegalStateException The connection is not open.
      * @throws IllegalArgumentException The message would exceed the
      *         eFTL server's maximum message size.
+     *
+     * @see Message#FIELD_NAME_DESTINATION
      */
     public void publish(Message message, CompletionListener listener);
     
@@ -165,16 +190,6 @@ public interface Connection
      * <p>
      * A matcher can narrow subscription interest in the inbound
      * message stream.
-     * <p>
-     * It is good practice to subscribe to
-     * messages published to a specific destination
-     * by using the message field name
-     * {@link Message#FIELD_NAME_DESTINATION}.
-     * <p>
-     * To subscribe to messages published to a specific destination,
-     * create a subscription matcher for that destination; for example:
-     * <code> {"_dest":"myTopic"} </code>
-     * </p>
      * 
      * @param matcher The subscription uses this matcher to
      *                    narrow the message stream. 
@@ -188,6 +203,8 @@ public interface Connection
      *
      * @see SubscriptionListener
      * @see #unsubscribe
+     * @see #closeSubscription
+     * @see Message#FIELD_NAME_DESTINATION
      */
     public String subscribe(String matcher, SubscriptionListener listener);
     
@@ -203,16 +220,6 @@ public interface Connection
      * <p>
      * A matcher can narrow subscription interest in the inbound
      * message stream.
-     * <p>
-     * It is good practice to subscribe to
-     * messages published to a specific destination
-     * by using the message field name
-     * {@link Message#FIELD_NAME_DESTINATION}.
-     * <p>
-     * To subscribe to messages published to a specific destination,
-     * create a subscription matcher for that destination; for example:
-     * <code> {"_dest":"myTopic"} </code>
-     * </p>
      * 
      * @param matcher The subscription uses this matcher to
      *                    narrow the message stream.
@@ -227,6 +234,8 @@ public interface Connection
      *
      * @see SubscriptionListener
      * @see #unsubscribe
+     * @see #closeSubscription
+     * @see Message#FIELD_NAME_DESTINATION
      */
     public String subscribe(String matcher, String durable, SubscriptionListener listener);
     
@@ -248,6 +257,7 @@ public interface Connection
      * @param durable The subscription uses this durable name.
      * @param props These properties can be used to affect the subscription:
      *            <ul>
+     *             <li> {@link EFTL#PROPERTY_ACKNOWLEDGE_MODE}
      *             <li> {@link EFTL#PROPERTY_DURABLE_TYPE}
      *             <li> {@link EFTL#PROPERTY_DURABLE_KEY}
      *            </ul>
@@ -261,11 +271,17 @@ public interface Connection
      *
      * @see SubscriptionListener
      * @see #unsubscribe
+     * @see #closeSubscription
      */
     public String subscribe(String matcher, String durable, Properties props, SubscriptionListener listener);
     
     /**
      * Close a subscription.
+     * <p>
+     * For durable subscriptions, this call will cause the persistence
+     * service to stop delivering messages while leaving the durable 
+     * subscription to continue accumulating messages. Any unacknowledged
+     * messages will be made available for redelivery.
      * <p>
      * Programs receive subscription identifiers through their
      * {@link SubscriptionListener#onSubscribe} methods.
@@ -274,12 +290,74 @@ public interface Connection
      *
      * @see #subscribe
      */
-    public void unsubscribe(String subscriptionId);
+    public void closeSubscription(String subscriptionId);
     
     /**
      * Close all subscriptions.
+     * <p>
+     * For durable subscriptions, this call will cause the persistence
+     * service to stop delivering messages while leaving the durable 
+     * subscriptions to continue accumulating messages. Any unacknowledged
+     * messages will be made available for redelivery.
+     *
+     * @see #subscribe
+     */
+    public void closeAllSubscriptions();
+
+    /**
+     * Unsubscribe from messages on a subscription.
+     * <p>
+     * For durable subscriptions, this call will cause the persistence
+     * service to remove the durable subscription, along with any
+     * persisted messages.
+     * <p>
+     * Programs receive subscription identifiers through their
+     * {@link SubscriptionListener#onSubscribe} methods.
+     * 
+     * @param subscriptionId Unsubscribe this subscription.
+     *
+     * @see #subscribe
+     */
+    public void unsubscribe(String subscriptionId);
+    
+    /**
+     * Unsubscribe from messages on all subscriptions.
+     * <p>
+     * For durable subscriptions, this call will cause the persistence
+     * service to remove the durable subscriptions, along with any
+     * persisted messages.
      *
      * @see #subscribe
      */
     public void unsubscribeAll();
+
+    /**
+     * Acknowledge this message.
+     * <p>
+     * Messages consumed from subscriptions with a client acknowledgment mode
+     * must be explicitly acknowledged. The eFTL server will stop delivering
+     * messages to the client once the server's configured maximum number of
+     * unacknowledged messages is reached.
+     *
+     * @param message The message being acknowledged.
+     *
+     * @see EFTL#ACKNOWLEDGE_MODE_CLIENT
+     * @see #acknowledgeAll
+     */
+    public void acknowledge(Message message);
+
+    /**
+     * Acknowledge all messages up to and including this message.
+     * <p>
+     * Messages consumed from subscriptions with a client acknowledgment mode
+     * must be explicitly acknowledged. The eFTL server will stop delivering
+     * messages to the client once the server's configured maximum number of
+     * unacknowledged messages is reached.
+     *
+     * @param message The message being acknowledged.
+     *
+     * @see EFTL#ACKNOWLEDGE_MODE_CLIENT
+     * @see #acknowledge
+     */
+    public void acknowledgeAll(Message message);
 }

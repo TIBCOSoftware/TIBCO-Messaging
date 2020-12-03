@@ -1,15 +1,16 @@
 /*
- * Copyright (c) 2001-$Date: 2018-10-08 13:00:26 -0500 (Mon, 08 Oct 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JSONMessage.cs 104223 2018-10-08 18:00:26Z bmahurka $
+ * $Id: JSONMessage.cs 128796 2020-09-24 19:20:18Z bpeterse $
  *
  */
 
 using System;
 using System.Text;
+using System.Globalization;
 
 namespace TIBCO.EFTL
 {
@@ -19,11 +20,18 @@ namespace TIBCO.EFTL
         public static readonly String MILLISECOND_FIELD = "_m_";
         public static readonly String OPAQUE_FIELD      = "_o_";
 
-        protected JsonObject data;
+        private JsonObject data;
+
+        public long SeqNum { get; set; }
+        public long ReqId { get; set; }
+        public String SubId { get; set; }
+        public String ReplyTo { get; set; }
+        public long StoreMessageId { get; set; }
+        public long DeliveryCount { get; set; }
 
         public JSONMessage(JsonObject data)
         {
-            this.data   = data;
+            this.data = data;
         }
 
         public JSONMessage()
@@ -104,7 +112,7 @@ namespace TIBCO.EFTL
                 throw new System.Exception("field " + fieldName + " is not of type DOUBLE");
 
             if (((JsonObject)obj)[DOUBLE_FIELD] is String)
-                return Double.Parse((String)((JsonObject)obj)[DOUBLE_FIELD]);
+                return Double.Parse((String)((JsonObject)obj)[DOUBLE_FIELD], NumberFormatInfo.InvariantInfo);
             else
                 return (Double)((JsonObject)obj)[DOUBLE_FIELD];
         }
@@ -134,7 +142,7 @@ namespace TIBCO.EFTL
                     for(int i=0,max=arr.Count;i<max;i++)
                     {
                         if (((JsonObject)arr[i])[DOUBLE_FIELD] is String)
-                            retVal[i] = Double.Parse((String)((JsonObject)arr[i])[DOUBLE_FIELD]);
+                            retVal[i] = Double.Parse((String)((JsonObject)arr[i])[DOUBLE_FIELD], NumberFormatInfo.InvariantInfo);
                         else
                             retVal[i] = (Double)((JsonObject)arr[i])[DOUBLE_FIELD];
                     }
@@ -182,6 +190,10 @@ namespace TIBCO.EFTL
                 else if(obj.ContainsKey(MILLISECOND_FIELD))
                 {
                     type = FieldType.DATE;
+                }
+                else if(obj.ContainsKey(OPAQUE_FIELD))
+                {
+                    type = FieldType.OPAQUE;
                 }
                 else
                 {
@@ -493,7 +505,7 @@ namespace TIBCO.EFTL
                     JsonObject obj = new JsonObject();
 
                     if (Double.IsNaN(value[i]) || Double.IsInfinity(value[i]))
-                        obj.Add(DOUBLE_FIELD, value[i].ToString());
+                        obj.Add(DOUBLE_FIELD, value[i].ToString(NumberFormatInfo.InvariantInfo));
                     else
                         obj.Add(DOUBLE_FIELD, value[i]);
 
@@ -550,7 +562,7 @@ namespace TIBCO.EFTL
             JsonObject obj = new JsonObject();
 
             if (Double.IsNaN(value) || Double.IsInfinity(value))
-                obj.Add(DOUBLE_FIELD, value.ToString());
+                obj.Add(DOUBLE_FIELD, value.ToString(NumberFormatInfo.InvariantInfo));
             else
                 obj.Add(DOUBLE_FIELD, value);
 

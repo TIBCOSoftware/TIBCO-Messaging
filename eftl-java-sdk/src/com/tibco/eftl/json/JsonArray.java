@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2016-03-15 18:26:14 -0500 (Tue, 15 Mar 2016) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-03-31 10:23:10 -0700 (Tue, 31 Mar 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JsonArray.java 84744 2016-03-15 23:26:14Z bpeterse $
+ * $Id: JsonArray.java 123342 2020-03-31 17:23:10Z bpeterse $
  */
 package com.tibco.eftl.json;
 
@@ -23,7 +23,7 @@ public final class JsonArray extends ArrayList<Object> {
             return sb.toString();
         } catch (IOException e) {
             // can't happen with StringBuilder
-            return null;
+            return "";
         }
     }
     

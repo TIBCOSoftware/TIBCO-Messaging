@@ -1,14 +1,15 @@
 /*
- * Copyright (c) 2009-$Date: 2018-09-04 17:57:51 -0500 (Tue, 04 Sep 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2009-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketConnection.cs 103512 2018-09-04 22:57:51Z bpeterse $
+ * $Id: WebSocketConnection.cs 128906 2020-09-29 20:29:25Z bpeterse $
  */
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +21,8 @@ namespace TIBCO.EFTL
 {
     public class WebSocketConnection : TIBCO.EFTL.IConnection, TIBCO.EFTL.WebSocketListener, IDisposable 
     {
-        Uri                 uri;
+        List<Uri>           urlList = new List<Uri>();
+        int                 urlIndex;
         IConnectionListener listener;
         long                connecting;
         long                connected;
@@ -35,9 +37,9 @@ namespace TIBCO.EFTL
         protected Object    writeLock = new Object();
         protected Object    processLock = new Object();
         protected bool      qos;
+        protected long      protocol;
         protected long      maxMessageSize;
         protected int       reconnectAttempts = 0;
-        protected long      lastSequenceNumber;
         protected Thread    writer;
         protected System.Timers.Timer     timer;
 
@@ -46,34 +48,27 @@ namespace TIBCO.EFTL
         internal SkipList<RequestContext> requests = new SkipList<RequestContext>();
 
         private static readonly RequestContext DISCONNECT = new RequestContext("");
-        private static readonly int defaultAutoReconnectAttempts = 5;
+        private static readonly double defaultConnectTimeout = 15.0;
+        private static readonly int defaultAutoReconnectAttempts = 256;
         private static readonly int defaultAutoReconnectMaxDelay = 30000;
+
+        private static readonly Random rand = new Random();
 
         public WebSocketConnection(String uri, IConnectionListener listener) 
         {
             try 
             {
-                this.uri = new Uri(uri);
+                setURLList(uri);
+
                 this.listener = listener;
                 this.props = new Hashtable();
 
                 props.Add(ProtocolConstants.QOS_FIELD, "true");
-
-                if (String.Compare("wss", this.uri.Scheme, true) == 0) 
-                {
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                    ServicePointManager.MaxServicePointIdleTime = 1000;
-                }
             } 
             catch(Exception) 
             {
                 throw new System.ArgumentException(uri);
             }
-        }
-
-        private String getHost() 
-        {
-            return uri.Host;
         }
 
         public void Connect(System.Collections.Hashtable p) 
@@ -89,9 +84,12 @@ namespace TIBCO.EFTL
                     }
                 }
 
-                if (String.Compare("wss", this.uri.Scheme, true) == 0) 
+                if (String.Compare("wss", this.getURL().Scheme, true) == 0) 
                 {
                     bool trustAll = false;
+
+                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                    ServicePointManager.MaxServicePointIdleTime = 1000;
 
                     if (props.ContainsKey(EFTL.PROPERTY_TRUST_ALL))
                         trustAll = (props[EFTL.PROPERTY_TRUST_ALL] as bool?) ?? false;
@@ -112,9 +110,10 @@ namespace TIBCO.EFTL
                     }
                 }
 
-                webSocket = new WebSocket(uri, this);
+                webSocket = new WebSocket(getURL(), this);
 
                 webSocket.setProtocol(ProtocolConstants.EFTL_WS_PROTOCOL);
+                webSocket.setTimeout(GetConnectTimeout());
                 webSocket.Open();
             }
         }
@@ -189,6 +188,20 @@ namespace TIBCO.EFTL
         public IKVMap CreateKVMap(String name) 
         {
             return new KVMap(this, name);
+        }
+
+        public void RemoveKVMap(String name)
+        {
+            if (!IsConnected())
+                throw new Exception("not connected");
+
+            JsonObject envelope = new JsonObject();
+
+            envelope.Add(ProtocolConstants.OP_FIELD, ProtocolOpConstants.OP_MAP_DESTROY);
+            if (name != null)
+                envelope.Add(ProtocolConstants.MAP_FIELD, name);
+
+            Queue(envelope.ToString());
         }
 
         public void MapSet(String name, String key, IMessage value, IKVMapListener listener) 
@@ -280,6 +293,73 @@ namespace TIBCO.EFTL
             }
         }
 
+        public void SendRequest(IMessage request, double timeout, IRequestListener listener)
+        {
+            if (!IsConnected())
+                throw new Exception("not connected");
+
+            JsonObject envelope = new JsonObject();
+
+            // synchronized to ensure message sequence numbers are ordered
+            lock(writeLock) 
+            {
+                long seqNum = Interlocked.Increment(ref messageIdGenerator);
+
+                envelope.Add(ProtocolConstants.OP_FIELD, ProtocolOpConstants.OP_REQUEST);
+                envelope.Add(ProtocolConstants.SEQ_NUM_FIELD, seqNum);
+                envelope.Add(ProtocolConstants.BODY_FIELD, ((JSONMessage) request)._rawData());
+
+                SendRequestContext ctx = new SendRequestContext(seqNum, envelope.ToString(), request, listener);
+
+                if (protocol < 1)
+                    throw new NotSupportedException("send request is not supported with this server");
+
+                if (maxMessageSize > 0 && ctx.GetJson().Length > maxMessageSize)
+                    throw new Exception("maximum message size exceeded");
+
+                ctx.SetTimeout(timeout, new TimerCallback(requestTimeout));
+
+                requests.Put(seqNum, ctx);
+
+                Queue(ctx);
+            }
+        }
+
+        public void SendReply(IMessage reply, IMessage request, ICompletionListener listener)
+        {
+            if (!IsConnected())
+                throw new Exception("not connected");
+
+            if (((JSONMessage) request).ReplyTo == null)
+                throw new ArgumentException("not a request message");
+
+            JsonObject envelope = new JsonObject();
+
+            // synchronized to ensure message sequence numbers are ordered
+            lock(writeLock) 
+            {
+                long seqNum = Interlocked.Increment(ref messageIdGenerator);
+
+                envelope.Add(ProtocolConstants.OP_FIELD, ProtocolOpConstants.OP_REPLY);
+                envelope.Add(ProtocolConstants.SEQ_NUM_FIELD, seqNum);
+                envelope.Add(ProtocolConstants.TO_FIELD, ((JSONMessage) request).ReplyTo);
+                envelope.Add(ProtocolConstants.REQ_ID_FIELD, ((JSONMessage) request).ReqId);
+                envelope.Add(ProtocolConstants.BODY_FIELD, ((JSONMessage) reply)._rawData());
+
+                PublishContext ctx = new PublishContext(seqNum, envelope.ToString(), reply, listener);
+
+                if (protocol < 1)
+                    throw new NotSupportedException("send reply is not supported with this server");
+
+                if (maxMessageSize > 0 && ctx.GetJson().Length > maxMessageSize)
+                    throw new Exception("maximum message size exceeded");
+
+                requests.Put(seqNum, ctx);
+
+                Queue(ctx);
+            }
+        }
+
         public void Publish(IMessage message) 
         {
             Publish(message, null);
@@ -331,7 +411,7 @@ namespace TIBCO.EFTL
             if (!IsConnected())
                 throw new Exception("not connected");
 
-            String subscriptionId = clientId + ".s." + Interlocked.Increment(ref subscriptionIdGenerator);
+            String subscriptionId =  Convert.ToString(Interlocked.Increment(ref subscriptionIdGenerator));
             Subscribe(subscriptionId, matcher, durable, props, listener);
             return subscriptionId;
         }
@@ -339,7 +419,6 @@ namespace TIBCO.EFTL
         private void Subscribe(String subscriptionId, String matcher, String durable, Hashtable props, ISubscriptionListener listener) 
         {
             BasicSubscription subscription = new BasicSubscription(subscriptionId, matcher, durable, props, listener);
-            subscription.setPending(true);
             subscriptions.TryAdd(subscription.getSubscriptionId(), subscription);
 
             Subscribe(subscription);
@@ -364,6 +443,36 @@ namespace TIBCO.EFTL
             }
 
             Queue(message.ToString());
+        }
+
+        public void CloseSubscription(String subscriptionId) 
+        {
+            BasicSubscription subscription = null;
+            if (!IsConnected())
+                throw new Exception("not connected");
+
+            if (protocol < 1)
+                throw new NotSupportedException("close subscription is not supported with this server");
+
+            bool removed = subscriptions.TryRemove(subscriptionId, out subscription);
+            if (removed && subscription != null) 
+            {
+                JsonObject message = new JsonObject();
+
+                message[ProtocolConstants.OP_FIELD] = ProtocolOpConstants.OP_UNSUBSCRIBE;
+                message[ProtocolConstants.ID_FIELD] = subscription.getSubscriptionId();
+                message[ProtocolConstants.DEL_FIELD] = "false";
+
+                Queue(message.ToString());
+            }
+        }
+
+        public void CloseAllSubscriptions() 
+        {
+            foreach (String subscriptionId in subscriptions.Keys) 
+            {
+                CloseSubscription(subscriptionId);
+            }
         }
 
         public void Unsubscribe(String subscriptionId) 
@@ -392,6 +501,22 @@ namespace TIBCO.EFTL
             }
         }
 
+        public void Acknowledge(IMessage message)
+        {
+            if (!IsConnected())
+                throw new Exception("not connected");
+
+            acknowledge(((JSONMessage) message).SeqNum, null);
+        }
+
+        public void AcknowledgeAll(IMessage message)
+        {
+            if (!IsConnected())
+                throw new Exception("not connected");
+
+            acknowledge(((JSONMessage) message).SeqNum, ((JSONMessage) message).SubId);
+        }
+
         // implemtation if WebSocketListener.
         public void OnOpen() 
         {
@@ -401,7 +526,7 @@ namespace TIBCO.EFTL
                 String password =(String) props[EFTL.PROPERTY_PASSWORD];
                 String identifier =(String) props[EFTL.PROPERTY_CLIENT_ID];
 
-                String userInfo = uri.UserInfo;
+                String userInfo = getURL().UserInfo;
 
                 if (userInfo != null && userInfo.Length > 0) 
                 {
@@ -413,7 +538,7 @@ namespace TIBCO.EFTL
                         password = tokens[1];
                 }
 
-                String query = uri.Query;
+                String query = getURL().Query;
 
                 if (query != null && query.Length > 0) 
                 {
@@ -435,6 +560,7 @@ namespace TIBCO.EFTL
                 JsonObject message = new JsonObject();
 
                 message[ProtocolConstants.OP_FIELD]              = ProtocolOpConstants.OP_LOGIN;
+                message[ProtocolConstants.PROTOCOL_FIELD]        = ProtocolConstants.PROTOCOL_VERSION;
                 message[ProtocolConstants.CLIENT_TYPE_FIELD]     = "c#";
                 message[ProtocolConstants.CLIENT_VERSION_FIELD]  = Version.EFTL_VERSION_STRING_SHORT;
 
@@ -453,33 +579,37 @@ namespace TIBCO.EFTL
                     message[ProtocolConstants.CLIENT_ID_FIELD] = identifier;
                 }
 
+                int maxPendingAcks = GetMaxPendingAcks();
+
+                if (maxPendingAcks > 0) 
+                {
+                    message[ProtocolConstants.MAX_PENDING_ACKS_FIELD] = maxPendingAcks;
+                }
+
                 JsonObject loginOptions = new JsonObject();
 
                 // add resume when auto-reconnecting
                 if (Interlocked.Read(ref reconnecting) == 1)
                     loginOptions[ProtocolConstants.RESUME_FIELD] = "true";
 
-                try 
+                // add user properties
+                foreach (String key in props.Keys) 
                 {
-                    // add user properties
-                    foreach (String key in props.Keys) 
+                    if (key.Equals(EFTL.PROPERTY_USERNAME) ||
+                        key.Equals(EFTL.PROPERTY_PASSWORD) ||
+                        key.Equals(EFTL.PROPERTY_CLIENT_ID) ||
+                        key.Equals(EFTL.PROPERTY_TRUST_ALL))
+                        continue;
+
+                    try
                     {
-                        if (key.Equals(EFTL.PROPERTY_USERNAME) ||
-                            key.Equals(EFTL.PROPERTY_PASSWORD) ||
-                            key.Equals(EFTL.PROPERTY_CLIENT_ID))
-                            continue;
-
                         String val = (String) props[key];
-
-                        if (String.Compare("true", val) == 0)
-                            loginOptions[key] = "true";
-                        else
-                            loginOptions[key] = val;
+                        loginOptions[key] = val;
+                    } 
+                    catch(Exception) 
+                    {
+                        //Console.WriteLine(e.StackTrace);
                     }
-                } 
-                catch(Exception) 
-                {
-                    //Console.WriteLine(e.StackTrace);
                 }
 
                 message[ProtocolConstants.LOGIN_OPTIONS_FIELD] = loginOptions;
@@ -503,17 +633,27 @@ namespace TIBCO.EFTL
         {
             if (Interlocked.CompareExchange(ref connecting, 0, 1) == 1) 
             {
-                // no longer connected
-                Interlocked.Exchange(ref connected, 0);
+                // Reconnect when the close code reflects a server restart.
+                if (code != ConnectionListenerConstants.RESTART || !scheduleReconnect()) 
+                {
+                    // no longer connected
+                    Interlocked.Exchange(ref connected, 0);
 
-                // stop the writer thread
-                if (writer != null)
-                    writer.Interrupt();
+                    // stop the writer thread
+                    if (writer != null)
+                        writer.Interrupt();
 
-                // clear the unacknowledged messages
-                clearRequests(CompletionListenerConstants.PUBLISH_FAILED, "Closed");
+                    // clear the unacknowledged messages
+                    clearRequests(CompletionListenerConstants.PUBLISH_FAILED, "Closed");
 
-                listener.OnDisconnect(this, code, reason);
+                    listener.OnDisconnect(this, code, reason);
+                }
+                else
+                {
+                    // stop the writer thread
+                    if (writer != null)
+                        writer.Interrupt();
+                }
             }
         }
 
@@ -548,11 +688,7 @@ namespace TIBCO.EFTL
         {
             object obj = JsonValue.Parse(text);
 
-            if (obj is JsonArray) 
-            {
-                handleMessages((JsonArray) obj);
-            } 
-            else if (obj is JsonObject) 
+            if (obj is JsonObject) 
             {
                 JsonObject message = (JsonObject) obj;
 
@@ -585,6 +721,9 @@ namespace TIBCO.EFTL
                             break;
                         case ProtocolOpConstants.OP_ACK:
                             handleAck(message);
+                            break;
+                        case ProtocolOpConstants.OP_REQUEST_REPLY:
+                            handleReply(message);
                             break;
                         case ProtocolOpConstants.OP_MAP_RESPONSE:
                             handleMapResponse(message);
@@ -624,7 +763,14 @@ namespace TIBCO.EFTL
             clientId = (String) message[ProtocolConstants.CLIENT_ID_FIELD];
             reconnectId = (String) message[ProtocolConstants.ID_TOKEN_FIELD];
             maxMessageSize = (long) message[ProtocolConstants.MAX_SIZE_FIELD];
-
+try {
+            if (message.ContainsKey(ProtocolConstants.PROTOCOL_FIELD))
+                protocol = (long) message[ProtocolConstants.PROTOCOL_FIELD];
+            else
+                protocol = 0;
+} catch (Exception e) {
+Console.WriteLine(e);
+}
             if (message.ContainsKey(ProtocolConstants.QOS_FIELD))
                 qos = System.Boolean.Parse((String) message[ProtocolConstants.QOS_FIELD]);
             else
@@ -638,6 +784,9 @@ namespace TIBCO.EFTL
 
             // reset reconnect attempts
             reconnectAttempts = 0;
+
+            // reset URL list to start auto-reconnect attempts from the beginning
+            resetURLList();
 
             // synchronized to ensure message sequence numbers are ordered
             lock(writeLock) 
@@ -655,27 +804,15 @@ namespace TIBCO.EFTL
                 // repair subscriptions
                 foreach (BasicSubscription subscription in subscriptions.Values) 
                 {
-                    // invoke callback if not auto-reconnecting
-                    if (Interlocked.Read(ref reconnecting) != 1)
-                        subscription.setPending(true);
+                    if (!resume)
+                        subscription.LastSeqNum = 0;
 
                     Subscribe(subscription);
                 }
 
-                if (resume) 
-                {
-                    // re-send unacknowledged messages
-                    foreach (PublishContext ctx in requests.Values())
-                        Queue(ctx);
-                }
-                else 
-                {
-                    // clear unacknowledged messages
-                    clearRequests(CompletionListenerConstants.PUBLISH_FAILED, "Reconnect");
-
-                    // reset the last sequence number if not a reconnect
-                    lastSequenceNumber = 0;
-                }
+                // re-send unacknowledged messages
+                foreach (PublishContext ctx in requests.Values())
+                    Queue(ctx);
             }
 
             // invoke callback if not auto-reconnecting
@@ -691,9 +828,9 @@ namespace TIBCO.EFTL
 
             // A subscription request has succeeded.
             BasicSubscription subscription = subscriptions[subscriptionId];
-            if (subscription != null && subscription.isPending()) 
+            if (subscription != null && subscription.Pending)
             {
-                subscription.setPending(false);
+                subscription.Pending = false;
                 subscription.getListener().OnSubscribe(subscriptionId);
             }
         }
@@ -710,106 +847,16 @@ namespace TIBCO.EFTL
             //   LISTENS_DISALLOWED listens are disabled for this user
             //   SUBSCRIPTION_FAILED an internal error occurred
 
-            BasicSubscription subscription = null;
-            bool removed = subscriptions.TryRemove(subscriptionId, out subscription);
-            if (removed && subscription != null) 
+            BasicSubscription subscription = subscriptions[subscriptionId];
+
+            // remove the subscription if not retryable
+            if (code == SubscriptionConstants.SUBSCRIPTION_INVALID)
+                subscriptions.TryRemove(subscriptionId, out subscription);
+
+            if (subscription != null) 
             {
+                subscription.Pending = true;
                 subscription.getListener().OnError(subscriptionId, Convert.ToInt32(code), reason);
-            }
-        }
-
-        private void handleMessages(JsonArray array) 
-        {
-            lock(processLock) 
-            {
-                ArrayList messages = new ArrayList(array.Count);
-
-                BasicSubscription currentSubscription = null;
-                long seqNum = 0;
-                long lastSeqNum = 0;
-                int max = array.Count;
-
-                for (int i = 0; i < max; i++) 
-                {
-
-                    JsonObject envelope = (JsonObject) array[i];
-
-                    string to = (String) envelope[ProtocolConstants.TO_FIELD];
-                    JsonObject message = (JsonObject) envelope[ProtocolConstants.BODY_FIELD];
-
-                    object seqNumObj;
-
-                    if (envelope.TryGetValue(ProtocolConstants.SEQ_NUM_FIELD, out seqNumObj))
-                        seqNum = Convert.ToInt64(seqNumObj);
-
-                    // The message will be processed if qos is not enabled, there is no 
-                    // sequence number or if the sequence number is greater than the last 
-                    // received sequence number.
-
-                    if (!qos || seqNum == 0 || seqNum > lastSequenceNumber) 
-                    {
-                        BasicSubscription subscription = null;
-                        bool exists = subscriptions.TryGetValue(to, out subscription);
-
-                        if (exists && subscription != null) 
-                        {
-                            if (currentSubscription != null && currentSubscription != subscription) 
-                            {
-                                try 
-                                {
-                                    IMessage[] arr = new IMessage[messages.Count];
-
-                                    for (int j = 0; j < messages.Count; j++)
-                                        arr[j] = (JSONMessage) messages[j];
-
-                                    currentSubscription.getListener().OnMessages(arr);
-                                } 
-                                catch(Exception) 
-                                {
-                                    // catch and discard exceptions thrown by the listener
-                                }
-                                messages.Clear();
-                            }
-
-                            currentSubscription = subscription;
-
-                            messages.Add(new JSONMessage(message));
-                        }
-
-                        // track the last received sequence number only if qos is enabled
-                        if (qos && seqNum > 0)
-                            lastSequenceNumber = seqNum;
-                    }
-
-                    if (seqNum > 0)
-                        lastSeqNum = seqNum;
-                }
-
-                if (currentSubscription != null && messages.Count > 0) 
-                {
-                    try 
-                    {
-                        IMessage[] arr = new IMessage[messages.Count];
-
-                        for (int i = 0; i < messages.Count; i++)
-                            arr[i] = (JSONMessage) messages[i];
-
-                        currentSubscription.getListener().OnMessages(arr);
-                    } 
-                    catch(Exception) 
-                    {
-                        // catch and discard exceptions thrown by the listener
-                        // Console.WriteLine(e.Message);
-                    }
-                    messages.Clear();
-                }
-
-                // Send an acknowledgment for the last sequence number in the array.
-                // The server will acknowledge all messages less than or equal to
-                // this sequence number.
-
-                if (lastSeqNum > 0)
-                    ack(lastSeqNum);
             }
         }
 
@@ -818,44 +865,64 @@ namespace TIBCO.EFTL
             lock(processLock) 
             {
                 long seqNum = 0;
-
+                long reqId = 0;
+                long msgId = 0;
+                long deliveryCount = 0;
+                String replyTo = null;
+                
                 String to = (String) envelope[ProtocolConstants.TO_FIELD];
-                JsonObject message = (JsonObject) envelope[ProtocolConstants.BODY_FIELD];
+                JsonObject body = (JsonObject) envelope[ProtocolConstants.BODY_FIELD];
 
-                object seqNumObj;
+                object fieldObj;
 
-                if (envelope.TryGetValue(ProtocolConstants.SEQ_NUM_FIELD, out seqNumObj))
-                    seqNum = Convert.ToInt64(seqNumObj);
+                if (envelope.TryGetValue(ProtocolConstants.SEQ_NUM_FIELD, out fieldObj))
+                    seqNum = Convert.ToInt64(fieldObj);
+                if (envelope.TryGetValue(ProtocolConstants.REQ_ID_FIELD, out fieldObj))
+                    reqId = Convert.ToInt64(fieldObj);
+                if (envelope.TryGetValue(ProtocolConstants.STORE_MSG_ID_FIELD, out fieldObj))
+                    msgId = Convert.ToInt64(fieldObj);
+                if (envelope.TryGetValue(ProtocolConstants.DELIVERY_COUNT_FIELD, out fieldObj))
+                    deliveryCount = Convert.ToInt64(fieldObj);
+                if (envelope.TryGetValue(ProtocolConstants.REPLY_TO_FIELD, out fieldObj))
+                    replyTo = Convert.ToString(fieldObj);
 
-                // The message will be processed if qos is not enabled, there is no 
-                // sequence number or if the sequence number is greater than the last 
-                // received sequence number.
+                // The message will be processed if there is no sequence number or 
+                // if the sequence number is greater than the last received sequence number.
 
-                if (!qos || seqNum == 0 || seqNum > lastSequenceNumber) 
+                BasicSubscription subscription = null;
+
+                bool exists = subscriptions.TryGetValue(to, out subscription);
+                if (exists && subscription != null) 
                 {
-                    BasicSubscription subscription = null;
-
-                    bool exists = subscriptions.TryGetValue(to, out subscription);
-                    if (exists && subscription != null) 
+                    if (seqNum == 0 || seqNum > subscription.LastSeqNum)
                     {
-                        IMessage[] messages = { new JSONMessage(message) };
+                        IMessage message = new JSONMessage(body);
+
+                        ((JSONMessage) message).SeqNum = seqNum;
+                        ((JSONMessage) message).SubId = to;
+                        ((JSONMessage) message).ReplyTo = replyTo;
+                        ((JSONMessage) message).ReqId = reqId;
+                        ((JSONMessage) message).StoreMessageId = msgId;
+                        ((JSONMessage) message).DeliveryCount = deliveryCount;
+
                         try 
                         {
-                            subscription.getListener().OnMessages(messages);
+                            subscription.getListener().OnMessages(new IMessage[] {message});
                         } 
                         catch(Exception) 
                         {
                             // catch and discard exceptions thrown by the listener
                         }
+
+                        // track the last received sequence number 
+                        if (subscription.AutoAck && seqNum != 0)
+                            subscription.LastSeqNum = seqNum;
                     }
 
-                    // track the last received sequence number only if qos is enabled
-                    if (qos && seqNum > 0)
-                        lastSequenceNumber = seqNum;
+                    // auto-acknowledge the message
+                    if (subscription.AutoAck && seqNum != 0)
+                        acknowledge(seqNum, subscription.Id);
                 }
-
-                if (seqNum > 0)
-                    ack(seqNum);
             }
         }
 
@@ -918,15 +985,39 @@ namespace TIBCO.EFTL
             if (message.TryGetValue(ProtocolConstants.REASON_FIELD, out obj))
                 reason = Convert.ToString(obj);
 
-            // Remove all unacknowledged messages with a sequence number equal to
-            // or less than the sequence number contained within the ack message.
-
             if (seqNum > 0) 
             {
                 if (code > 0)
                     requestError(seqNum, code, reason);
                 else
                     requestSuccess(seqNum, null);
+            }
+        }
+
+        private void handleReply(JsonObject message) 
+        {
+            long seqNum = 0;
+            JsonObject body = null;
+            int code = 0;
+            string reason = null;
+
+            object obj;
+
+            if (message.TryGetValue(ProtocolConstants.SEQ_NUM_FIELD, out obj))
+                seqNum = Convert.ToInt64(obj);
+            if (message.TryGetValue(ProtocolConstants.BODY_FIELD, out obj))
+                body =(JsonObject) obj;
+            if (message.TryGetValue(ProtocolConstants.ERR_CODE_FIELD, out obj))
+                code = Convert.ToInt32(obj);
+            if (message.TryGetValue(ProtocolConstants.REASON_FIELD, out obj))
+                reason = Convert.ToString(obj);
+
+            if (seqNum > 0) 
+            {
+                if (code > 0)
+                    requestError(seqNum, code, reason);
+                else
+                    requestSuccess(seqNum, (body != null ? new JSONMessage(body) : null));
             }
         }
 
@@ -960,9 +1051,9 @@ namespace TIBCO.EFTL
             }
         }
 
-        private void ack(Int64 seqNum) 
+        private void acknowledge(Int64 seqNum, String subId) 
         {
-            if (!qos)
+            if (seqNum == 0)
                 return;
 
             JsonObject message = new JsonObject();
@@ -970,8 +1061,18 @@ namespace TIBCO.EFTL
             message[ProtocolConstants.OP_FIELD] = ProtocolOpConstants.OP_ACK;
             message[ProtocolConstants.SEQ_NUM_FIELD] = seqNum;
 
+            if (subId != null)
+                message[ProtocolConstants.ID_FIELD] = subId;
+
             // queue message for writer thread
             Queue(message.ToString());
+        }
+
+        private void requestTimeout(Object stateInfo)
+        {
+            Int64 seqNum = (Int64)stateInfo;
+
+            requestError(seqNum, RequestListenerConstants.REQUEST_TIMEOUT, "request timeout");
         }
 
         private void requestSuccess(Int64 seqNum, IMessage response) 
@@ -979,8 +1080,7 @@ namespace TIBCO.EFTL
             RequestContext ctx = null;
             if (requests.Remove(seqNum, out ctx)) 
             {
-                if (ctx.GetListener() != null)
-                    ctx.GetListener().OnSuccess(response);
+                ctx.OnSuccess(response);
             }
         }
 
@@ -989,10 +1089,10 @@ namespace TIBCO.EFTL
             RequestContext ctx = null;
             if (requests.Remove(seqNum, out ctx)) 
             {
-                if (ctx.GetListener() != null)
-                    ctx.GetListener().OnError(code, reason);
-                else
+                if (!ctx.HasListener()) 
                     listener.OnError(this, code, reason);
+
+                ctx.OnError(code, reason);
             }
         }
 
@@ -1000,9 +1100,9 @@ namespace TIBCO.EFTL
         {
             foreach (RequestContext ctx in requests.Values()) 
             {
-                if (ctx.GetListener() != null)
-                    ctx.GetListener().OnError(code, reason);
                 requests.Remove(ctx.GetSeqNum());
+
+                ctx.OnError(code, reason);
             }
         }
 
@@ -1010,22 +1110,50 @@ namespace TIBCO.EFTL
         {
             bool scheduled = false;
 
+            // schedule a connect only if not previously connected
+            // and there are additional URLs to try in the URL list
+            //
             // schedule a reconnect only if previously connected and 
             // the number of reconnect attempts has not been exceeded
-            if (Interlocked.Read(ref connected) == 1 && reconnectAttempts < GetReconnectAttempts()) 
+            if (Interlocked.Read(ref connected) == 0 && nextURL())
             {
                 try 
                 {
-                    // exponential backoff truncated to 30 seconds
-                    long backoff = Math.Min((long) Math.Pow(2.0, reconnectAttempts++) * 1000, GetReconnectMaxDelay());
-
                     timer = new System.Timers.Timer();
 
                     // Hook up the Elapsed event for the timer.
                     timer.Elapsed += new ElapsedEventHandler(reconnectTask);
 
-                    timer.Interval = backoff;
+                    timer.AutoReset = false;
                     timer.Enabled = true;
+
+                    scheduled = true;
+                } 
+                catch(Exception) 
+                {
+                    // failed to schedule connect
+                }
+            }
+            else if (Interlocked.Read(ref connected) == 1 && reconnectAttempts < GetReconnectAttempts()) 
+            {
+                try 
+                {
+                    timer = new System.Timers.Timer();
+
+                    // Hook up the Elapsed event for the timer.
+                    timer.Elapsed += new ElapsedEventHandler(reconnectTask);
+
+                    timer.AutoReset = false;
+                    timer.Enabled = true;
+
+                    // backoff once all URLs have been tried
+                    if (!nextURL())
+                    {
+                        // add jitter by applying a randomness factor of 0.5
+                        double jitter = rand.NextDouble() + 0.5;
+                        // exponential backoff truncated to 30 seconds
+                        timer.Interval = Math.Min((long) (Math.Pow(2.0, reconnectAttempts++) * 1000 * jitter), GetReconnectMaxDelay());
+                    }
 
                     scheduled = true;
                 } 
@@ -1063,20 +1191,25 @@ namespace TIBCO.EFTL
             return cancelled;
         }
 
-        private int GetConnectTimeout() 
+        private double GetConnectTimeout() 
         {
             // defaults to 15 seconds
-            String ctimeout = "15.0";
+            double value = defaultConnectTimeout;
 
             if (props.ContainsKey(EFTL.PROPERTY_TIMEOUT))
-                ctimeout = (String) props[EFTL.PROPERTY_TIMEOUT];
+            {
+                string propValue = (String) props[EFTL.PROPERTY_TIMEOUT];
+                double doubleValue = 0.0;
+                if (Double.TryParse(propValue, out doubleValue))
+                    value = doubleValue;
+            }
 
-            return (int)(Double.Parse(ctimeout) * 1000.0);
+            return value;
         }
 
         private int GetReconnectAttempts() 
         {
-            // defaults to 5 attempts
+            // defaults to 256 attempts
             int value = defaultAutoReconnectAttempts;
 
             if (props.ContainsKey(EFTL.PROPERTY_AUTO_RECONNECT_ATTEMPTS)) 
@@ -1101,6 +1234,21 @@ namespace TIBCO.EFTL
                 double doubleValue = 0.0;
                 if (Double.TryParse(propValue, out doubleValue))
                     value = (int)(doubleValue * 1000.0);
+            }
+
+            return value;
+        }
+
+        private int GetMaxPendingAcks() 
+        {
+            int value = 0;
+
+            if (props.ContainsKey(EFTL.PROPERTY_MAX_PENDING_ACKS)) 
+            {
+                string propValue = (String) props[EFTL.PROPERTY_MAX_PENDING_ACKS];
+                int intValue = 0;
+                if (Int32.TryParse(propValue, out intValue))
+                    value = intValue;
             }
 
             return value;
@@ -1146,6 +1294,39 @@ namespace TIBCO.EFTL
             catch(Exception) 
             {
             }
+        }
+
+        private void setURLList(String list)
+        {
+            foreach (String url in list.Split('|')) {
+                urlList.Add(new Uri(url));
+            }
+
+            urlIndex = 0;
+
+            // randomize the URL list
+            urlList = urlList.OrderBy(x => rand.Next()).ToList();
+            //urlList = urlList.OrderBy(x => Random.value).ToList();
+        }
+
+        private void resetURLList()
+        {
+            urlIndex = 0;
+        }
+
+        private bool nextURL()
+        {
+            if (++urlIndex < urlList.Count) {
+                return true;
+            } else {
+                urlIndex = 0;
+                return false;
+            }
+        }
+
+        private Uri getURL()
+        {
+            return urlList[urlIndex];
         }
     }
 }

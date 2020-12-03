@@ -178,7 +178,7 @@
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1655
+        eftl.js, line 2021
     </li></ul></dd>
      -->
     
@@ -302,7 +302,7 @@
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 229
+        eftl.js, line 238
     </li></ul></dd>
      -->
     
@@ -472,7 +472,7 @@
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 248
+        eftl.js, line 257
     </li></ul></dd>
      -->
     
@@ -649,7 +649,7 @@ a connection object. For publish errors, this argument is the message that was n
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 236
+        eftl.js, line 245
     </li></ul></dd>
      -->
     
@@ -779,7 +779,7 @@ to process messages.</p>
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1567
+        eftl.js, line 1833
     </li></ul></dd>
      -->
     
@@ -904,7 +904,7 @@ to process messages.</p>
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 257
+        eftl.js, line 266
     </li></ul></dd>
      -->
     
@@ -941,6 +941,278 @@ to process messages.</p>
             
                 
 <dt>
+    <h4 class="name" id="onReply"><span class="type-signature"></span>onReply<span class="signature">(reply)</span><span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    <div class="description">
+        <p>A request operation has received a reply.</p>
+    </div>
+    
+
+    
+    
+    
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>reply</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type"><a href="eFTLMessage.html">eFTLMessage</a></span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">The reply message.</td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!--     
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        eftl.js, line 2029
+    </li></ul></dd>
+     -->
+    
+    
+    
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="eFTLConnection.html#sendRequest">eFTLConnection#sendRequest</a></li>
+        </ul>
+    </dd>
+    
+    
+    
+</dl>
+
+    
+    
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+</dd>
+
+            
+                
+<dt>
+    <h4 class="name" id="onStateChange"><span class="type-signature"></span>onStateChange<span class="signature">(connection, state)</span><span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    <div class="description">
+        <p>The connection state has changed.</p>
+<p>The eFTL library invokes this method whenever the connection state changes.
+    </div>
+    
+
+    
+    
+    
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>connection</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type"><a href="eFTLConnection.html">eFTLConnection</a></span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">The connection whose state has changed.</td>
+        </tr>
+	
+	
+	
+        <tr>
+            
+                <td class="name"><code>state</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">The connection has changed to this state.</td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!--     
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        eftl.js, line 276
+    </li></ul></dd>
+     -->
+    
+    
+    
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="eFTL.html#connect">eFTL#connect</a></li>
+        </ul>
+    </dd>
+    
+    
+    
+</dl>
+
+    
+    
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+</dd>
+
+            
+                
+<dt>
     <h4 class="name" id="onSubscribe"><span class="type-signature"></span>onSubscribe<span class="signature">(subscriptionId)</span><span class="type-signature"></span></h4>
     
     
@@ -951,7 +1223,8 @@ to process messages.</p>
     <div class="description">
         <p>A new subscription is ready to receive messages.</p>
 <p>The eFTL library may invoke this method after the first message arrives.</p>
-<p>To close the subscription, call <a href="eFTLConnection.html#unsubscribe">eFTLConnection#unsubscribe</a> with the subscription identifier.</p>
+<p>To close the subscription, call <a href="eFTLConnection.html#unsubscribe">eFTLConnection#unsubscribe</a> or 
+<a href="eFTLConnection.html#closeSubscription">eFTLConnection#closeSubscription</a> with the subscription identifier.</p>
     </div>
     
 
@@ -1032,7 +1305,7 @@ to process messages.</p>
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1556
+        eftl.js, line 1820
     </li></ul></dd>
      -->
     
@@ -1045,6 +1318,8 @@ to process messages.</p>
             <li><a href="eFTLConnection.html#subscribe">eFTLConnection#subscribe</a></li>
         
             <li><a href="eFTLConnection.html#unsubscribe">eFTLConnection#unsubscribe</a></li>
+        
+            <li><a href="eFTLConnection.html#closeSubscription">eFTLConnection#closeSubscription</a></li>
         </ul>
     </dd>
     
@@ -1083,10 +1358,10 @@ to process messages.</p>
     <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="eFTLConnection.html">eFTLConnection</a></li><li><a href="eFTLKVMap.html">eFTLKVMap</a></li><li><a href="eFTLMessage.html">eFTLMessage</a></li></ul><h3>Namespaces</h3><ul><li><a href="eFTL.html">eFTL</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
-<br clear="both">
+<br class="clear">
 
 <footer>
-    &copy;2014-2018 TIBCO Software Inc - Licensed under a BSD-style license. Refer to [LICENSE]
+    &copy;2014-2020 TIBCO Software Inc - All Rights Reserved.
 </footer>
 
 

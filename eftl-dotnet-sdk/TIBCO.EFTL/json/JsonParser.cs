@@ -209,7 +209,7 @@ public class JsonParser
 
         while (pos < len)
         {
-            sb.Append(src, start, pos - 1);
+            sb.Append(src, start, pos - start - 1);
 
             if (pos >= len)
             {
@@ -278,7 +278,7 @@ public class JsonParser
                 }
                 else if (c == '"')
                 {
-                    sb.Append(src, start, pos - 1);
+                    sb.Append(src, start, pos - start - 1);
                     return sb.ToString();
                 }
             }

@@ -59,7 +59,7 @@ typedef struct _cJSON
     struct _cJSON *child;
 
     /* The type of the item, as above. */
-    int type;
+    unsigned int type;
 
     /* The item's string, if type==_cJSON_String  and type == _cJSON_Raw */
     char *valuestring;

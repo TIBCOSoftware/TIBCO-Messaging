@@ -1,11 +1,9 @@
-/*
- * Copyright (c) 2001-$Date: 2018-05-21 11:55:18 -0500 (Mon, 21 May 2018) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
- *
- * $Id: example_test.go 101362 2018-05-21 16:55:18Z bpeterse $
- */
+//
+// Copyright (c) 2001-$Date: 2020-06-10 10:59:09 -0700 (Wed, 10 Jun 2020) $ TIBCO Software Inc.
+// Licensed under a BSD-style license. Refer to [LICENSE]
+// For more information, please contact:
+// TIBCO Software Inc., Palo Alto, California, USA
+//
 
 package eftl_test
 
@@ -20,10 +18,9 @@ import (
 func ExampleConnect() {
 	errChan := make(chan error)
 
-	opts := &eftl.Options{
-		Username: "username",
-		Password: "password",
-	}
+	opts := eftl.DefaultOptions()
+	opts.Username = "username"
+	opts.Password = "password"
 
 	// connect to the server
 	conn, err := eftl.Connect("ws://localhost:9191/channel", opts, errChan)
@@ -81,8 +78,7 @@ func ExampleConnection_Publish() {
 
 	// publish a message
 	err = conn.Publish(eftl.Message{
-		"_dest": "sample",
-		"text":  "sample text",
+		"type":  "hello",
 		"long":  99,
 		"float": 0.99,
 		"time":  time.Now(),
@@ -113,8 +109,7 @@ func ExampleConnection_PublishAsync() {
 
 	// publish a message
 	err = conn.PublishAsync(eftl.Message{
-		"_dest": "sample",
-		"text":  "sample text",
+		"type":  "hello",
 		"long":  99,
 		"float": 0.99,
 		"time":  time.Now(),
@@ -157,7 +152,7 @@ func ExampleConnection_Subscribe() {
 	msgChan := make(chan eftl.Message)
 
 	// subscribe to messages
-	sub, err := conn.Subscribe("{\"_dest\": \"sample\"}", "", msgChan)
+	sub, err := conn.Subscribe("{\"type\": \"hello\"}", "", msgChan)
 	if err != nil {
 		fmt.Println("subscribe failed:", err)
 		return
@@ -197,7 +192,7 @@ func ExampleConnection_SubscribeAsync() {
 	msgChan := make(chan eftl.Message)
 
 	// subscribe to messages
-	err = conn.SubscribeAsync("{\"_dest\": \"sample\"}", "", msgChan, subChan)
+	err = conn.SubscribeAsync("{\"type\": \"hello\"}", "", msgChan, subChan)
 	if err != nil {
 		fmt.Println("subscribe failed:", err)
 		return
@@ -220,6 +215,72 @@ func ExampleConnection_SubscribeAsync() {
 			fmt.Println(msg)
 		}
 	}
+}
+
+// Publish request messages and wait for a reply.
+func ExampleConnection_SendRequest() {
+	// connect to the server
+	conn, err := eftl.Connect("ws://localhost:9191/channel", nil, nil)
+	if err != nil {
+		fmt.Println("connect failed:", err)
+		return
+	}
+
+	// disconnect from the server when done with the connection
+	defer conn.Disconnect()
+
+	// publish a request message and wait for a reply.
+	reply, err = conn.SendRequest(eftl.Message{
+		"type": "request",
+		"text": "this is a request message",
+	}, 10*time.Second)
+	if err == eftl.ErrTimeout {
+		fmt.Println("request failed:", timeout)
+	} else if err != nil {
+		fmt.Println("request failed:", err)
+	} else {
+		fmt.Println("received reply:", reply)
+	}
+	// Output:
+}
+
+// Publish request messages asynchronously and receive a reply.
+func ExampleConnection_SendRequestAsync() {
+	// connect to the server
+	conn, err := eftl.Connect("ws://localhost:9191/channel", nil, nil)
+	if err != nil {
+		fmt.Println("connect failed:", err)
+		return
+	}
+
+	// disconnect from the server when done with the connection
+	defer conn.Disconnect()
+
+	// create a completion channel
+	compChan := make(chan *eftl.Completion, 1)
+
+	// publish a request message
+	err = conn.SendRequestAsync(eftl.Message{
+		"type": "request",
+		"text": "this is a request message",
+	}, compChan)
+	if err != nil {
+		fmt.Println("request failed:", err)
+		return
+	}
+
+	// wait for request to complete
+	select {
+	case comp := <-compChan:
+		if comp.Error != nil {
+			fmt.Println("request failed:", err)
+		} else {
+			fmt.Println("received reply:", comp.Message)
+		}
+	case <-time.After(10 * time.Second):
+		fmt.Println("request failed: timeout")
+	}
+	// Output:
 }
 
 // Set a key-value pair in a map.

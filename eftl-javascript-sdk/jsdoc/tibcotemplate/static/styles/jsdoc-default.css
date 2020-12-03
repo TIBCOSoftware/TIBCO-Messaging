@@ -6,7 +6,7 @@ html
 
 body
 {
-	font: 14px "DejaVu Sans Condensed", "Liberation Sans", "Nimbus Sans L", Tahoma, Geneva, "Helvetica Neue", Helvetica, Arial, sans serif;
+	font: 14px "DejaVu Sans Condensed", "Liberation Sans", "Nimbus Sans L", Tahoma, Geneva, "Helvetica Neue", Helvetica, Arial, sans-serif;
 	line-height: 130%;
 	color: #000;
 	background-color: #fff;
@@ -140,8 +140,8 @@ h3
 	font-size: 150%;
 	font-weight: bold;
 	letter-spacing: -0.01em;
-	margin-top: 16px;
 	margin: 6px 0 3px 0;
+	margin-top: 16px;
 }
 
 h4
@@ -149,8 +149,8 @@ h4
 	font-size: 130%;
 	font-weight: bold;
 	letter-spacing: -0.01em;
-	margin-top: 16px;
 	margin: 18px 0 3px 0;
+	margin-top: 16px;
 	color: #1f9515;
 }
 

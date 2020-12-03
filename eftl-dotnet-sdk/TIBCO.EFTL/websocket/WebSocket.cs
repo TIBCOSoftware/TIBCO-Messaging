@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009-$Date: 2017-08-30 17:50:29 -0500 (Wed, 30 Aug 2017) $ TIBCO Software Inc.
+ * Copyright (c) 2009-$Date: 2019-07-25 13:43:33 -0700 (Thu, 25 Jul 2019) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocket.cs 95894 2017-08-30 22:50:29Z bpeterse $
+ * $Id: WebSocket.cs 113204 2019-07-25 20:43:33Z bpeterse $
  */
 
 using System;
@@ -35,6 +35,7 @@ namespace TIBCO.EFTL
         private WebSocketListener  listener;
         long                       state;
         private ArrayList          protocols;
+        private TimeSpan           timeout;
         System.Net.WebSockets.ClientWebSocket        clientWebSocket = null;
         System.Net.WebSockets.ClientWebSocketOptions options;
 
@@ -68,9 +69,15 @@ namespace TIBCO.EFTL
             options.KeepAliveInterval = new System.TimeSpan(0);
         }
 
-        internal void setProtocol(String protocol) {
+        internal void setProtocol(String protocol) 
+        {
             this.protocols.Add(protocol);
             options.AddSubProtocol(protocol);
+        }
+
+        internal void setTimeout(double seconds) 
+        {
+            this.timeout = TimeSpan.FromSeconds(seconds);
         }
 
         internal void Open() 
@@ -312,7 +319,10 @@ namespace TIBCO.EFTL
                     sp.Expect100Continue = true;
                 }
 
-                clientWebSocket.ConnectAsync(this.uri, CancellationToken.None).Wait();
+                if (!clientWebSocket.ConnectAsync(this.uri, CancellationToken.None).Wait(this.timeout))
+                {
+                    throw new Exception("timeout");
+                }
                 
                 // notify listener
                 notifyOpen();
@@ -339,7 +349,9 @@ namespace TIBCO.EFTL
 
         private void dispatch()
         {
-            byte[] buffer = new byte[128*1024];
+            const Int32 bufferSize = 128 * 1024;
+
+            byte[] buffer = new byte[bufferSize];
             bool breakOut = false;
 
             try 
@@ -369,14 +381,14 @@ namespace TIBCO.EFTL
                      } 
                      catch (Exception e)
                      {
-       	   	         notifyError(e);
+                         notifyError(e);
                          break;
-    	             }
-	    
+                     }
+        
                      int count = result.Count;
                      while (!result.EndOfMessage)
                      {
-                         if (count >= buffer.Length)
+                         if (count > buffer.Length)
                          {
                             Task t1 = clientWebSocket.CloseAsync(WebSocketCloseStatus.InvalidPayloadData, "payload too long", CancellationToken.None);
                             t1.Wait(CancellationToken.None);
@@ -398,6 +410,13 @@ namespace TIBCO.EFTL
                             notifyClose((int)result.CloseStatus, result.CloseStatusDescription);
                             breakOut = true;
                             break;
+                        }
+                        else if (result.Count == 0)
+                        {
+                            // filled the buffer, resize it
+                            var newBuffer = new byte[buffer.Length + bufferSize];
+                            Array.Copy(buffer, newBuffer, buffer.Length);
+                            buffer = newBuffer;
                         }
                         if (breakOut)
                             break;

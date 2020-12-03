@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2016-03-15 18:42:55 -0500 (Tue, 15 Mar 2016) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-03-31 10:23:10 -0700 (Tue, 31 Mar 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JsonObject.java 84746 2016-03-15 23:42:55Z bpeterse $
+ * $Id: JsonObject.java 123342 2020-03-31 17:23:10Z bpeterse $
  */
 package com.tibco.eftl.json;
 
@@ -24,7 +24,7 @@ public final class JsonObject extends HashMap<String, Object> {
             return sb.toString();
         } catch (IOException e) {
             // can't happen with StringBuilder
-            return null;
+            return "";
         }
     }
     

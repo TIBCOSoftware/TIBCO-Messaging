@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2018-06-06 13:30:42 -0500 (Wed, 06 Jun 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.c 101572 2018-06-06 18:30:42Z bpeterse $
+ * $Id: eftl.c 128796 2020-09-24 19:20:18Z bpeterse $
  *
  */
 
@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <inttypes.h>
+#include <time.h>
 #include <math.h>
 
 #include "websocket.h"
@@ -25,11 +26,14 @@
 #include "version.h"
 
 #if defined(_WIN32)
+#include <sys/timeb.h>
 #define strcasecmp _stricmp
+#else
+#include <sys/signal.h>
 #endif
 
 #define TIBEFTL_PROTOCOL        "v1.eftl.tibco.com"
-
+#define TIBEFTL_PROTOCOL_VER    (1)
 #define TIBEFTL_TIMEOUT         (10000)
 
 #define OP_HEARTBEAT            (0)
@@ -44,6 +48,11 @@
 #define OP_ACK                  (9)
 #define OP_ERROR                (10)
 #define OP_DISCONNECT           (11)
+#define OP_REQUEST              (13)
+#define OP_REQUEST_REPLY        (14)
+#define OP_REPLY                (15)
+#define OP_MAP_CREATE           (16)
+#define OP_MAP_DESTROY          (18)
 #define OP_MAP_SET              (20)
 #define OP_MAP_GET              (22)
 #define OP_MAP_REMOVE           (24)
@@ -55,6 +64,7 @@ typedef struct tibeftlCompletionStruct
     char*                       reason;
     tibeftlMessage              response;
     semaphore_t                 semaphore;
+    bool                        notified;
 
 } tibeftlCompletionRec, *tibeftlCompletion;
 
@@ -81,22 +91,18 @@ typedef struct tibeftlRequestListStruct
 
 } tibeftlRequestListRec;
 
-typedef enum tibeftlConnectionStateEnum
+typedef struct tibeftlErrorContextStruct
 {
-    STATE_UNCONNECTED,
-    STATE_DISCONNECTED,
-    STATE_CONNECTING,
-    STATE_CONNECTED,
-    STATE_DISCONNECTING,
-    STATE_AUTORECONNECTING,
-    STATE_RECONNECTING
+    tibeftlConnection           conn;
+    tibeftlErr                  err;
 
-} tibeftlConnectionState;
+} tibeftlErrorContextRec, *tibeftlErrorContext; 
 
 struct tibeftlConnectionStruct
 {
     int                         ref;
-    url_t*                      url;
+    url_t**                     urlList;
+    int                         urlIndex;
     tibeftlErrorCallback        errCb;
     void*                       errCbArg;
     tibeftlCompletionRec        completion;
@@ -109,18 +115,24 @@ struct tibeftlConnectionStruct
     char*                       password;
     char*                       clientId;
     char*                       trustStore;
+    bool                        trustAll;
     char*                       reconnectToken;
-    thread_t                    autoReconnectThread;
+    thread_t                    reconnectThread;
+    int                         protocol;
     int                         maxMsgSize;
+    int                         maxPendingAcks;
     int64_t                     timeout;
     int64_t                     pubSeqNum;
     int64_t                     lastSubId;
-    int64_t                     lastSeqNum;
     void*                       onConnectArg;
     int64_t                     autoReconnectAttempts;
     int64_t                     autoReconnectMaxDelay;
     int64_t                     reconnectAttempts;
-    tibeftlCompletionRec        autoReconnectCompletion;
+    tibeftlCompletionRec        reconnectCompletion;
+    tibeftlStateCallback        stateChangeCallback;
+    void*                       stateChangeCallbackArg;
+    thread_t                    dispatchThread;
+    tibeftlMessageList          msgList;
 };
 
 struct tibeftlSubscriptionStruct
@@ -130,9 +142,12 @@ struct tibeftlSubscriptionStruct
     char*                       durable;
     char*                       durableType;
     char*                       durableKey;
+    int64_t                     lastSeqNum;
+    tibeftlAcknowledgeMode      ackMode;
     tibeftlMessageCallback      msgCb;
     void*                       msgCbArg;
     tibeftlCompletionRec        completion;
+    bool                        pending;
 };
 
 struct tibeftlErrStruct
@@ -146,6 +161,24 @@ struct tibeftlKVMapStruct
     char*                       name;
     tibeftlConnection           conn;
 };
+
+static int64_t
+tibeftl_now(void)
+{
+#if defined(_WIN32)
+    struct _timeb tb;
+    _ftime_s(&tb);
+    return (((int64_t)tb.time) * 1000 + tb.millitm);
+#elif defined(CLOCK_MONOTONIC)
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return ((int64_t)ts.tv_sec) * 1000 + (((int64_t)ts.tv_nsec) / 1000000);
+#else
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return ((int64_t)tv.tv_sec) * 1000 + (((int64_t)tv.tv_usec) / 1000);
+#endif
+}
 
 static tibeftlSubscription
 tibeftlSubscription_create(
@@ -161,9 +194,11 @@ tibeftlSubscription_create(
 
     sub = calloc(1, sizeof(*sub));
 
-    size = snprintf(NULL, 0, "%" PRId64, subId);
-    sub->subId = malloc(size + 1);
-    sprintf(sub->subId, "%" PRId64, subId);
+    sub->ackMode = TIBEFTL_ACKNOWLEDGE_MODE_AUTO;
+
+    size = snprintf(NULL, 0, "%" PRId64, subId) + 1;
+    sub->subId = malloc(size);
+    snprintf(sub->subId, size, "%" PRId64, subId);
 
     if (matcher)
         sub->matcher = strdup(matcher);
@@ -173,9 +208,13 @@ tibeftlSubscription_create(
         sub->durableType = strdup(opts->durableType);
     if (opts && opts->durableKey)
         sub->durableKey = strdup(opts->durableKey);
-
+    if (opts)
+        sub->ackMode = opts->acknowledgeMode;
+    
     sub->msgCb = msgCb;
     sub->msgCbArg = msgCbArg;
+
+    sub->pending = true;
 
     return sub;
 }
@@ -210,14 +249,41 @@ tibeftlCompletion_init(
 }
 
 static void
-tibeftlCompletion_clear(
+tibeftlCompletion_reset(
     tibeftlCompletion           completion)
 {
+    completion->notified = false;
+    completion->code = 0;
+
+    if (completion->response)
+    {
+        tibeftlMessage_Destroy(NULL, completion->response);
+        completion->response = NULL;
+    }
+
     if (completion->reason)
     {
         free(completion->reason);
         completion->reason = NULL;
     }
+}
+
+static void
+tibeftlCompletion_clear(
+    tibeftlCompletion           completion)
+{
+    if (completion->response)
+    {
+        tibeftlMessage_Destroy(NULL, completion->response);
+        completion->response = NULL;
+    }
+
+    if (completion->reason)
+    {
+        free(completion->reason);
+        completion->reason = NULL;
+    }
+
     if (completion->semaphore)
     {
         semaphore_destroy(completion->semaphore);
@@ -233,15 +299,23 @@ tibeftlCompletion_wait(
     return (semaphore_wait(completion->semaphore, millis) ? TIBEFTL_ERR_TIMEOUT : completion->code);
 }
 
-static void
+static bool
 tibeftlCompletion_notify(
     tibeftlCompletion           completion,
     tibeftlMessage              response,
     int                         code,
     const char*                 reason)
 {
-    completion->response = response;
-    completion->code = code;
+    if (!completion || completion->notified)
+        return false;
+
+    completion->notified = true;
+
+    if (completion->response)
+    {
+        tibeftlMessage_Destroy(NULL, completion->response);
+        completion->reason = NULL;
+    }
 
     if (completion->reason)
     {
@@ -249,11 +323,58 @@ tibeftlCompletion_notify(
         completion->reason = NULL;
     }
 
+    completion->response = response;
+    completion->code = code;
+
     if (reason)
         completion->reason = strdup(reason);
 
     if (completion->semaphore)
         semaphore_post(completion->semaphore);
+
+    return true;
+}
+
+static void*
+tibeftlConnection_errorCb(
+    void*                       arg)
+{
+    tibeftlErrorContext         context = (tibeftlErrorContext)arg;
+
+    websocket_close(context->conn->websocket);
+
+    if (context->conn->errCb)
+        context->conn->errCb(context->conn, context->err, context->conn->errCbArg);
+
+    tibeftlErr_Destroy(context->err);
+
+    free(context);
+
+    return NULL;
+}
+
+static void
+tibeftlConnection_invokeErrorCb(
+    tibeftlConnection           conn,
+    int                         code,
+    const char*                 reason)
+{
+    tibeftlErrorContext         context;
+    tibeftlErr                  err;
+    thread_t                    thread;
+
+    err = tibeftlErr_Create();
+    tibeftlErr_Set(err, code, reason);
+
+    context = malloc(sizeof(*context));
+    if (context)
+    {
+        context->conn = conn;
+        context->err = err;
+    }
+
+    thread_start(&thread, tibeftlConnection_errorCb, (void*)context);
+    thread_detach(thread);
 }
 
 static tibeftlCompletion
@@ -305,10 +426,19 @@ tibeftlConnection_notifySubscribed(
 
     sub = hashmap_get(conn->subscriptions, subId);
 
-    if (sub)
+    // notify the completion only if the subscription is 
+    // pending, otherwise, invoke the error callback
+    if (sub && sub->pending)
+    {
+        sub->pending = false;
         tibeftlCompletion_notify(&sub->completion, NULL, code, reason);
+    }
+    else if (sub && code)
+    {
+        // subscription failed following a reconnect
+        tibeftlConnection_invokeErrorCb(conn, code, reason);
+    }
 }
-
 
 static tibeftlCompletion
 tibeftlConnection_registerRequest(
@@ -381,7 +511,7 @@ tibeftlConnection_unregisterRequest(
     }
 }
 
-static void
+static bool
 tibeftlConnection_notifyRequest(
     tibeftlConnection           conn,
     int64_t                     seqNum,
@@ -390,15 +520,18 @@ tibeftlConnection_notifyRequest(
     const char*                 reason)
 {
     tibeftlRequest              request;
+    bool                        notified = false;
 
     if (!conn)
-        return;
+        return false;
 
     for (request = conn->requestList.head; request; request = request->next)
     {
         if (request->seqNum == seqNum)
-            tibeftlCompletion_notify(&request->completion, response, code, reason);
+            notified = tibeftlCompletion_notify(&request->completion, response, code, reason);
     }
+
+    return notified;
 }
 
 static void
@@ -433,6 +566,23 @@ tibeftlConnection_resendAllRequests(
     }
 }
 
+static const char*
+tibeftlAcknowledgeMode_toString(
+    tibeftlAcknowledgeMode      ackMode)
+{
+    switch (ackMode)
+    {
+    case TIBEFTL_ACKNOWLEDGE_MODE_AUTO:
+        return "auto";
+    case TIBEFTL_ACKNOWLEDGE_MODE_CLIENT:
+        return "client";
+    case TIBEFTL_ACKNOWLEDGE_MODE_NONE:
+        return "none";
+    default:
+        return "unknown";
+    }
+}
+
 static void
 tibeftlSubscription_subscribe(
     const char*                 key,
@@ -447,10 +597,15 @@ tibeftlSubscription_subscribe(
     json = _cJSON_CreateObject();
     _cJSON_AddNumberToObject(json, "op", OP_SUBSCRIBE);
     _cJSON_AddStringToObject(json, "id", sub->subId);
+    _cJSON_AddStringToObject(json, "ack", tibeftlAcknowledgeMode_toString(sub->ackMode));
     if (sub->matcher)
         _cJSON_AddStringToObject(json, "matcher", sub->matcher);
     if (sub->durable)
         _cJSON_AddStringToObject(json, "durable", sub->durable);
+    if (sub->durableType)
+        _cJSON_AddStringToObject(json, "type", sub->durableType);
+    if (sub->durableKey)
+        _cJSON_AddStringToObject(json, "key", sub->durableKey);
 
     text = _cJSON_PrintUnformatted(json);
 
@@ -471,6 +626,42 @@ tibeftlSubscription_cleanup(
     tibeftlCompletion_clear(&sub->completion);
 
     tibeftlSubscription_destroy(sub);
+}
+
+static void
+tibeftlSubscription_reset(
+    const char*                 key,
+    void*                       value,
+    void*                       context)
+{
+    tibeftlSubscription         sub = (tibeftlSubscription)value;
+
+    sub->lastSeqNum = 0;
+}
+
+static void
+tibeftlSubscription_close(
+    const char*                 key,
+    void*                       value,
+    void*                       context)
+{
+    tibeftlConnection           conn = (tibeftlConnection)context;
+    _cJSON*                     json;
+    char*                       text;
+
+    json = _cJSON_CreateObject();
+    _cJSON_AddNumberToObject(json, "op", OP_UNSUBSCRIBE);
+    _cJSON_AddStringToObject(json, "id", key);
+    _cJSON_AddFalseToObject(json, "del");
+
+    text = _cJSON_PrintUnformatted(json);
+
+    websocket_send_text(conn->websocket, text);
+
+    tibeftlConnection_unregisterSubscription(conn, key);
+
+    _cJSON_Delete(json);
+    _cJSON_free(text);
 }
 
 static void
@@ -497,50 +688,21 @@ tibeftlSubscription_unsubscribe(
     _cJSON_free(text);
 }
 
-typedef struct tibeftlErrorContextStruct
-{
-    tibeftlConnection           conn;
-    tibeftlErr                  err;
-
-} tibeftlErrorContextRec, *tibeftlErrorContext;
-
-static void*
-tibeftlConnection_errorCb(
-    void*                       arg)
-{
-    tibeftlErrorContext         context = (tibeftlErrorContext)arg;
-
-    websocket_close(context->conn->websocket);
-
-    if (context->conn->errCb)
-        context->conn->errCb(context->conn, context->err, context->conn->errCbArg);
-
-    tibeftlErr_Destroy(context->err);
-
-    free(context);
-
-    return NULL;
-}
-
 static void
-tibeftlConnection_invokeErrorCb(
+tibeftlConnection_setState(
     tibeftlConnection           conn,
-    int                         code,
-    const char*                 reason)
+    tibeftlConnectionState      state)
 {
-    tibeftlErrorContext         context;
-    tibeftlErr                  err;
-    thread_t                    thread;
+    if (!conn)
+        return;
 
-    err = tibeftlErr_Create();
-    tibeftlErr_Set(err, code, reason);
+    if (conn->state != state)
+    {
+        conn->state = state;
 
-    context = malloc(sizeof(*context));
-    context->conn = conn;
-    context->err = err;
-
-    thread_start(&thread, tibeftlConnection_errorCb, context);
-    thread_detach(thread);
+        if (conn->stateChangeCallback)
+            conn->stateChangeCallback(conn, conn->state, conn->stateChangeCallbackArg);
+    }
 }
 
 static void
@@ -555,6 +717,12 @@ tibeftlConnection_handleWelcome(
         return;
 
     mutex_lock(&conn->mutex);
+
+    tibeftlConnection_setState(conn, STATE_CONNECTED);
+
+    // reset reconnect logic
+    conn->reconnectAttempts = 0;
+    conn->urlIndex = 0;
 
     if ((item = _cJSON_GetObjectItem(json, "client_id")) && _cJSON_IsString(item))
     {
@@ -579,27 +747,26 @@ tibeftlConnection_handleWelcome(
     if ((item = _cJSON_GetObjectItem(json, "timeout")) && _cJSON_IsNumber(item))
         websocket_set_timeout(conn->websocket, item->valueint);
 
+    if ((item = _cJSON_GetObjectItem(json, "protocol")) && _cJSON_IsNumber(item))
+        conn->protocol = item->valueint;
+
     if ((item = _cJSON_GetObjectItem(json, "max_size")) && _cJSON_IsNumber(item))
         conn->maxMsgSize = item->valueint;
 
     if ((item = _cJSON_GetObjectItem(json, "_resume")) && _cJSON_IsString(item))
         resume = (strcasecmp(item->valuestring, "true") == 0 ? 1 : 0);
 
+    if (!resume)
+    {
+        // reset subscription last sequence number
+        hashmap_iterate(conn->subscriptions, tibeftlSubscription_reset, conn);
+    }
+
     // repair subscriptions
     hashmap_iterate(conn->subscriptions, tibeftlSubscription_subscribe, conn);
 
-    if (resume)
-    {
-        // re-send unacknowledged messages
-        tibeftlConnection_resendAllRequests(conn);
-    }
-    else
-    {
-        // notify unacknowledged messages
-        tibeftlConnection_notifyAllRequests(conn, TIBEFTL_ERR_PUBLISH_FAILED, "Reconnect");
-
-        conn->lastSeqNum = 0;
-    }
+    // re-send unacknowledged messages
+    tibeftlConnection_resendAllRequests(conn);
 
     mutex_unlock(&conn->mutex);
 
@@ -607,16 +774,46 @@ tibeftlConnection_handleWelcome(
 }
 
 static void
+tibeftlConnection_acknowledge(
+    tibeftlConnection           conn,
+    long                        seqNum,
+    const char*                 subId)
+{
+    _cJSON*                     json;
+    char*                       text;
+
+    if (conn && seqNum > 0)
+    {
+        json = _cJSON_CreateObject();
+        _cJSON_AddNumberToObject(json, "op", OP_ACK);
+        _cJSON_AddNumberToObject(json, "seq", seqNum);
+
+        if (subId)
+            _cJSON_AddStringToObject(json, "id", subId);
+
+        text = _cJSON_PrintUnformatted(json);
+
+        websocket_send_text(conn->websocket, text);
+
+        _cJSON_Delete(json);
+        _cJSON_free(text);
+    }
+}
+
+static void
 tibeftlConnection_handleMessage(
     tibeftlConnection           conn,
     _cJSON*                     json)
 {
-    tibeftlSubscription         sub;
+    tibeftlMessage              msg;
     _cJSON*                     item;
     int64_t                     seqNum = 0;
     char*                       subId = NULL;
+    char*                       replyTo = NULL;
+    int64_t                     reqId = 0;
+    int64_t                     msgId = 0;
+    int64_t                     deliveryCount = 0;
     _cJSON*                     body = NULL;
-    char*                       text = NULL;
 
     if (!conn)
         return;
@@ -627,51 +824,37 @@ tibeftlConnection_handleMessage(
     if ((item = _cJSON_GetObjectItem(json, "to")) && _cJSON_IsString(item))
         subId = item->valuestring;
 
+    if ((item = _cJSON_GetObjectItem(json, "reply_to")) && _cJSON_IsString(item))
+        replyTo = item->valuestring;
+
+    if ((item = _cJSON_GetObjectItem(json, "req")) && _cJSON_IsNumber(item))
+        reqId = (int64_t)item->valuedouble;
+
+    if ((item = _cJSON_GetObjectItem(json, "sid")) && _cJSON_IsNumber(item))
+        msgId = (int64_t)item->valuedouble;
+
+    if ((item = _cJSON_GetObjectItem(json, "cnt")) && _cJSON_IsNumber(item))
+        deliveryCount = (int64_t)item->valuedouble;
+
     if ((item = _cJSON_GetObjectItem(json, "body")) && _cJSON_IsObject(item))
         body = item;
 
-    mutex_lock(&conn->mutex);
+    if (!subId || !body)
+        return;
 
-    if (subId && (seqNum == 0 || seqNum > conn->lastSeqNum))
+    msg = tibeftlMessage_CreateWithJSON(body);
+    if (msg)
     {
-        sub = hashmap_get(conn->subscriptions, subId);
+        _cJSON_DetachItemViaPointer(json, body);
 
-        if (sub && body)
-        {
-            if (sub->msgCb)
-            {
-                tibeftlMessage msg = tibeftlMessage_CreateWithJSON(body);
+        tibeftlMessage_SetReceipt(msg, seqNum, subId);
+        tibeftlMessage_SetReplyTo(msg, replyTo, reqId);
+        tibeftlMessage_SetStoreMessageId(msg, msgId);
+        tibeftlMessage_SetDeliveryCount(msg, deliveryCount);
 
-                if (msg)
-                {
-                    _cJSON_DetachItemViaPointer(json, body);
-
-                    sub->msgCb(conn, sub, 1, &msg, sub->msgCbArg);
-
-                    tibeftlMessage_Destroy(NULL, msg);
-                }
-            }
-        }
-
-        if (seqNum > 0)
-            conn->lastSeqNum = seqNum;
+        if (!tibeftlMessageList_Add(conn->msgList, msg))
+            tibeftlMessage_Destroy(NULL, msg);
     }
-
-    if (seqNum > 0)
-    {
-        json = _cJSON_CreateObject();
-        _cJSON_AddNumberToObject(json, "op", OP_ACK);
-        _cJSON_AddNumberToObject(json, "seq", seqNum);
-
-        text = _cJSON_PrintUnformatted(json);
-
-        websocket_send_text(conn->websocket, text);
-
-        _cJSON_Delete(json);
-        _cJSON_free(text);
-    }
-
-    mutex_unlock(&conn->mutex);
 }
 
 static void
@@ -754,6 +937,47 @@ tibeftlConnection_handleAck(
 }
 
 static void
+tibeftlConnection_handleReply(
+    tibeftlConnection           conn,
+    _cJSON*                     json)
+{
+    _cJSON*                     item;
+    _cJSON*                     body = NULL;
+    int64_t                     seqNum = 0;
+    int                         code = 0;
+    char*                       reason = NULL;
+    tibeftlMessage              msg = NULL;
+    bool                        notified;
+
+    if (!conn)
+        return;
+
+    if ((item = _cJSON_GetObjectItem(json, "seq")) && _cJSON_IsNumber(item))
+        seqNum = (int64_t)item->valuedouble;
+
+    if ((item = _cJSON_GetObjectItem(json, "body")) && _cJSON_IsObject(item))
+        body = _cJSON_DetachItemViaPointer(json, item);
+
+    if ((item = _cJSON_GetObjectItem(json, "err")) && _cJSON_IsNumber(item))
+        code = (int)item->valuedouble;
+
+    if ((item = _cJSON_GetObjectItem(json, "reason")) && _cJSON_IsString(item))
+        reason = item->valuestring;
+
+    if (body)
+        msg = tibeftlMessage_CreateWithJSON(body);
+
+    mutex_lock(&conn->mutex);
+
+    notified = tibeftlConnection_notifyRequest(conn, seqNum, msg, code, reason);
+
+    mutex_unlock(&conn->mutex);
+
+    if (!notified)
+        tibeftlMessage_Destroy(NULL, msg);
+}
+
+static void
 tibeftlConnection_handleError(
     tibeftlConnection           conn,
     _cJSON*                     json)
@@ -785,6 +1009,7 @@ tibeftlConnection_handleMapResponse(
     int                         code = 0;
     char*                       reason = NULL;
     tibeftlMessage              msg = NULL;
+    bool                        notified;
 
     if (!conn)
         return;
@@ -806,9 +1031,12 @@ tibeftlConnection_handleMapResponse(
 
     mutex_lock(&conn->mutex);
 
-    tibeftlConnection_notifyRequest(conn, seqNum, msg, code, reason);
+    notified = tibeftlConnection_notifyRequest(conn, seqNum, msg, code, reason);
 
     mutex_unlock(&conn->mutex);
+
+    if (!notified)
+        tibeftlMessage_Destroy(NULL, msg);
 }
 
 static void
@@ -817,9 +1045,12 @@ tibeftlConnection_onWebSocketOpen(
     void*                       context)
 {
     tibeftlConnection           conn = (tibeftlConnection)context;
+    url_t*                      url;
     _cJSON*                     opts;
     _cJSON*                     json;
     char*                       text;
+
+    url = websocket_url(websocket);
 
     opts = _cJSON_CreateObject();
     _cJSON_AddStringToObject(opts, "_qos", "true");
@@ -827,18 +1058,28 @@ tibeftlConnection_onWebSocketOpen(
 
     json = _cJSON_CreateObject();
     _cJSON_AddNumberToObject(json, "op", OP_LOGIN);
+    _cJSON_AddNumberToObject(json, "protocol", TIBEFTL_PROTOCOL_VER);
     _cJSON_AddStringToObject(json, "client_type", "C");
     _cJSON_AddStringToObject(json, "client_version", EFTL_VERSION_STRING_SHORT);
     _cJSON_AddItemToObject(json, "login_options", opts);
 
-    if (conn->username && strlen(conn->username) > 0)
+    if (url && url_username(url))
+        _cJSON_AddStringToObject(json, "user", url_username(url));
+    else if (conn->username && strlen(conn->username) > 0)
         _cJSON_AddStringToObject(json, "user", conn->username);
-    if (conn->password && strlen(conn->password) > 0)
+    if (url && url_password(url))
+        _cJSON_AddStringToObject(json, "password", url_password(url));
+    else if (conn->password && strlen(conn->password) > 0)
         _cJSON_AddStringToObject(json, "password", conn->password);
-    if (conn->clientId && strlen(conn->clientId) > 0)
+    if (url && url_query(url, "clientId"))
+        _cJSON_AddStringToObject(json, "client_id", url_query(url, "clientId"));
+    else if (conn->clientId && strlen(conn->clientId) > 0)
         _cJSON_AddStringToObject(json, "client_id", conn->clientId);
     if (conn->reconnectToken && strlen(conn->reconnectToken) > 0)
         _cJSON_AddStringToObject(json, "id_token", conn->reconnectToken);
+
+    if (conn->maxPendingAcks > 0) 
+        _cJSON_AddNumberToObject(json, "max_pending_acks", conn->maxPendingAcks);
 
     text = _cJSON_PrintUnformatted(json);
 
@@ -884,142 +1125,159 @@ tibeftlConnection_onWebSocketText(
         case OP_ACK:
             tibeftlConnection_handleAck(conn, json);
             break;
+        case OP_REQUEST_REPLY:
+            tibeftlConnection_handleReply(conn, json);
+            break;
         case OP_ERROR:
             tibeftlConnection_handleError(conn, json);
             break;
         case OP_MAP_RESPONSE:
             tibeftlConnection_handleMapResponse(conn, json);
+            break;
         }
     }
 
     _cJSON_Delete(json);
 }
 
+bool
+tibeftl_connect(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    url_t*                      url)
+{
+    tibeftlCompletion_reset(&conn->completion);
+
+    websocket_open(conn->websocket, url);
+
+    if (tibeftlCompletion_wait(&conn->completion, conn->timeout) == TIBEFTL_ERR_TIMEOUT)
+    {
+        websocket_close(conn->websocket);
+
+        if (err != NULL)
+            tibeftlErr_Set(err, TIBEFTL_ERR_TIMEOUT, "connect request timed out");
+
+        return false;
+    }
+    else if (conn->completion.code)
+    {
+        websocket_close(conn->websocket);
+
+        if (err != NULL)
+            tibeftlErr_Set(err, conn->completion.code, conn->completion.reason);
+
+        return false;
+    }
+
+    return true;
+}
+
 static void
 tibeftlConnection_cancelAutoReconnect(
-    tibeftlConnection  conn)
+    tibeftlConnection           conn)
 {
     if (conn == NULL)
         return;
 
-    mutex_lock(&conn->mutex);
-
-    if (conn->state == STATE_AUTORECONNECTING)
+    if (conn->reconnectThread != INVALID_THREAD)
     {
-        if (conn->autoReconnectThread != INVALID_THREAD)
-        {
-            thread_t thread = conn->autoReconnectThread;
-            mutex_unlock(&conn->mutex);
-            tibeftlCompletion_notify(&conn->autoReconnectCompletion, NULL, -1, NULL);
-            thread_join(thread);
-            thread_destroy(thread);
-            mutex_lock(&conn->mutex);
-            conn->state = STATE_DISCONNECTED;
-        }
+        thread_t thread = conn->reconnectThread;
+
+        mutex_unlock(&conn->mutex);
+
+        tibeftlCompletion_notify(&conn->reconnectCompletion, NULL, -1, NULL);
+
+        thread_join(thread);
+        thread_destroy(thread);
+
+        mutex_lock(&conn->mutex);
     }
 
     mutex_unlock(&conn->mutex);
 }
 
-typedef struct
+typedef struct tibeftlReconnectContextStruct
 {
-    tibeftlConnection conn;
-    int64_t           backoff;
-} tibeftlConnection_autoReconnectInfo;
+    tibeftlConnection           conn;
+    int64_t                     backoff;
+    url_t*                      url;
 
-bool
-tibeftl_doConnect(
-    tibeftlErr                  err,
-    tibeftlConnection           conn)
-{
-    bool errorDetected = false;
-
-    websocket_open(conn->websocket);
-
-    if (tibeftlCompletion_wait(&conn->completion, conn->timeout) == TIBEFTL_ERR_TIMEOUT)
-    {
-        if (err != NULL)
-            tibeftlErr_Set(err, TIBEFTL_ERR_TIMEOUT, "connect request timed out");
-        errorDetected = true;
-    }
-    else if (conn->completion.code)
-    {
-        if (err != NULL)
-            tibeftlErr_Set(err, conn->completion.code, conn->completion.reason);
-        errorDetected = true;
-    }
-
-    if (errorDetected)
-    {
-        websocket_close(conn->websocket);
-    }
-    mutex_lock(&conn->mutex);
-    if (!errorDetected)
-    {
-        conn->state = STATE_CONNECTED;
-        conn->reconnectAttempts = 0;
-    }
-    mutex_unlock(&conn->mutex);
-
-    return !errorDetected;
-}
+} tibeftlReconnectContext;
 
 static void *
-tibeftlConnection_autoReconnectThreadProc(
-    void*             data)
+tibeftlConnection_reconnectThread(
+    void*                       arg)
 {
-    tibeftlConnection conn;
-    int64_t backoff;
-    int rc;
-    tibeftlConnection_autoReconnectInfo * info = (tibeftlConnection_autoReconnectInfo *) data;
+    tibeftlReconnectContext*    context = (tibeftlReconnectContext*)arg;
+    int                         rc;
 
-    if (info == NULL)
-        return NULL;
-    conn = info->conn;
-    backoff = info->backoff;
-    free((void *) data);
-    if (conn == NULL)
+    if (context == NULL)
         return NULL;
 
-    rc = tibeftlCompletion_wait(&conn->autoReconnectCompletion, (int) backoff);
-    mutex_lock(&conn->mutex);
-    conn->autoReconnectThread = INVALID_THREAD;
-    tibeftlCompletion_clear(&conn->autoReconnectCompletion);
-    mutex_unlock(&conn->mutex);
-    if (rc == TIBEFTL_ERR_TIMEOUT)
-        tibeftl_doConnect(NULL, conn);
+    if (context->conn)
+    {
+        rc = tibeftlCompletion_wait(&context->conn->reconnectCompletion, (int)context->backoff);
+
+        mutex_lock(&context->conn->mutex);
+
+        context->conn->reconnectThread = INVALID_THREAD;
+
+        tibeftlCompletion_clear(&context->conn->reconnectCompletion);
+
+        mutex_unlock(&context->conn->mutex);
+
+        if (rc == TIBEFTL_ERR_TIMEOUT)
+            tibeftl_connect(NULL, context->conn, context->url);
+    }
+
+    free(context);
 
     return NULL;
 }
 
 static bool
 tibeftlConnection_scheduleReconnect(
-    tibeftlConnection  conn)
+    tibeftlConnection           conn)
 {
-    bool scheduled = false;
+    tibeftlReconnectContext*    context;
+    int64_t                     backoff = 0;
+    bool                        scheduled = false;
 
     if (conn != NULL)
     {
         mutex_lock(&conn->mutex);
+
         if (conn->reconnectAttempts < conn->autoReconnectAttempts)
         {
-            tibeftlConnection_autoReconnectInfo * info;
-            int64_t backoff;
+            tibeftlConnection_setState(conn, STATE_RECONNECTING);
 
-            conn->state = STATE_AUTORECONNECTING;
-            backoff = (int64_t) (pow(2.0, (double) (conn->reconnectAttempts++)) * 1000.0);
-            if (backoff > conn->autoReconnectMaxDelay)
-                backoff = conn->autoReconnectMaxDelay;
-            info = calloc(1, sizeof(tibeftlConnection_autoReconnectInfo));
-            info->conn = conn;
-            info->backoff = backoff;
-            tibeftlCompletion_init(&conn->autoReconnectCompletion);
-            thread_start(&conn->autoReconnectThread, tibeftlConnection_autoReconnectThreadProc, (void *) info);
-            thread_detach(conn->autoReconnectThread);
+            if (conn->urlIndex == 0)
+            {
+                // add jitter by applying a randomness factor of 0.5 
+                double jitter = (rand() / (RAND_MAX + 1.0)) + 0.5;
+                backoff = (int64_t) (pow(2.0, (double) (conn->reconnectAttempts++)) * 1000.0 * jitter);
+                if (backoff > conn->autoReconnectMaxDelay)
+                    backoff = conn->autoReconnectMaxDelay;
+            }
+
+            context = calloc(1, sizeof(tibeftlReconnectContext));
+            context->conn = conn;
+            context->backoff = backoff;
+            context->url = conn->urlList[conn->urlIndex];
+            if (++conn->urlIndex >= url_list_count(conn->urlList))
+                conn->urlIndex = 0;
+
+            tibeftlCompletion_init(&conn->reconnectCompletion);
+
+            thread_start(&conn->reconnectThread, tibeftlConnection_reconnectThread, (void*)context);
+            thread_detach(conn->reconnectThread);
+
             scheduled = true;
         }
+
         mutex_unlock(&conn->mutex);
     }
+
     return scheduled;
 }
 
@@ -1040,35 +1298,30 @@ tibeftlConnection_onWebSocketError(
 
     state = conn->state;
 
-    conn->state = STATE_DISCONNECTED;
+    tibeftlConnection_setState(conn, STATE_DISCONNECTED);
 
     mutex_unlock(&conn->mutex);
 
     switch (state)
     {
-    case STATE_UNCONNECTED:
-    case STATE_DISCONNECTED:
-    case STATE_DISCONNECTING:
-    default:
-        break;
-
     case STATE_CONNECTING:
-    case STATE_RECONNECTING:
         tibeftlCompletion_notify(&conn->completion, NULL, TIBEFTL_ERR_CONNECT_FAILED, reason);
         break;
-
-    case STATE_AUTORECONNECTING:
+    case STATE_RECONNECTING:
+        tibeftlCompletion_notify(&conn->completion, NULL, TIBEFTL_ERR_CONNECT_FAILED, reason);
     case STATE_CONNECTED:
-        if (state == STATE_AUTORECONNECTING)
-            tibeftlCompletion_notify(&conn->completion, NULL, TIBEFTL_ERR_CONNECT_FAILED, reason);
         if (!tibeftlConnection_scheduleReconnect(conn))
+        {
             tibeftlConnection_invokeErrorCb(conn, TIBEFTL_ERR_CONNECTION_LOST, reason);
+        }
+        break;
+    default:
         break;
     }
 
     mutex_lock(&conn->mutex);
 
-    if (conn->state != STATE_AUTORECONNECTING)
+    if (conn->state != STATE_RECONNECTING)
     {
         tibeftlConnection_notifyAllRequests(conn, code, reason);
     }
@@ -1093,34 +1346,94 @@ tibeftlConnection_onWebSocketClose(
 
     state = conn->state;
 
-    conn->state = STATE_DISCONNECTED;
+    tibeftlConnection_setState(conn, STATE_DISCONNECTED);
 
     mutex_unlock(&conn->mutex);
 
     switch (state)
     {
-    case STATE_UNCONNECTED:
-    case STATE_DISCONNECTED:
-    case STATE_DISCONNECTING:
-    case STATE_AUTORECONNECTING:
-    case STATE_RECONNECTING:
-    default:
-        break;
-
     case STATE_CONNECTING:
         tibeftlCompletion_notify(&conn->completion, NULL, code, reason);
         break;
-
+    case STATE_RECONNECTING:
+        tibeftlCompletion_notify(&conn->completion, NULL, code, reason);
     case STATE_CONNECTED:
-        tibeftlConnection_invokeErrorCb(conn, code, reason);
+        // Reconnect when the close code reflects a server restart.
+        if (code != TIBEFTL_ERR_SERVICE_RESTART || !tibeftlConnection_scheduleReconnect(conn))
+        {
+            tibeftlConnection_invokeErrorCb(conn, code, reason);
+        }
+        break;
+    default:
         break;
     }
 
     mutex_lock(&conn->mutex);
 
-    tibeftlConnection_notifyAllRequests(conn, code, reason);
+    if (conn->state != STATE_RECONNECTING)
+    {
+        tibeftlConnection_notifyAllRequests(conn, code, reason);
+    }
 
     mutex_unlock(&conn->mutex);
+}
+
+static void*
+tibeftlConnection_dispatchThread(
+    void*                       arg)
+{
+    tibeftlConnection           conn = (tibeftlConnection)arg;
+    tibeftlSubscription         sub;
+    tibeftlMessage              msg;
+    const char*                 subId;
+    int64_t                     seqNum;
+
+    for (;;)
+    {
+        tibeftlAcknowledgeMode  ackMode = TIBEFTL_ACKNOWLEDGE_MODE_AUTO;
+        tibeftlMessageCallback  msgCb = NULL;
+        void*                   msgCbArg = NULL;
+
+        // get the next message
+        msg = tibeftlMessageList_Next(conn->msgList);
+
+        if (!msg)
+            break;
+
+        tibeftlMessage_GetReceipt(msg, &seqNum, &subId);
+
+        mutex_lock(&conn->mutex);
+
+        // find the subscription
+        sub = hashmap_get(conn->subscriptions, subId);
+        if (sub)
+        {
+            if (seqNum == 0 || seqNum > sub->lastSeqNum)
+            {
+                ackMode = sub->ackMode;
+                msgCb = sub->msgCb;
+                msgCbArg = sub->msgCbArg;
+
+                // track the last received sequence number
+                if (sub->ackMode == TIBEFTL_ACKNOWLEDGE_MODE_AUTO && seqNum != 0)
+                    sub->lastSeqNum = seqNum;
+            }
+        }
+
+        mutex_unlock(&conn->mutex);
+
+        // invoke the message callback
+        if (msgCb)
+            msgCb(conn, sub, 1, &msg, msgCbArg);
+
+        // acknowledge the message if necessary
+        if (ackMode == TIBEFTL_ACKNOWLEDGE_MODE_AUTO) 
+            tibeftl_Acknowledge(NULL, conn, msg);
+
+        tibeftlMessage_Destroy(NULL, msg);
+    }
+
+    return NULL;
 }
 
 static tibeftlConnection
@@ -1135,22 +1448,23 @@ tibeftlConnection_create(
 
     conn = calloc(1, sizeof(*conn));
 
-    conn->state = STATE_UNCONNECTED;
-    conn->url = url_parse(url);
+    conn->state = STATE_INITIAL;
     conn->ref = 1;
-
-    if (url_username(conn->url))
-        conn->username = strdup(url_username(conn->url));
-    if (url_password(conn->url))
-        conn->password = strdup(url_password(conn->url));
-    if (url_query(conn->url, "clientId"))
-        conn->clientId = strdup(url_query(conn->url, "clientId"));
-    if (url_query(conn->url, "trustStore"))
-        conn->trustStore = strdup(url_query(conn->url, "trustStore"));
-
     conn->timeout = TIBEFTL_TIMEOUT;
+    conn->urlList = url_list_parse(url);
 
-    if (opts && opts->ver == 0)
+#if defined(SIGPIPE)
+    // ignore SIGPIPE 
+    signal(SIGPIPE, SIG_IGN);
+#endif
+
+    // seed rand
+    srand((unsigned int)tibeftl_now());
+
+    // shuffle the URLs
+    url_list_shuffle(conn->urlList);
+
+    if (opts)
     {
         if (opts->username && !conn->username)
             conn->username = strdup(opts->username);
@@ -1161,12 +1475,29 @@ tibeftlConnection_create(
         if (opts->trustStore && !conn->trustStore)
             conn->trustStore = strdup(opts->trustStore);
 
+        if (opts->trustAll == true)
+            conn->trustAll = opts->trustAll;
+
         if (opts->timeout > 0)
             conn->timeout = opts->timeout;
         if (opts->autoReconnectAttempts > 0)
             conn->autoReconnectAttempts = opts->autoReconnectAttempts;
         if (opts->autoReconnectMaxDelay > 0)
             conn->autoReconnectMaxDelay = opts->autoReconnectMaxDelay;
+
+        if (opts->ver > 0)
+        {
+            if (opts->stateChangeCallback)
+                conn->stateChangeCallback = opts->stateChangeCallback;
+            if (opts->stateChangeCallbackArg)
+                conn->stateChangeCallbackArg = opts->stateChangeCallbackArg;
+        }
+
+        if (opts->ver > 1)
+        {
+            if (opts->maxPendingAcks != 0)
+                conn->maxPendingAcks = opts->maxPendingAcks;
+        }
     }
 
     conn->errCb = errCb;
@@ -1174,10 +1505,15 @@ tibeftlConnection_create(
 
     mutex_init(&conn->mutex);
 
+    conn->msgList = tibeftlMessageList_Create();
+
+    thread_start(&conn->dispatchThread, tibeftlConnection_dispatchThread, (void*)conn);
+
     websocket_options_init(websocketOptions);
 
     websocketOptions.protocol = TIBEFTL_PROTOCOL;
     websocketOptions.trustStore = conn->trustStore;
+    websocketOptions.trustAll = conn->trustAll;
     websocketOptions.timeout = conn->timeout;
     websocketOptions.open_cb = tibeftlConnection_onWebSocketOpen;
     websocketOptions.text_cb = tibeftlConnection_onWebSocketText;
@@ -1185,7 +1521,7 @@ tibeftlConnection_create(
     websocketOptions.close_cb = tibeftlConnection_onWebSocketClose;
     websocketOptions.context = conn;
 
-    conn->websocket = websocket_create(url, &websocketOptions);
+    conn->websocket = websocket_create(&websocketOptions);
     conn->subscriptions = hashmap_create(128);
     tibeftlCompletion_init(&conn->completion);
 
@@ -1199,6 +1535,13 @@ tibeftlConnection_destroy(
     if (!conn)
         return;
 
+    tibeftlMessageList_Close(conn->msgList);
+
+    thread_join(conn->dispatchThread);
+    thread_destroy(conn->dispatchThread);
+
+    tibeftlMessageList_Destroy(conn->msgList);
+
     hashmap_iterate(conn->subscriptions, tibeftlSubscription_cleanup, NULL);
 
     hashmap_destroy(conn->subscriptions);
@@ -1209,14 +1552,16 @@ tibeftlConnection_destroy(
 
     mutex_destroy(&conn->mutex);
 
-    if (conn->url)
-        url_destroy(conn->url);
+    if (conn->urlList)
+        url_list_destroy(conn->urlList);
     if (conn->username)
         free(conn->username);
     if (conn->password)
         free(conn->password);
     if (conn->clientId)
         free(conn->clientId);
+    if (conn->trustStore)
+        free(conn->trustStore);
     if (conn->reconnectToken)
         free(conn->reconnectToken);
 
@@ -1271,20 +1616,26 @@ tibeftl_Connect(
     void*                       errCbArg)
 {
     tibeftlConnection           conn;
+    int                         i;
 
     if (tibeftlErr_IsSet(err))
         return NULL;
 
     conn = tibeftlConnection_create(url, opts, errCb, errCbArg);
 
-    conn->state = STATE_CONNECTING;
-
-    if (!tibeftl_doConnect(err, conn))
+    for (i = 0; conn->urlList[i]; i++)
     {
-        tibeftlConnection_destroy(conn);
-        conn = NULL;
+        tibeftlConnection_setState(conn, STATE_CONNECTING);
+
+        tibeftlErr_Clear(err);
+
+        if (tibeftl_connect(err, conn, conn->urlList[i]))
+            return conn;
     }
-    return conn;
+
+    tibeftlConnection_destroy(conn);
+
+    return NULL;
 }
 
 void
@@ -1302,16 +1653,8 @@ tibeftl_Disconnect(
 
     switch (conn->state)
     {
-    case STATE_UNCONNECTED:
-    case STATE_DISCONNECTED:
-    case STATE_CONNECTING:
-    case STATE_DISCONNECTING:
-    default:
-        break;
-
     case STATE_CONNECTED:
-    case STATE_RECONNECTING:
-        conn->state = STATE_DISCONNECTING;
+        tibeftlConnection_setState(conn, STATE_DISCONNECTING);
 
         mutex_unlock(&conn->mutex);
 
@@ -1329,14 +1672,16 @@ tibeftl_Disconnect(
 
         mutex_lock(&conn->mutex);
 
-        conn->state = STATE_DISCONNECTED;
+        tibeftlConnection_setState(conn, STATE_DISCONNECTED);
         break;
+    case STATE_RECONNECTING:
+        tibeftlConnection_setState(conn, STATE_DISCONNECTING);
 
-    case STATE_AUTORECONNECTING:
-        conn->state = STATE_DISCONNECTING;
-        mutex_unlock(&conn->mutex);
         tibeftlConnection_cancelAutoReconnect(conn);
-        mutex_lock(&conn->mutex);
+
+        tibeftlConnection_setState(conn, STATE_DISCONNECTED);
+        break;
+    default:
         break;
     }
 
@@ -1350,7 +1695,8 @@ tibeftl_Reconnect(
     tibeftlErr                  err,
     tibeftlConnection           conn)
 {
-    bool rc;
+    bool                        connected;
+    int                         i;
 
     if (tibeftlErr_IsSet(err))
         return;
@@ -1365,34 +1711,28 @@ tibeftl_Reconnect(
 
     switch (conn->state)
     {
-    case STATE_UNCONNECTED:
-    case STATE_CONNECTING:
-    case STATE_CONNECTED:
-    case STATE_DISCONNECTING:
     case STATE_RECONNECTING:
-    default:
-        break;
-
-    case STATE_AUTORECONNECTING:
+        tibeftlConnection_cancelAutoReconnect(conn);
     case STATE_DISCONNECTED:
-        if (conn->state == STATE_AUTORECONNECTING)
+        for (i = 0; conn->urlList[i]; i++)
         {
+            tibeftlConnection_setState(conn, STATE_CONNECTING);
+
             mutex_unlock(&conn->mutex);
 
-            tibeftlConnection_cancelAutoReconnect(conn);
+            tibeftlErr_Clear(err);
+
+            connected = tibeftl_connect(err, conn, conn->urlList[i]);
 
             mutex_lock(&conn->mutex);
+
+            if (connected)
+                break;
+            else
+                tibeftlConnection_setState(conn, STATE_DISCONNECTED);
         }
-
-        conn->state = STATE_RECONNECTING;
-
-        mutex_unlock(&conn->mutex);
-
-        rc = tibeftl_doConnect(err, conn);
-
-        mutex_lock(&conn->mutex);
-        if (!rc)
-            conn->state = STATE_DISCONNECTED;
+        break;
+    default:
         break;
     }
 
@@ -1415,7 +1755,7 @@ tibeftl_IsConnected(
 
     mutex_unlock(&conn->mutex);
 
-    return (state == STATE_CONNECTED || state == STATE_AUTORECONNECTING ? true : false);
+    return (state == STATE_CONNECTED || state == STATE_RECONNECTING ? true : false);
 }
 
 void
@@ -1446,7 +1786,7 @@ tibeftl_Publish(
 
     mutex_lock(&conn->mutex);
 
-    if (conn->state == STATE_CONNECTED || conn->state == STATE_AUTORECONNECTING)
+    if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
     {
         seqNum = ++conn->pubSeqNum;
 
@@ -1496,6 +1836,197 @@ tibeftl_Publish(
     }
 }
 
+tibeftlMessage
+tibeftl_SendRequest(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlMessage              request,
+    int64_t                     timeout)
+{
+    tibeftlCompletion           completion = NULL;
+    tibeftlMessage              reply = NULL;
+    _cJSON*                     json;
+    int64_t                     seqNum = 0;
+    char*                       text;
+
+    if (tibeftlErr_IsSet(err))
+        return NULL;
+
+    if (!conn)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "conn is NULL");
+        return NULL;
+    }
+
+    if (!request)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "msg is NULL");
+        return NULL;
+    }
+
+    mutex_lock(&conn->mutex);
+
+    if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
+    {
+        seqNum = ++conn->pubSeqNum;
+
+        json = _cJSON_CreateObject();
+        _cJSON_AddNumberToObject(json, "op", OP_REQUEST);
+        _cJSON_AddNumberToObject(json, "seq", seqNum);
+        _cJSON_AddItemReferenceToObject(json, "body", tibeftlMessage_GetJSON(request));
+
+        text = _cJSON_PrintUnformatted(json);
+
+        if (conn->protocol < 1)
+        {
+            tibeftlErr_Set(err, TIBEFTL_ERR_NOT_SUPPORTED, "send request is not supported with this server");
+        }
+        else if (conn->maxMsgSize > 0 && strlen(text) > conn->maxMsgSize)
+        {
+            tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "maximum message size exceeded");
+        }
+        else
+        {
+            completion = tibeftlConnection_registerRequest(conn, seqNum, text);
+
+            websocket_send_text(conn->websocket, text);
+        }
+
+        _cJSON_Delete(json);
+    }
+    else
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_CONNECTED, "not connected");
+    }
+
+    mutex_unlock(&conn->mutex);
+
+    if (completion)
+    {
+        if (tibeftlCompletion_wait(completion, timeout) == TIBEFTL_ERR_TIMEOUT)
+        {
+            tibeftlErr_Set(err, TIBEFTL_ERR_TIMEOUT, "request timed out");
+        }
+        else if (completion->code)
+        {
+            tibeftlErr_Set(err, completion->code, completion->reason);
+        }
+
+        mutex_lock(&conn->mutex);
+
+        reply = completion->response;
+
+        completion->response = NULL;
+
+        tibeftlConnection_unregisterRequest(conn, seqNum);
+
+        mutex_unlock(&conn->mutex);
+    }
+
+    return reply;
+}
+
+void
+tibeftl_SendReply(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlMessage              reply,
+    tibeftlMessage              request)
+{
+    tibeftlCompletion           completion = NULL;
+    _cJSON*                     json;
+    int64_t                     seqNum = 0;
+    const char*                 replyTo = NULL;
+    int64_t                     reqId = 0;
+    char*                       text;
+
+    if (tibeftlErr_IsSet(err))
+        return;
+
+    if (!conn)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "conn is NULL");
+        return;
+    }
+
+    if (!reply)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "reply is NULL");
+        return;
+    }
+
+    if (!request)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "request is NULL");
+        return;
+    }
+
+    tibeftlMessage_GetReplyTo(request, &replyTo, &reqId);
+
+    if (!replyTo)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "not a request message");
+        return;
+    }
+
+    mutex_lock(&conn->mutex);
+
+    if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
+    {
+        seqNum = ++conn->pubSeqNum;
+
+        json = _cJSON_CreateObject();
+        _cJSON_AddNumberToObject(json, "op", OP_REPLY);
+        _cJSON_AddNumberToObject(json, "seq", seqNum);
+        _cJSON_AddStringToObject(json, "to", replyTo);
+        _cJSON_AddNumberToObject(json, "req", reqId);
+        _cJSON_AddItemReferenceToObject(json, "body", tibeftlMessage_GetJSON(reply));
+
+        text = _cJSON_PrintUnformatted(json);
+
+        if (conn->protocol < 1)
+        {
+            tibeftlErr_Set(err, TIBEFTL_ERR_NOT_SUPPORTED, "send reply is not supported with this server");
+        }
+        else if (conn->maxMsgSize > 0 && strlen(text) > conn->maxMsgSize)
+        {
+            tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "maximum message size exceeded");
+        }
+        else
+        {
+            completion = tibeftlConnection_registerRequest(conn, seqNum, text);
+
+            websocket_send_text(conn->websocket, text);
+        }
+
+        _cJSON_Delete(json);
+    }
+    else
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_CONNECTED, "not connected");
+    }
+
+    mutex_unlock(&conn->mutex);
+
+    if (completion)
+    {
+        if (tibeftlCompletion_wait(completion, WAIT_FOREVER) == TIBEFTL_ERR_TIMEOUT)
+        {
+            tibeftlErr_Set(err, TIBEFTL_ERR_TIMEOUT, "reply timed out");
+        }
+        else if (completion->code)
+        {
+            tibeftlErr_Set(err, completion->code, completion->reason);
+        }
+
+        mutex_lock(&conn->mutex);
+
+        tibeftlConnection_unregisterRequest(conn, seqNum);
+
+        mutex_unlock(&conn->mutex);
+    }
+}
+
 tibeftlSubscription
 tibeftl_Subscribe(
     tibeftlErr                  err,
@@ -1520,8 +2051,6 @@ tibeftl_SubscribeWithOptions(
 {
     tibeftlSubscription         sub = NULL;
     tibeftlCompletion           completion = NULL;
-    _cJSON*                     json;
-    char*                       text;
     int64_t                     subId;
 
     if (tibeftlErr_IsSet(err))
@@ -1535,7 +2064,7 @@ tibeftl_SubscribeWithOptions(
 
     mutex_lock(&conn->mutex);
 
-    if (conn->state == STATE_CONNECTED || conn->state == STATE_AUTORECONNECTING)
+    if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
     {
         subId = ++conn->lastSubId;
 
@@ -1543,24 +2072,7 @@ tibeftl_SubscribeWithOptions(
 
         completion = tibeftlConnection_registerSubscription(conn, sub);
 
-        json = _cJSON_CreateObject();
-        _cJSON_AddNumberToObject(json, "op", OP_SUBSCRIBE);
-        _cJSON_AddStringToObject(json, "id", sub->subId);
-        if (sub->matcher)
-            _cJSON_AddStringToObject(json, "matcher", sub->matcher);
-        if (sub->durable)
-            _cJSON_AddStringToObject(json, "durable", sub->durable);
-        if (sub->durableType)
-            _cJSON_AddStringToObject(json, "type", sub->durableType);
-        if (sub->durableKey)
-            _cJSON_AddStringToObject(json, "key", sub->durableKey);
-
-        text = _cJSON_PrintUnformatted(json);
-
-        websocket_send_text(conn->websocket, text);
-
-        _cJSON_Delete(json);
-        _cJSON_free(text);
+        tibeftlSubscription_subscribe(sub->subId, sub, conn);
     }
     else
     {
@@ -1579,9 +2091,87 @@ tibeftl_SubscribeWithOptions(
         {
             tibeftlErr_Set(err, completion->code, completion->reason);
         }
+
+        if (tibeftlErr_IsSet(err))
+        {
+            mutex_lock(&conn->mutex);
+
+            tibeftlConnection_unregisterSubscription(conn, (const char*)sub->subId);
+
+            mutex_unlock(&conn->mutex);
+
+            sub = NULL;
+        }
     }
 
     return sub;
+}
+
+void
+tibeftl_CloseSubscription(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlSubscription         sub)
+{
+    if (!conn)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "connection is NULL");
+        return;
+    }
+
+    if (!sub)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "subscription is NULL");
+        return;
+    }
+
+    mutex_lock(&conn->mutex);
+
+    if (conn->protocol < 1)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_SUPPORTED, "close subscription is not supported with this server");
+    }
+    else if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
+    {
+        tibeftlSubscription_close((const char*)sub->subId, (void*)sub, (void*)conn);
+    }
+    else
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_CONNECTED, "not connected");
+    }
+
+    mutex_unlock(&conn->mutex);
+}
+
+void
+tibeftl_CloseAllSubscriptions(
+    tibeftlErr                  err,
+    tibeftlConnection           conn)
+{
+    if (!conn)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "connection is NULL");
+        return;
+    }
+
+    mutex_lock(&conn->mutex);
+
+    if (conn->protocol < 1)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_SUPPORTED, "close subscription is not supported with this server");
+    }
+    else if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
+    {
+        hashmap_t* copy = hashmap_copy(conn->subscriptions);
+        hashmap_iterate(copy, tibeftlSubscription_close, (void*)conn);
+        hashmap_destroy(copy);
+    }
+    else
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_CONNECTED, "not connected");
+    }
+
+    mutex_unlock(&conn->mutex);
 }
 
 void
@@ -1604,7 +2194,7 @@ tibeftl_Unsubscribe(
 
     mutex_lock(&conn->mutex);
 
-    if (conn->state == STATE_CONNECTED || conn->state == STATE_AUTORECONNECTING)
+    if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
     {
         tibeftlSubscription_unsubscribe((const char*)sub->subId, (void*)sub, (void*)conn);
     }
@@ -1629,9 +2219,84 @@ tibeftl_UnsubscribeAll(
 
     mutex_lock(&conn->mutex);
 
-    if (conn->state == STATE_CONNECTED || conn->state == STATE_AUTORECONNECTING)
+    if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
     {
-        hashmap_iterate(conn->subscriptions, tibeftlSubscription_unsubscribe, (void*)conn);
+        hashmap_t* copy = hashmap_copy(conn->subscriptions);
+        hashmap_iterate(copy, tibeftlSubscription_unsubscribe, (void*)conn);
+        hashmap_destroy(copy);
+    }
+    else
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_CONNECTED, "not connected");
+    }
+
+    mutex_unlock(&conn->mutex);
+}
+
+void
+tibeftl_Acknowledge(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlMessage              msg)
+{
+    int64_t                     seqNum;
+
+    if (!conn)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "connection is NULL");
+        return;
+    }
+
+    if (!msg)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "message is NULL");
+        return;
+    }
+
+    mutex_lock(&conn->mutex);
+
+    if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
+    {
+        tibeftlMessage_GetReceipt(msg, &seqNum, NULL);
+
+        tibeftlConnection_acknowledge(conn, seqNum, NULL);
+    }
+    else
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_CONNECTED, "not connected");
+    }
+
+    mutex_unlock(&conn->mutex);
+}
+
+void
+tibeftl_AcknowledgeAll(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlMessage              msg)
+{
+    int64_t                     seqNum;
+    const char*                 subId;
+
+    if (!conn)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "connection is NULL");
+        return;
+    }
+
+    if (!msg)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "message is NULL");
+        return;
+    }
+
+    mutex_lock(&conn->mutex);
+
+    if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
+    {
+        tibeftlMessage_GetReceipt(msg, &seqNum, &subId);
+
+        tibeftlConnection_acknowledge(conn, seqNum, subId);
     }
     else
     {
@@ -1679,6 +2344,53 @@ tibeftl_CreateKVMap(
     }
 
     return map;
+}
+
+void
+tibeftl_RemoveKVMap(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    const char*                 name)
+{
+    _cJSON*                     json;
+    char*                       text;
+
+    if (tibeftlErr_IsSet(err))
+        return;
+
+    if (!conn)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "conn is NULL");
+        return;
+    }
+
+    if (!name)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "name is NULL");
+        return;
+    }
+
+    mutex_lock(&conn->mutex);
+
+    if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
+    {
+        json = _cJSON_CreateObject();
+        _cJSON_AddNumberToObject(json, "op", OP_MAP_DESTROY);
+        _cJSON_AddStringToObject(json, "map", name);
+
+        text = _cJSON_PrintUnformatted(json);
+
+        websocket_send_text(conn->websocket, text);
+
+        _cJSON_Delete(json);
+        _cJSON_free(text);
+    }
+    else
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_CONNECTED, "not connected");
+    }
+
+    mutex_unlock(&conn->mutex);
 }
 
 void
@@ -1730,7 +2442,7 @@ tibeftlKVMap_Set(
 
     mutex_lock(&map->conn->mutex);
 
-    if (map->conn->state == STATE_CONNECTED || map->conn->state == STATE_AUTORECONNECTING)
+    if (map->conn->state == STATE_CONNECTED || map->conn->state == STATE_RECONNECTING)
     {
         seqNum = ++map->conn->pubSeqNum;
 
@@ -1811,7 +2523,7 @@ tibeftlKVMap_Get(
 
     mutex_lock(&map->conn->mutex);
 
-    if (map->conn->state == STATE_CONNECTED || map->conn->state == STATE_AUTORECONNECTING)
+    if (map->conn->state == STATE_CONNECTED || map->conn->state == STATE_RECONNECTING)
     {
         seqNum = ++map->conn->pubSeqNum;
 
@@ -1847,9 +2559,11 @@ tibeftlKVMap_Get(
             tibeftlErr_Set(err, completion->code, completion->reason);
         }
 
+        mutex_lock(&map->conn->mutex);
+
         msg = completion->response;
 
-        mutex_lock(&map->conn->mutex);
+        completion->response = NULL;
 
         tibeftlConnection_unregisterRequest(map->conn, seqNum);
 
@@ -1887,7 +2601,7 @@ tibeftlKVMap_Remove(
 
     mutex_lock(&map->conn->mutex);
 
-    if (map->conn->state == STATE_CONNECTED || map->conn->state == STATE_AUTORECONNECTING)
+    if (map->conn->state == STATE_CONNECTED || map->conn->state == STATE_RECONNECTING)
     {
         seqNum = ++map->conn->pubSeqNum;
 
@@ -2017,5 +2731,28 @@ tibeftlErr_Clear(
         free(err->desc);
 
         err->desc = NULL;
+    }
+}
+
+const char*
+tibeftlConnectionState_ToString(
+    tibeftlConnectionState      state)
+{
+    switch(state)
+    {
+    case STATE_INITIAL:
+        return "initial";
+    case STATE_DISCONNECTED:
+        return "disconnected";
+    case STATE_CONNECTING:
+        return "connecting";
+    case STATE_CONNECTED:
+        return "connected";
+    case STATE_DISCONNECTING:
+        return "disconnecting";
+    case STATE_RECONNECTING:
+        return "reconnecting";
+    default:
+        return "unknown";
     }
 }

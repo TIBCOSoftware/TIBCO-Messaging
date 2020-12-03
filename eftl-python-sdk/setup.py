@@ -6,7 +6,7 @@ from setuptools import setup
 HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
-README = (HERE / "README.md").read_text()
+README = (HERE / "README.md").read_text(encoding='utf-8')
 
 # This call to setup() does all the work
 setup(
@@ -16,12 +16,14 @@ setup(
     long_description=README,
     long_description_content_type="text/markdown",
     author="TIBCO Software Inc.",
+    author_email="support@tibco.com", 
+    url="https://www.tibco.com",
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
     ],
     packages=setuptools.find_packages(),
     include_package_data=True,
-    install_requires=["jsonpickle", "autobahn", "pyOpenSSL", "twisted", "service_identity"],
+    install_requires=["asyncio", "datetime", "jsonpickle", "autobahn", "pyOpenSSL", "service_identity"],
     entry_points={},
 )

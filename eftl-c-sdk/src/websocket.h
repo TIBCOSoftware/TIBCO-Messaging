@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2017-09-20 16:42:36 -0500 (Wed, 20 Sep 2017) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-03-31 10:23:10 -0700 (Tue, 31 Mar 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: websocket.h 96393 2017-09-20 21:42:36Z bpeterse $
+ * $Id: websocket.h 123342 2020-03-31 17:23:10Z bpeterse $
  *
  */
 
@@ -12,6 +12,9 @@
 #define INCLUDED_TIBEFTL_WS_H
 
 #include <inttypes.h>
+#include <stdbool.h>
+
+#include "url.h"
 
 typedef struct websocket_s websocket_t;
 
@@ -71,6 +74,7 @@ typedef struct websocket_options_s
     const char*                 origin;
     const char*                 protocol;
     const char*                 trustStore;
+    bool                        trustAll;
 
     int64_t                     timeout;
 
@@ -85,11 +89,10 @@ typedef struct websocket_options_s
 } websocket_options_t;
 
 #define websocket_options_init(opts) \
-    ((opts) = (websocket_options_t){ 0, NULL, NULL, NULL, 10000, NULL, NULL, NULL, NULL, NULL, NULL })
+    ((opts) = (websocket_options_t){ 0, NULL, NULL, NULL, false, 10000, NULL, NULL, NULL, NULL, NULL, NULL })
 
 websocket_t*
 websocket_create(
-    const char*                 url,
     websocket_options_t*        opts);
 
 void
@@ -103,7 +106,8 @@ websocket_set_timeout(
 
 int
 websocket_open(
-    websocket_t*                websocket);
+    websocket_t*                websocket,
+    url_t*                      url);
 
 int
 websocket_close(
@@ -118,6 +122,10 @@ int
 websocket_send_binary(
     websocket_t*                websocket,
     const void*                 data,
-    int                         size);
+    unsigned int                size);
+
+url_t*
+websocket_url(
+    websocket_t*                websocket);
 
 #endif /* INCLUDED_TIBEFTL_WS_H */

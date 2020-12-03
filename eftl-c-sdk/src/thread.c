@@ -1,14 +1,15 @@
 /*
- * Copyright (c) 2018: 2018-04-09 22:46:40 -0500 (Mon, 09 Apr 2018) $ TIBCO Software Inc.
+ * Copyright (c) $Date: 2020-06-30 11:44:20 -0700 (Tue, 30 Jun 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: thread.c 100869 2018-04-10 03:46:40Z bpeterse $
+ * $Id: thread.c 126740 2020-06-30 18:44:20Z bpeterse $
  *
  */
 
 #include <stdlib.h>
+#include <errno.h>
 
 #include "thread.h"
 
@@ -54,7 +55,10 @@ void mutex_init(mutex_t* mutex)
 #if defined(_WIN32)
     InitializeCriticalSection(mutex);
 #else
-    pthread_mutex_init(mutex, NULL);
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(mutex, &attr);
 #endif
 }
 
@@ -107,7 +111,7 @@ semaphore_t semaphore_create(void)
 {
     semaphore_t semaphore;
 #if defined(_WIN32)
-    semaphore = CreateEvent(NULL, FALSE, FALSE, NULL);
+    semaphore = CreateSemaphore(NULL, 0, LONG_MAX, NULL);
 #elif defined(__APPLE__)
     semaphore = dispatch_semaphore_create(0L);
 #else
@@ -129,7 +133,7 @@ void semaphore_destroy(semaphore_t semaphore)
 #endif
 }
 
-int semaphore_wait(semaphore_t semaphore, int timeout)
+int semaphore_wait(semaphore_t semaphore, int64_t timeout)
 {
 #if defined(_WIN32)
     if (timeout == WAIT_FOREVER)
@@ -140,19 +144,35 @@ int semaphore_wait(semaphore_t semaphore, int timeout)
     if (timeout == WAIT_FOREVER)
         return dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
     else
-        return dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)timeout*1000000L));
+        return dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, timeout*1000000L));
 #else
     if (timeout == WAIT_FOREVER)
     {
-        return sem_wait(semaphore);
+        int rc;
+        while ((rc = sem_wait(semaphore)) == -1 && errno == EINTR)
+            continue;
+        return rc;
     }
     else
     {
+        int rc;
         struct timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
         ts.tv_sec += timeout / 1000;
         ts.tv_nsec += (timeout % 1000) * 1000000;
-        return sem_timedwait(semaphore, &ts);
+        if (ts.tv_nsec >= 1000000000)
+        {
+            ts.tv_nsec -= 1000000000;
+            ts.tv_sec += 1;
+        }
+        else if (ts.tv_nsec < 0)
+        {
+            ts.tv_nsec += 1000000000;
+            ts.tv_sec -= 1;
+        }
+        while ((rc = sem_timedwait(semaphore, &ts)) == -1 && errno == EINTR)
+            continue;
+        return rc;
     }
 #endif
 }
@@ -160,7 +180,7 @@ int semaphore_wait(semaphore_t semaphore, int timeout)
 void semaphore_post(semaphore_t semaphore)
 {
 #if defined(_WIN32)
-    SetEvent(semaphore);
+    ReleaseSemaphore(semaphore, 1, NULL);
 #elif defined(__APPLE__)
     dispatch_semaphore_signal(semaphore);
 #else

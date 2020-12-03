@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2017-01-31 15:28:19 -0600 (Tue, 31 Jan 2017) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: IMessage.cs 91161 2017-01-31 21:28:19Z bmahurka $
+ * $Id: IMessage.cs 128796 2020-09-24 19:20:18Z bpeterse $
  *
  */
 using System;
@@ -19,6 +19,18 @@ namespace TIBCO.EFTL
     /// </summary>
     public interface IMessage
     {
+        /// <summary>
+        /// The message's unique store identifier assigned by the persistence service.
+        /// </summary>
+        ///
+        long StoreMessageId { get; }
+
+        /// <summary>
+        /// The message's delivery count assigned by the persistence service.
+        /// </summary>
+        ///
+        long DeliveryCount { get; }
+
         /// <summary>
         /// Determine whether a field is present in the message.
         /// </summary>

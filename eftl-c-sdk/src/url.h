@@ -1,10 +1,10 @@
 /*
- * Copyright (c) $Date: 2018-04-24 10:57:05 -0500 (Tue, 24 Apr 2018) $ TIBCO Software Inc.
+ * Copyright (c) $Date: 2019-06-19 13:06:39 -0700 (Wed, 19 Jun 2019) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: url.h 100982 2018-04-24 15:57:05Z bpeterse $
+ * $Id: url.h 111192 2019-06-19 20:06:39Z bpeterse $
  *
  */
 
@@ -29,12 +29,32 @@ typedef struct url_s url_t;
 
 typedef struct url_query_s url_query_t;
 
+url_t**
+url_list_parse(
+    const char* str);
+
+void
+url_list_destroy(
+    url_t**     list);
+
+int
+url_list_count(
+    url_t**     list);
+
+void
+url_list_shuffle(
+    url_t**     list);
+
 url_t*
 url_parse(
     const char* str);
 
 void
 url_destroy(
+    url_t*      url);
+
+url_t*
+url_copy(
     url_t*      url);
 
 const char*

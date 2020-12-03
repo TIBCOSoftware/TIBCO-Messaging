@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2017-01-26 20:00:35 -0600 (Thu, 26 Jan 2017) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: Message.java 91044 2017-01-27 02:00:35Z bpeterse $
+ * $Id: Message.java 128796 2020-09-24 19:20:18Z bpeterse $
  *
  */
 package com.tibco.eftl;
@@ -17,13 +17,30 @@ import java.util.Date;
 public interface Message
 {
     /**
-     * Message field name identifying the destination of a message. 
+     * Message field name identifying the EMS destination of a message. 
+     * <p>
+     * The destination message field is only required when communicating with
+     * EMS.
      * <p>
      * To publish a message on a specific destination include this 
      * message field using {@link Message#setString}.
+     * <pre>
+     *     message.setString(Message.FIELD_NAME_DESTINATION, "MyDest");
+     * </pre>
      * <p>
      * To subscribe to messages published on a specific destination,
      * use a matcher that includes this message field name. 
+     * <pre>
+     *     String matcher = String.Format("{\"%s\":\"%s\"}",
+     *         Message.FIELD_NAME_DESTINATION, "MyDest");
+     *
+     *     connection.Subscribe(matcher, "MyDurable", null, new MySubscriptionListener());
+     * </pre>
+     * <p>
+     * To distinguish between topics and queues the destination name
+     * can be prefixed with either "TOPIC:" or "QUEUE:", for example
+     * "TOPIC:MyDest" or "QUEUE:MyDest". A destination with no prefix is
+     * a topic.
      */
     public static final String FIELD_NAME_DESTINATION = "_dest";
 
@@ -71,6 +88,22 @@ public interface Message
         MESSAGE_ARRAY
     };
     
+    /**
+     * Get the message's unique store identifier assigned
+     * by the persistence service.
+     *
+     * @return The message identifier.
+     */
+    public long getStoreMessageId();
+
+    /**
+     * Get the message's delivery count assigned
+     * by the persistence service.
+     *
+     * @return The message delivery count.
+     */
+    public long getDeliveryCount();
+
     /**
      * Determine whether a field is present in the message.
      * 

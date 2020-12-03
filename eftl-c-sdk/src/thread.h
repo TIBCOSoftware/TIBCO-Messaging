@@ -1,15 +1,17 @@
 /*
- * Copyright (c) $Date: 2018-03-08 14:04:14 -0600 (Thu, 08 Mar 2018) $ TIBCO Software Inc.
+ * Copyright (c) $Date: 2020-05-26 13:01:55 -0700 (Tue, 26 May 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: thread.h 100048 2018-03-08 20:04:14Z bpeterse $
+ * $Id: thread.h 125253 2020-05-26 20:01:55Z bpeterse $
  *
  */
 
 #ifndef INCLUDED_TIBEFTL_THREAD_H
 #define INCLUDED_TIBEFTL_THREAD_H
+
+#include <inttypes.h>
 
 #define WAIT_FOREVER -1
 
@@ -57,15 +59,15 @@ void thread_join(thread_t thread);
 void thread_detach(thread_t thread);
 
 void mutex_init(mutex_t* mutex);
-void mutex_destroy(mutex_t* m);
-void mutex_lock(mutex_t* m);
-void mutex_unlock(mutex_t* m);
+void mutex_destroy(mutex_t* mutex);
+void mutex_lock(mutex_t* mutex);
+void mutex_unlock(mutex_t* mutex);
 
 void thread_once(thread_once_t* once_control, void (*init_routine)(void));
 
 semaphore_t semaphore_create(void);
 void semaphore_destroy(semaphore_t semaphore);
-int semaphore_wait(semaphore_t semaphore, int timeout);
+int semaphore_wait(semaphore_t semaphore, int64_t timeout);
 void semaphore_post(semaphore_t semaphore);
 
 #endif /* INCLUDED_TIBEFTL_THREAD_H */

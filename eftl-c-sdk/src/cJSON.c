@@ -65,7 +65,7 @@ CJSON_PUBLIC(const char *) _cJSON_GetErrorPtr(void)
 CJSON_PUBLIC(const char*) _cJSON_Version(void)
 {
     static char version[15];
-    sprintf(version, "%i.%i.%i", CJSON_VERSION_MAJOR, CJSON_VERSION_MINOR, CJSON_VERSION_PATCH);
+    snprintf(version, sizeof(version), "%i.%i.%i", CJSON_VERSION_MAJOR, CJSON_VERSION_MINOR, CJSON_VERSION_PATCH);
 
     return version;
 }
@@ -434,22 +434,22 @@ static _cJSON_bool print_number(const _cJSON * const item, printbuffer * const o
     /* This checks for NaN and Infinity */
     if ((d * 0) != 0)
     {
-        length = sprintf((char*)number_buffer, "null");
+        length = snprintf((char*)number_buffer, sizeof(number_buffer), "null");
     }
     else
     {
         /* Try 15 decimal places of precision to avoid nonsignificant nonzero digits */
-        length = sprintf((char*)number_buffer, "%1.15g", d);
+        length = snprintf((char*)number_buffer, sizeof(number_buffer), "%1.15g", d);
 
         /* Check whether the original double can be recovered */
         if ((sscanf((char*)number_buffer, "%lg", &test) != 1) || ((double)test != d))
         {
             /* If not, print with 17 decimal places of precision */
-            length = sprintf((char*)number_buffer, "%1.17g", d);
+            length = snprintf((char*)number_buffer, sizeof(number_buffer), "%1.17g", d);
         }
     }
 
-    /* sprintf failed or buffer overrun occured */
+    /* snprintf failed or buffer overrun occured */
     if ((length < 0) || (length > (int)(sizeof(number_buffer) - 1)))
     {
         return false;
@@ -786,12 +786,13 @@ static _cJSON_bool print_string_ptr(const unsigned char * const input, printbuff
     /* empty string */
     if (input == NULL)
     {
-        output = ensure(output_buffer, sizeof("\"\""));
+        output_length = sizeof("\"\"");
+        output = ensure(output_buffer, output_length);
         if (output == NULL)
         {
             return false;
         }
-        strcpy((char*)output, "\"\"");
+        strncpy((char*)output, "\"\"", output_length);
 
         return true;
     }
@@ -842,7 +843,7 @@ static _cJSON_bool print_string_ptr(const unsigned char * const input, printbuff
     output[0] = '\"';
     output_pointer = output + 1;
     /* copy the string */
-    for (input_pointer = input; *input_pointer != '\0'; (void)input_pointer++, output_pointer++)
+    for (input_pointer = input; *input_pointer != '\0'; (void)input_pointer++)
     {
         if ((*input_pointer > 31) && (*input_pointer != '\"') && (*input_pointer != '\\'))
         {
@@ -883,6 +884,7 @@ static _cJSON_bool print_string_ptr(const unsigned char * const input, printbuff
                     break;
             }
         }
+        output_pointer++;
     }
     output[output_length + 1] = '\"';
     output[output_length + 2] = '\0';
@@ -1210,7 +1212,7 @@ static _cJSON_bool print_value(const _cJSON * const item, printbuffer * const ou
             {
                 return false;
             }
-            strcpy((char*)output, "null");
+            strncpy((char*)output, "null", 5);
             return true;
 
         case _cJSON_False:
@@ -1219,7 +1221,7 @@ static _cJSON_bool print_value(const _cJSON * const item, printbuffer * const ou
             {
                 return false;
             }
-            strcpy((char*)output, "false");
+            strncpy((char*)output, "false", 6);
             return true;
 
         case _cJSON_True:
@@ -1228,7 +1230,7 @@ static _cJSON_bool print_value(const _cJSON * const item, printbuffer * const ou
             {
                 return false;
             }
-            strcpy((char*)output, "true");
+            strncpy((char*)output, "true", 5);
             return true;
 
         case _cJSON_Number:

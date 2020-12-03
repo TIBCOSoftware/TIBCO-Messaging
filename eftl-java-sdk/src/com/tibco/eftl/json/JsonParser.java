@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2016-03-28 18:53:37 -0500 (Mon, 28 Mar 2016) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-03-31 10:23:10 -0700 (Tue, 31 Mar 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JsonParser.java 85043 2016-03-28 23:53:37Z bpeterse $
+ * $Id: JsonParser.java 123342 2020-03-31 17:23:10Z bpeterse $
  */
 package com.tibco.eftl.json;
 
@@ -178,10 +178,6 @@ public class JsonParser {
 
         while (pos < len) {
             b.append(src, start, pos-1);
-
-            if (pos >= len) {
-                throw new JsonException("Unterminated string");
-            }
 
             char c = src.charAt(pos++);
             switch (c) {

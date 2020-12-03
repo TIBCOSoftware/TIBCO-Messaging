@@ -1,10 +1,10 @@
 //
-//  Copyright (c) 2013-$Date: 2018-02-05 18:15:48 -0600 (Mon, 05 Feb 2018) $ TIBCO Software Inc.
+//  Copyright (c) 2013-$Date: 2020-02-06 12:13:10 -0800 (Thu, 06 Feb 2020) $ TIBCO Software Inc.
 //  Licensed under a BSD-style license. Refer to [LICENSE]
 //  For more information, please contact:
 //  TIBCO Software Inc., Palo Alto, California USA
 //
-//  $Id: eFTLConnection.h 99237 2018-02-06 00:15:48Z bpeterse $
+//  $Id: eFTLConnection.h 121481 2020-02-06 20:13:10Z bpeterse $
 //
 
 #import <Foundation/Foundation.h>
@@ -77,6 +77,13 @@ extern NSInteger const eFTLConnectionMessageTooLarge;
  * \memberof eFTLConnection
  * \brief %eFTL server error (1011).  Please report this error to TIBCO. */
 extern NSInteger const eFTLConnectionServerError;
+
+/** 
+ * \memberof eFTLConnection
+ * \brief The server is restarting (1012).
+ *
+ *  Programs may wait, then attempt to reconnect. */
+extern NSInteger const eFTLConnectionRestart;
 
 /** 
  * \memberof eFTLConnection
@@ -247,16 +254,6 @@ extern NSInteger const eFTLSubscriptionInvalid;
  * A matcher can narrow subscription interest in the inbound
  * message stream.
  *
- * It is good practice to subscribe to
- * messages published to a specific destination
- * by using the message field name 
- * eFTLMessage::eFTLFieldNameDestination.
- *
- * To subscribe for messages published to a specific destination,
- * create a subscription matcher for that destination; for example:
- * @code {"_dest":"myTopic"}
- * @endcode
- *
  * @param matcher The subscription uses this content matcher to
  *                narrow the message stream. 
  * @param listener This listener defines callback methods for
@@ -283,16 +280,6 @@ extern NSInteger const eFTLSubscriptionInvalid;
  *
  * A matcher can narrow subscription interest in the inbound
  * message stream.
- *
- * It is good practice to subscribe to
- * messages published to a specific destination
- * by using the message field name
- * eFTLMessage::eFTLFieldNameDestination.
- *
- * To subscribe for messages published to a specific destination,
- * create a subscription matcher for that destination; for example:
- * @code {"_dest":"myTopic"}
- * @endcode
  *
  * @param matcher The subscription uses this content matcher to
  *                narrow the message stream.

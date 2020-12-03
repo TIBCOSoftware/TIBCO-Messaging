@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2017-10-30 16:57:04 -0500 (Mon, 30 Oct 2017) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: msg.c 97172 2017-10-30 21:57:04Z bpeterse $
+ * $Id: msg.c 128796 2020-09-24 19:20:18Z bpeterse $
  *
  */
 
@@ -14,6 +14,7 @@
 #include <math.h>
 
 #include "hashmap.h"
+#include "thread.h"
 #include "base64.h"
 #include "eftl.h"
 #include "msg.h"
@@ -35,6 +36,18 @@
 #define isNegInf(x) (!isfinite(x) && x<0)
 #endif
 
+typedef struct tibeftlMessageListStruct
+{
+    mutex_t                     mutex;
+    semaphore_t                 sema;
+
+    bool                        closed;
+
+    tibeftlMessage              head;
+    tibeftlMessage              tail;
+
+} tibeftlMessageListRec, *tibeftlMessageList;
+
 typedef struct tibeftlCacheStruct
 {
     tibeftlFieldType            type;
@@ -45,9 +58,25 @@ typedef struct tibeftlCacheStruct
 
 struct tibeftlMessageStruct
 {
+    tibeftlMessage              next;
+
     _cJSON*                     json;
     _cJSON*                     iter;
     hashmap_t*                  cache;
+
+    // receipt
+    int64_t                     seqNum;
+    char*                       subId;
+
+    // reply to
+    char*                       replyTo;
+    int64_t                     reqId;
+
+    // store message id
+    int64_t                     msgId;
+
+    // delivery count
+    int64_t                     deliveryCount;
 };
 
 static void
@@ -79,6 +108,110 @@ _deleteCache(
     free(cache);
 }
 
+tibeftlMessageList
+tibeftlMessageList_Create(void)
+{
+    tibeftlMessageList          list;
+
+    list = calloc(1, sizeof(struct tibeftlMessageListStruct));
+    if (!list)
+        return NULL;
+
+    mutex_init(&list->mutex);
+    list->sema = semaphore_create();
+
+    return list;
+}
+
+void
+tibeftlMessageList_Destroy(
+    tibeftlMessageList          list)
+{
+    if (!list)
+        return;
+
+    mutex_destroy(&list->mutex);
+    semaphore_destroy(list->sema);
+
+    free(list);
+}
+
+void
+tibeftlMessageList_Close(
+    tibeftlMessageList          list)
+{
+    if (!list)
+        return;
+
+    mutex_lock(&list->mutex);
+
+    list->closed = true;
+
+    mutex_unlock(&list->mutex);
+
+    semaphore_post(list->sema);
+}
+
+bool
+tibeftlMessageList_Add(
+    tibeftlMessageList          list,
+    tibeftlMessage              msg)
+{
+    if (!list || !msg)
+        return false;
+
+    mutex_lock(&list->mutex);
+
+    if (list->closed)
+    {
+        mutex_unlock(&list->mutex);
+        return false;
+    }
+
+    msg->next = NULL;
+
+    if (list->head == NULL)
+    {
+        list->head = list->tail = msg;
+    }
+    else
+    {
+        list->tail->next = msg;
+        list->tail = list->tail->next;
+    }
+
+    mutex_unlock(&list->mutex);
+
+    semaphore_post(list->sema);
+
+    return true;
+}
+
+tibeftlMessage
+tibeftlMessageList_Next(
+    tibeftlMessageList          list)
+{
+    tibeftlMessage              msg = NULL;
+
+    if (!list)
+        return NULL;
+
+    semaphore_wait(list->sema, WAIT_FOREVER);
+
+    mutex_lock(&list->mutex);
+
+    msg = list->head;
+
+    if (list->head && list->head->next)
+        list->head = list->head->next;
+    else
+        list->head = list->tail = NULL;
+    
+    mutex_unlock(&list->mutex);
+
+    return msg;
+}
+
 static void
 tibeftlMessage_clearCache(
     tibeftlMessage              msg)
@@ -105,7 +238,7 @@ tibeftlMessage_removeCache(
     cache = hashmap_remove(msg->cache, field);
 
     if (cache)
-    	_deleteCache(field, cache, NULL);
+        _deleteCache(field, cache, NULL);
 }
 
 static void
@@ -288,9 +421,137 @@ tibeftlMessage_Destroy(
     if (msg->json)
         _cJSON_Delete(msg->json);
 
+    if (msg->subId)
+        free(msg->subId);
+
+    if (msg->replyTo)
+        free(msg->replyTo);
+
     tibeftlMessage_clearCache(msg);
 
     free(msg);
+}
+
+void
+tibeftlMessage_SetReceipt(
+    tibeftlMessage              msg,
+    int64_t                     seqNum,
+    const char*                 subId)
+{
+    if (!msg)
+        return;
+
+    if (seqNum)
+        msg->seqNum = seqNum;
+
+    if (subId)
+        msg->subId = strdup(subId);
+}
+
+void
+tibeftlMessage_GetReceipt(
+    tibeftlMessage              msg,
+    int64_t*                    seqNum,
+    const char**                subId)
+{
+    if (!msg)
+        return;
+
+    if (seqNum)
+        *seqNum = msg->seqNum;
+
+    if (subId)
+        *subId = msg->subId; 
+}
+
+void
+tibeftlMessage_SetReplyTo(
+    tibeftlMessage              msg,
+    const char*                 replyTo,
+    int64_t                     reqId)
+{
+    if (!msg)
+        return;
+
+    if (replyTo)
+        msg->replyTo = strdup(replyTo);
+
+    if (reqId)
+        msg->reqId = reqId;
+}
+
+void
+tibeftlMessage_GetReplyTo(
+    tibeftlMessage              msg,
+    const char**                replyTo,
+    int64_t*                    reqId)
+{
+    if (!msg)
+        return;
+
+    if (replyTo)
+        *replyTo = msg->replyTo;
+
+    if (reqId)
+        *reqId = msg->reqId; 
+}
+
+void
+tibeftlMessage_SetStoreMessageId(
+    tibeftlMessage              msg,
+    int64_t                     msgId)
+{
+    if (!msg)
+        return;
+
+    if (msgId)
+        msg->msgId = msgId;
+}
+
+int64_t
+tibeftlMessage_GetStoreMessageId(
+    tibeftlErr                  err,
+    tibeftlMessage              msg)
+{
+    if (tibeftlErr_IsSet(err))
+        return 0;
+
+    if (!msg)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "message is NULL");
+        return 0;
+    }
+
+    return msg->msgId; 
+}
+
+void
+tibeftlMessage_SetDeliveryCount(
+    tibeftlMessage              msg,
+    int64_t                     deliveryCount)
+{
+    if (!msg)
+        return;
+
+    if (deliveryCount)
+        msg->deliveryCount = deliveryCount;
+}
+
+int64_t
+tibeftlMessage_GetDeliveryCount(
+    tibeftlErr                  err,
+    tibeftlMessage              msg)
+{
+    if (tibeftlErr_IsSet(err))
+        return 0;
+
+    if (!msg)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "message is NULL");
+        return 0;
+    }
+
+    return msg->deliveryCount; 
 }
 
 static void
@@ -473,7 +734,7 @@ _printFields(
         case TIBEFTL_FIELD_TYPE_STRING_ARRAY:
         {
             char** value;
-            int cnt, i;
+            int cnt = 0, i = 0;
             value = (char**)tibeftlMessage_GetArray(NULL, msg, TIBEFTL_FIELD_TYPE_STRING_ARRAY, field, &cnt);
             if (ptr)
             {
@@ -515,7 +776,7 @@ _printFields(
         case TIBEFTL_FIELD_TYPE_LONG_ARRAY:
         {
             int64_t* value;
-            int cnt, i;
+            int cnt = 0, i = 0;
             value = (int64_t*)tibeftlMessage_GetArray(NULL, msg, TIBEFTL_FIELD_TYPE_LONG_ARRAY, field, &cnt);
             if (ptr)
             {
@@ -557,7 +818,7 @@ _printFields(
         case TIBEFTL_FIELD_TYPE_DOUBLE_ARRAY:
         {
             double* value;
-            int cnt, i;
+            int cnt = 0, i = 0;
             value = (double*)tibeftlMessage_GetArray(NULL, msg, TIBEFTL_FIELD_TYPE_DOUBLE_ARRAY, field, &cnt);
             if (ptr)
             {
@@ -599,7 +860,7 @@ _printFields(
         case TIBEFTL_FIELD_TYPE_TIME_ARRAY:
         {
             int64_t* value;
-            int cnt, i;
+            int cnt = 0, i = 0;
             value = (int64_t*)tibeftlMessage_GetArray(NULL, msg, TIBEFTL_FIELD_TYPE_TIME_ARRAY, field, &cnt);
             if (ptr)
             {
@@ -641,7 +902,7 @@ _printFields(
         case TIBEFTL_FIELD_TYPE_MESSAGE_ARRAY:
         {
             tibeftlMessage* value;
-            int cnt, i;
+            int cnt = 0, i = 0;
             value = (tibeftlMessage*)tibeftlMessage_GetArray(NULL, msg, TIBEFTL_FIELD_TYPE_MESSAGE_ARRAY, field, &cnt);
             if (ptr)
             {
@@ -1495,6 +1756,7 @@ tibeftlMessage_GetArray(
     void*                       arr;
     int                         len = 0;
     int                         i;
+    int                         alen = 0;
 
     if (tibeftlErr_IsSet(err))
         return NULL;
@@ -1541,7 +1803,12 @@ tibeftlMessage_GetArray(
             switch (type)
             {
             case TIBEFTL_FIELD_TYPE_STRING_ARRAY:
-                arr = malloc(sizeof(char*) * len);
+                alen = (sizeof(char*) * len);
+                if (len != alen/sizeof(char*)) {
+                    tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "possible malloc overflow while getting string array field");
+                    return NULL;
+                }
+                arr = malloc(alen);
                 for (i = 0; i < len; i++)
                 {
                     val = _cJSON_GetArrayItem(obj, i);
@@ -1550,7 +1817,12 @@ tibeftlMessage_GetArray(
                 }
                 break;
             case TIBEFTL_FIELD_TYPE_LONG_ARRAY:
-                arr = malloc(sizeof(int64_t) * len);
+                alen = (sizeof(int64_t) * len);
+                if (len != alen/sizeof(int64_t)) {
+                    tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "possible malloc overflow while getting long array field");
+                    return NULL;
+                }
+                arr = malloc(alen);
                 for (i = 0; i < len; i++)
                 {
                     val = _cJSON_GetArrayItem(obj, i);
@@ -1559,7 +1831,12 @@ tibeftlMessage_GetArray(
                 }
                 break;
             case TIBEFTL_FIELD_TYPE_DOUBLE_ARRAY:
-                arr = malloc(sizeof(double) * len);
+                alen = (sizeof(double) * len);
+                if (len != alen/sizeof(double)) {
+                    tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "possible malloc overflow while getting double array field");
+                    return NULL;
+                }
+                arr = malloc(alen);
                 for (i = 0; i < len; i++)
                 {
                     val = _cJSON_GetArrayItem(obj, i);
@@ -1572,7 +1849,12 @@ tibeftlMessage_GetArray(
                 }
                 break;
             case TIBEFTL_FIELD_TYPE_TIME_ARRAY:
-                arr = malloc(sizeof(int64_t) * len);
+                alen = (sizeof(int64_t) * len);
+                if (len != alen/sizeof(int64_t)) {
+                    tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "possible malloc overflow while getting time array field");
+                    return NULL;
+                }
+                arr = malloc(alen);
                 for (i = 0; i < len; i++)
                 {
                     val = _cJSON_GetArrayItem(obj, i);
@@ -1585,7 +1867,12 @@ tibeftlMessage_GetArray(
                 }
                 break;
             case TIBEFTL_FIELD_TYPE_MESSAGE_ARRAY:
-                arr = malloc(sizeof(tibeftlMessage) * len);
+                alen = (sizeof(tibeftlMessage) * len);
+                if (len != alen/sizeof(tibeftlMessage)) {
+                    tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "possible malloc overflow while getting message array field");
+                    return NULL;
+                }
+                arr = malloc(alen);
                 for (i = 0; i < len; i++)
                 {
                     val = _cJSON_GetArrayItem(obj, i);

@@ -1,18 +1,18 @@
 /*
- * Copyright (c) 2013-$Date: 2015-01-19 16:24:25 -0600 (Mon, 19 Jan 2015) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2020-08-19 11:55:34 -0700 (Wed, 19 Aug 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketFrame.java 77266 2015-01-19 22:24:25Z bpeterse $
+ * $Id: WebSocketFrame.java 127983 2020-08-19 18:55:34Z bpeterse $
  *
  */
 package com.tibco.eftl.websocket;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  *  0                   1                   2                   3
@@ -44,26 +44,26 @@ public class WebSocketFrame {
     public static final byte PING         = 0x09;
     public static final byte PONG         = 0x0A;
 
-    private static final Random random;
+    private static final SecureRandom random;
     private static final Charset UTF8;
     
     static {
-        random = new Random();
+        random = new SecureRandom();
         UTF8 = Charset.forName("UTF-8");
     }
     
     /** Create a binary frame. */
-    public static byte[] binary(byte[] data) {
+    public static byte[] binaryFrame(byte[] data) {
         return frame(BINARY, data);
     }
     
     /** Create a text frame. */
-    public static byte[] text(String text) {
+    public static byte[] textFrame(String text) {
         return frame(TEXT, text.getBytes(UTF8));
     }
     
     /** Create a close frame. */
-    public static byte[] close(int code) {
+    public static byte[] closeFrame(int code) {
         byte[] data = new byte[2];
         data[0] = (byte) ((code >> 8) & 0xFF);
         data[1] = (byte) ( code       & 0xFF);
@@ -71,12 +71,12 @@ public class WebSocketFrame {
     }
     
     /** Create a ping frame. */
-    public static byte[] ping(byte[] data) {
+    public static byte[] pingFrame(byte[] data) {
         return frame(PING, data);
     }
     
     /** Create a pong frame. */
-    public static byte[] pong(byte[] data, int offset, int length) {
+    public static byte[] pongFrame(byte[] data, int offset, int length) {
         return frame(PONG, data, offset, length);
     }
     
@@ -89,7 +89,10 @@ public class WebSocketFrame {
     }
     
     private static byte[] frame(byte opcode, boolean fin, byte[] data, int offset, int length) {
-        if (offset < 0 || length < 0 || offset + length > data.length) 
+        if (offset < 0 || length < 0) 
+            throw new IndexOutOfBoundsException();
+        
+        if (data != null && offset + length > data.length) 
             throw new IndexOutOfBoundsException();
         
         int maskOffset = (length <= 125 ? 2 : (length <= 65535 ? 4 : 10));
@@ -103,18 +106,18 @@ public class WebSocketFrame {
             frame[1] = (byte) (0x80 | length);
         } else if (length <= 65535) {
             frame[1] = (byte) (0x80 | 126);
-            frame[2] = (byte) ((length >> 8)  & 0xFF);
-            frame[3] = (byte) ( length        & 0xFF);
+            frame[2] = (byte) ((((long) length) >> 8)  & 0xFF);
+            frame[3] = (byte) ( ((long) length)        & 0xFF);
         } else {
             frame[1] = (byte) (0x80 | 127);
-            frame[2] = (byte) ((length >> 56) & 0xFF);
-            frame[3] = (byte) ((length >> 48) & 0xFF);
-            frame[4] = (byte) ((length >> 40) & 0xFF);
-            frame[5] = (byte) ((length >> 32) & 0xFF);
-            frame[6] = (byte) ((length >> 24) & 0xFF);
-            frame[7] = (byte) ((length >> 16) & 0xFF);
-            frame[8] = (byte) ((length >> 8)  & 0xFF);
-            frame[9] = (byte) ( length        & 0xFF);
+            frame[2] = (byte) ((((long) length) >> 56) & 0xFF);
+            frame[3] = (byte) ((((long) length) >> 48) & 0xFF);
+            frame[4] = (byte) ((((long) length) >> 40) & 0xFF);
+            frame[5] = (byte) ((((long) length) >> 32) & 0xFF);
+            frame[6] = (byte) ((((long) length) >> 24) & 0xFF);
+            frame[7] = (byte) ((((long) length) >> 16) & 0xFF);
+            frame[8] = (byte) ((((long) length) >> 8)  & 0xFF);
+            frame[9] = (byte) ( ((long) length)        & 0xFF);
         }
 
         generateMask(frame, maskOffset);

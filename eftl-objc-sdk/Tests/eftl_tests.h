@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2001-$Date: 2013-07-24 16:57:11 -0500 (Wed, 24 Jul 2013) $ TIBCO Software Inc.
+//  Copyright (c) 2001-$Date: 2013-07-24 14:57:11 -0700 (Wed, 24 Jul 2013) $ TIBCO Software Inc.
 //  Licensed under a BSD-style license. Refer to [LICENSE]
 //  For more information, please contact:
 //  TIBCO Software Inc., Palo Alto, California USA

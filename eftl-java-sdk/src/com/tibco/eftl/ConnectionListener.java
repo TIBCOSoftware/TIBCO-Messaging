@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2015-10-13 00:58:36 -0500 (Tue, 13 Oct 2015) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-01-13 09:13:35 -0800 (Mon, 13 Jan 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: ConnectionListener.java 82294 2015-10-13 05:58:36Z bmahurka $
+ * $Id: ConnectionListener.java 120856 2020-01-13 17:13:35Z bpeterse $
  *
  */
 package com.tibco.eftl;
@@ -66,6 +66,10 @@ public interface ConnectionListener
     /** eFTL server error.  Please report this error to TIBCO support staff.
      */
     public static final int SERVER_ERROR = 1011; /* RFC6455.CLOSE_SERVER_ERROR */
+    
+    /** The server closed the connection because the server is restarting.
+     */
+    public static final int RESTART = 1012; 
     
     /** The client could not establish a secure connection to the eFTL server.
      * <p>

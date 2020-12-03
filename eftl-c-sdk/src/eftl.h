@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2018-06-06 13:30:42 -0500 (Wed, 06 Jun 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.h.config 101572 2018-06-06 18:30:42Z bpeterse $
+ * $Id: eftl.h.config 128906 2020-09-29 20:29:25Z bpeterse $
  *
  */
 
@@ -99,6 +99,10 @@ extern "C" {
 */
 #define TIBEFTL_ERR_INVALID_TYPE                (5)
 
+/** @brief Not supported.
+*/
+#define TIBEFTL_ERR_NOT_SUPPORTED               (6)
+
 /** @brief Not connected.
  */
 #define TIBEFTL_ERR_NOT_CONNECTED               (8)
@@ -131,6 +135,22 @@ extern "C" {
 */
 #define TIBEFTL_ERR_SUBSCRIPTION_INVALID        (22)
 
+/** @brief Map request failed, not authorized.
+*/
+#define TIBEFTL_ERR_MAP_REQUEST_NOT_AUTHORIZED  (14)
+
+/** @brief Map request failed.
+*/
+#define TIBEFTL_ERR_MAP_REQUEST_FAILED          (30)
+
+/** @brief Request not authorized.
+*/
+#define TIBEFTL_ERR_REQUEST_NOT_AUTHORIZED      (40)
+
+/** @brief Request failed.
+*/
+#define TIBEFTL_ERR_REQUEST_FAILED              (41)
+
 /** @brief Server is shutting down.
 */
 #define TIBEFTL_ERR_GOING_AWAY                  (1001)
@@ -138,6 +158,10 @@ extern "C" {
 /** @brief Published message is too big.
 */
 #define TIBEFTL_ERR_MESSAGE_TOO_BIG             (1009)
+
+/** @brief Server is restarting.
+*/
+#define TIBEFTL_ERR_SERVICE_RESTART             (1012)
 
 /** @brief Server closed the connection.
 */
@@ -153,14 +177,35 @@ extern "C" {
 
 //@}
 
-/** @brief Message field name identifying the destination of a message.
+/** @brief Message field name identifying the EMS destination of a message.
  *
- * To publish a message on a specific destination include this
+ * The destination message field is only required when communicating with
+ * EMS. 
+ *
+ * To publish a message on a specific EMS destination include this
  * message field using @ref tibeftlMessage_SetString().
  *
- * To subscribe to messages published on a specific destination,
+ * @code
+ * tibeftlMessage_SetString(err, msg, TIBEFTL_FIELD_NAME_DESTINATION, "MyDest");
+ * @endcode
+ *
+ * To subscribe to messages published on a specific EMS destination
  * use a subscription matcher that includes this message field name
  * in @ref tibeftl_Subscribe().
+ *
+ * @code
+ * char matcher[64];
+ *
+ * snprintf(matcher, sizeof(matcher), "{\"%s\":\"%s\"}",
+ *         TIBEFTL_FIELD_NAME_DESTINATION, "MyDest");
+ *
+ * tibeftl_Subscribe(err, conn, matcher, "MyDurable", cb, NULL);
+ * @endcode
+ *
+ * To distinguish between topics and queues the destination name
+ * can be prefixed with either "TOPIC:" or "QUEUE:", for example
+ * "TOPIC:MyDest" or "QUEUE:MyDest". A destination name with no prefix is
+ * a topic.
  */
 #define TIBEFTL_FIELD_NAME_DESTINATION  "_dest"
 
@@ -197,6 +242,29 @@ typedef struct tibeftlMessageStruct *tibeftlMessage;
  */
 typedef struct tibeftlKVMapStruct *tibeftlKVMap;
 
+/** @brief Connection states.
+ *
+ * @see tibeftlStateCallback
+ */
+typedef enum tibeftlConnectionStateEnum
+{
+    STATE_INITIAL,
+    STATE_DISCONNECTED,
+    STATE_CONNECTING,
+    STATE_CONNECTED,
+    STATE_DISCONNECTING,
+    STATE_RECONNECTING,
+
+} tibeftlConnectionState;
+
+/**
+ * @brief Get a printable string that describes the connection state.
+ */
+DLL_EXPORT
+const char*
+tibeftlConnectionState_ToString(
+    tibeftlConnectionState      state);
+
 /**
  * @brief Connection error callback.
  *
@@ -214,6 +282,23 @@ typedef struct tibeftlKVMapStruct *tibeftlKVMap;
 typedef void (*tibeftlErrorCallback)(
     tibeftlConnection           conn,
     tibeftlErr                  err,
+    void*                       arg);
+
+/**
+ * @brief Connection state callback.
+ *
+ * A connection state callback is invoked whenever the state
+ * of the connection changes.
+ *
+ * @param conn The connection on which the state changed.
+ * @param state The current state of the connection.
+ * @param arg The callback-specific argument.
+ *
+ * @see tibeftlOptions
+ */
+typedef void (*tibeftlStateCallback)(
+    tibeftlConnection           conn,
+    tibeftlConnectionState      state,
     void*                       arg);
 
 /**
@@ -267,26 +352,94 @@ typedef struct tibeftlOptionsStruct
      * certificates used to authenticate the server's certificate on
      * secure connections.
      *
-     * If the trust store is not set, any server certificate will be
-     * accepted.
+     * If the trust store is not specified the system default CA 
+     * certificates will be used.
      */
     const char*                 trustStore;
+
+    /**
+     * @brief Sets whether or not to skip server certifiate authentication.
+     *
+     * Specify \c true to accept any server certificate. This option
+     * should only be used during development and testing.
+     */
+    bool                        trustAll;
 
     /** @brief Timeout, in milliseconds, for server requests.
      */
     int64_t                     timeout;
 
-    /** @brief Maximum autoreconnect attempts.
+    /** @brief Maximum auto-reconnect attempts.
+     *
+     * A value of 0 disables auto-reconnect. The default values is 256
+     * attempts.
      */
     int64_t                     autoReconnectAttempts;
 
-    /** @brief Maximum autoreconnect delay in milliseconds.
+    /** @brief Maximum delay in milliseconds between auto-reconnect attempts.
+     *
+     * The default value is 30 seconds.
      */
     int64_t                     autoReconnectMaxDelay;
 
+    /** @brief Callback invoked whenever the connection state changes.
+     */
+    tibeftlStateCallback        stateChangeCallback;
+
+    /** @brief Argument included with the connection state change callback.
+     */
+    void*                       stateChangeCallbackArg;
+
+    /** 
+     * @brief Specifies the maximum number of unacknowledged messages
+     * allowed for the client.
+     *
+     * Once the maximum number of unacknowledged messages is reached the
+     * client will stop receiving additional messages until previously
+     * received messages are acknowledged.
+     *
+     * If not specified the server's configured value will be used.
+     */
+    int                         maxPendingAcks;
+
 } tibeftlOptions;
 
-#define tibeftlOptionsDefault { 0, NULL, NULL, NULL, NULL, 10000, 5, 30000 }
+#define tibeftlOptionsDefault { 2, NULL, NULL, NULL, NULL, false, 10000, 256, 30000, NULL, NULL, 0 }
+
+/** @brief Acknowledge mode.
+ *
+ * @see tibeftlSubscriptionOptions
+ */
+typedef enum tibeftlAcknowledgeModeEnum
+{
+    /** @brief Auto acknowledgment mode.
+     *
+     * Messages consumed from a subscription with this acknowledgment mode are
+     * automatically acknowledged.
+     */
+    TIBEFTL_ACKNOWLEDGE_MODE_AUTO,
+    
+    /** @brief Client acknowledgment mode.
+     *
+     * Messages consumed from a subscription with this acknowledgment mode require
+     * explicit acknowledgment by the client.
+     *
+     * The eFTL server will stop delivering messages to the client once the
+     * server's configured maximum unacknowledged messages is reached.
+     *
+     * @see tibeftl_Acknowledge
+     * @see tibeftl_AcknowledgeAll
+     */
+    TIBEFTL_ACKNOWLEDGE_MODE_CLIENT,
+    
+    /** @brief None acknowledgment mode.
+     *
+     * Messages consumed from a subscription with this acknowledgment mode do
+     * not require acknowledgment.
+     */
+    TIBEFTL_ACKNOWLEDGE_MODE_NONE,
+
+} tibeftlAcknowledgeMode;
 
 /** @name Durable Types
  *
@@ -309,6 +462,14 @@ typedef struct tibeftlOptionsStruct
  */
 typedef struct tibeftlSubscriptionOptionsStruct
 {
+    /** 
+     * @brief Acknowledgment mode.
+     *
+     * Specifies how messages consumed by the subscription
+     * are acknowledged.
+     */
+    tibeftlAcknowledgeMode      acknowledgeMode;
+    
     /** @brief Durable subscription type.
      */
     const char*                 durableType;
@@ -319,7 +480,7 @@ typedef struct tibeftlSubscriptionOptionsStruct
 
 } tibeftlSubscriptionOptions;
 
-#define tibeftlSubscriptionOptionsDefault { NULL, NULL }
+#define tibeftlSubscriptionOptionsDefault { TIBEFTL_ACKNOWLEDGE_MODE_AUTO, NULL, NULL }
 
 /**
  * @brief Version string of the eFTL library.
@@ -335,19 +496,22 @@ tibeftl_Version(void);
  *
  * Creates a connection to the server.
  *
- * The server URL has the syntax:
+ * When a pipe-separated list of URLs is specified this call will attempt
+ * a connection to each in turn, in a random order, until one is connected.
+ *
+ * The server URLs have the syntax:
  *
  * \c ws://host:port/channel
  * \c wss://host:port/channel
  *
- * Optionally, the URL can contain the username, password, and/or
+ * Optionally, the URLs can contain the username, password, and/or
  * client identifier: 
  *
  * \c ws://username:password@host:port/channel?clientId=<identifier>
  * \c wss://username:password@host:port/channel?clientId=<identifier>
  *
  * @param err An eFTL error to capture information about failures.
- * @param url The URL of the server.
+ * @param url A single URL, or a pipe ('|') separated list of URLs, to the server.
  * @param opts (optional) The options to use when creating the connection.
  * @param errCb (optional) The error callback to be invoked when
  * connection errors occur.
@@ -366,7 +530,7 @@ tibeftl_Connect(
 
 /**
  * @brief Disconnect from the server and free all resources associated
- * with the connection.
+ * with the connection, including the connection object itself.
  *
  * @param err An eFTL error to capture information about failures.
  * @param conn The connection object.
@@ -410,17 +574,11 @@ tibeftl_IsConnected(
 /**
  * @brief Publish a message to all subscribing clients.
  *
- * It is good practice to direct messages to specific destinations
- * by adding a message string field with the name
- * @ref TIBEFTL_FIELD_NAME_DESTINATION.; for example:
- *
- * @code
- * tibeftlMessage_SetString(err, msg, TIBEFTL_FIELD_NAME_DESTINATION, "MyDest");
- * @endcode
- *
  * @param err An eFTL error to capture information about failures.
  * @param conn The connection object.
  * @param msg The message to publish.
+ *
+ * @see TIBEFTL_FIELD_NAME_DESTINATION
  */
 DLL_EXPORT
 void
@@ -430,23 +588,49 @@ tibeftl_Publish(
     tibeftlMessage              msg);
 
 /**
+ * @brief Publish a request message and wait for a reply.
+ *
+ * @param err An eFTL error to capture information about failures.
+ * @param conn The connection object.
+ * @param request The request message to publish.
+ * @param timeout Timeout, in milliseconds, to wait for a reply.
+ *
+ * @return The reply message, or NULL if the request times out.
+ *
+ * @see tibeftl_SendReply
+ * @see TIBEFTL_FIELD_NAME_DESTINATION
+ */
+DLL_EXPORT
+tibeftlMessage
+tibeftl_SendRequest(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlMessage              request,
+    int64_t                     timeout);
+
+/**
+ * @brief Send a reply message in response to a request message.
+ *
+ * @param err An eFTL error to capture information about failures.
+ * @param conn The connection object.
+ * @param reply The reply message to send.
+ * @param request The request message.
+ *
+ * @see tibeftl_SendRequest
+ */
+DLL_EXPORT
+void
+tibeftl_SendReply(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlMessage              reply,
+    tibeftlMessage              request);
+
+/**
  * @brief Subscribe to messages.
  *
  * A subscription can be narrowed by using a matcher that matches
  * only those messages whose content is of interest.
- *
- * It is good practice to subscribe to messages published to specific
- * destinations by using the message field name
- * @ref TIBEFTL_FIELD_NAME_DESTINATION in the matcher; for example:
- *
- * @code
- * char matcher[64];
- *
- * snprintf(matcher, sizeof(matcher), "{\"%s\":\"%s\"}",
- *         TIBEFTL_FIELD_NAME_DESTINATION, "MyDestination");
- *
- * tibeftl_Subscribe(err, conn, matcher, "MyDurable", cb, NULL);
- * @endcode
  *
  * @param err An eFTL error to capture information about failures.
  * @param conn The connection object.
@@ -459,6 +643,8 @@ tibeftl_Publish(
  * @param msgCbArg The message callback argument.
  *
  * @return The subscription.
+ *
+ * @see TIBEFTL_FIELD_NAME_DESTINATION
  */
 DLL_EXPORT
 tibeftlSubscription
@@ -482,6 +668,7 @@ tibeftl_Subscribe(
  * messages to receive.
  * @param durable (optional) The name to use when creating durable
  * subscriptions.
+ * @param opts (optional) The options to use when creating the subscription.
  * @param msgCb The message callback to be invoked when messages
  * are received.
  * @param msgCbArg The message callback argument.
@@ -500,8 +687,52 @@ tibeftl_SubscribeWithOptions(
     void*                       msgCbArg);
 
 /**
- * @brief Unsubscribe from messages and free all resources associated
- * with the subscription.
+ * @brief Close a subscription and free resources associated 
+ * with the subscription object.
+ *
+ * For durable subscriptions, calling this function will cause the
+ * persistence service to stop delivering messages while leaving
+ * the durable subscription to continue accumulating persisted
+ * messages. Any unacknowledged messages will be made available
+ * for redelivery.
+ *
+ * @param err An eFTL error to capture information about failures.
+ * @param conn The connection object.
+ * @param sub The subscription to close.
+ */
+DLL_EXPORT
+void
+tibeftl_CloseSubscription(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlSubscription         sub);
+
+/**
+ * @brief Close all subscriptions and free resources associated 
+ * with all subscription objects.
+ *
+ * For durable subscriptions, calling this function will cause the
+ * persistence service to stop delivering messages while leaving
+ * the durable subscriptions to continue accumulating persisted
+ * messages. Any unacknowledged messages will be made available
+ * for redelivery.
+ *
+ * @param err An eFTL error to capture information about failures.
+ * @param conn The connection object.
+ */
+DLL_EXPORT
+void
+tibeftl_CloseAllSubscriptions(
+    tibeftlErr                  err,
+    tibeftlConnection           conn);
+
+/**
+ * @brief Unsubscribe from messages and free resources associated
+ * with the subscription object.
+ *
+ * For durable subscriptions, calling this function will cause the
+ * persistence service to remove the durable subscription, along
+ * with any persisted messages.
  *
  * @param err An eFTL error to capture information about failures.
  * @param conn The connection object.
@@ -515,8 +746,12 @@ tibeftl_Unsubscribe(
     tibeftlSubscription         sub);
 
 /**
- * @brief Unsubscribe from all messages and free all resources associated
- * with all subscriptions.
+ * @brief Unsubscribe from all messages and free resources associated
+ * with all subscription objects.
+ *
+ * For durable subscriptions, calling this function will cause the
+ * persistence service to remove the durable subscriptions, along
+ * with any persisted messages.
  *
  * @param err An eFTL error to capture information about failures.
  * @param conn The connection object.
@@ -526,6 +761,44 @@ void
 tibeftl_UnsubscribeAll(
     tibeftlErr                  err,
     tibeftlConnection           conn);
+
+/**
+ * @brief Acknowledge this message.
+ * 
+ * Messages consumed from subscriptions with a client acknowledgment mode
+ * must be explicitly acknowledged. The eFTL server will stop delivering
+ * messages to the client once the server's configured maximum number of
+ * unacknowledged messages is reached.
+ *
+ * @param err An eFTL error to capture information about failures.
+ * @param conn The connection object.
+ * @param msg The message to acknowledge.
+ */
+DLL_EXPORT
+void
+tibeftl_Acknowledge(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlMessage              msg);
+
+/**
+ * @brief Acknowledge all messages up to and including this message.
+ * 
+ * Messages consumed from subscriptions with a client acknowledgment mode
+ * must be explicitly acknowledged. The eFTL server will stop delivering
+ * messages to the client once the server's configured maximum number of
+ * unacknowledged messages is reached.
+ *
+ * @param err An eFTL error to capture information about failures.
+ * @param conn The connection object.
+ * @param msg The message being acknowledged.
+ */
+DLL_EXPORT
+void
+tibeftl_AcknowledgeAll(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlMessage              msg);
 
 /**
  * @brief Create a key-value map.
@@ -544,10 +817,26 @@ tibeftl_CreateKVMap(
     const char*                 name);
 
 /**
+ * @brief Remove a key-value map.
+ *
+ * @param err An eFTL error to capture information about failures.
+ * @param conn The connection object.
+ * @param name The key-value map name.
+ *
+ * @return The key-value map.
+ */ 
+DLL_EXPORT
+void
+tibeftl_RemoveKVMap(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    const char*                 name);
+
+/**
  * @brief Destroy a key-value map.
  *
  * @param err An eFTL error to capture information about failures.
- * @param conn The key-value map object.
+ * @param map The key-value map object.
  */
 DLL_EXPORT
 void
@@ -742,6 +1031,36 @@ tibeftlMessage_ToString(
     tibeftlMessage              msg,
     char*                       buffer,
     size_t                      size);
+
+/**
+ * @brief Get the message's unique store identifier
+ * assigned by the persistence service.
+ *
+ * @param err An eFTL error to capture information about failures.
+ * @param msg The message object.
+ *
+ * @return The message identifier.
+ */
+DLL_EXPORT
+int64_t
+tibeftlMessage_GetStoreMessageId(
+    tibeftlErr                  err,
+    tibeftlMessage              msg);
+
+/**
+ * @brief Get the message's delivery count 
+ * assigned by the persistence service.
+ *
+ * @param err An eFTL error to capture information about failures.
+ * @param msg The message object.
+ *
+ * @return The message delivery count.
+ */
+DLL_EXPORT
+int64_t
+tibeftlMessage_GetDeliveryCount(
+    tibeftlErr                  err,
+    tibeftlMessage              msg);
 
 /**
  * @brief Check whether a field is set in a message.

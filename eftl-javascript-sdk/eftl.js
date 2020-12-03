@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2018: 2018-05-21 11:55:18 -0500 (Mon, 21 May 2018) $ TIBCO Software Inc.
+ * Copyright (c) $Date: 2020-10-06 09:36:16 -0700 (Tue, 06 Oct 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.js 101362 2018-05-21 16:55:18Z bpeterse $
+ * $Id: eftl.js 129135 2020-10-06 16:36:16Z bpeterse $
  */
 // Node.js requires a WebSocket implementation (npm install ws)
 var WebSocket = WebSocket || require('ws');
@@ -90,6 +90,15 @@ var WebSocket = WebSocket || require('ws');
 
   function _isInteger(n) {
     return n % 1 === 0;
+  }
+
+  function _shuffle(array) {
+    for (var i = array.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = array[i];
+      array[i] = array[j];
+      array[j] = temp;
+    }
   }
 
   function _each(obj, iterator, context) {
@@ -191,11 +200,8 @@ var WebSocket = WebSocket || require('ws');
       // Node.js
       var url = require('url');
       return url.parse(str);
-    } else if ("function" == typeof URL) {
-        // modern browser and web worker thread
-        return new URL(str);
     } else {
-      // fallback for older browser
+      // browser
       var url = document.createElement('a');
       url.href = str;
       url.query = (url.search && url.search.charAt(0) === '?' ? url.search.substring(1) : url.search);
@@ -267,6 +273,14 @@ var WebSocket = WebSocket || require('ws');
    * @see eFTLConnection#reconnect
    */
 
+  /**
+   * @callback onStateChange
+   * @desc <p>The connection state has changed.</p>
+   * <p>The eFTL library invokes this method whenever the connection state changes.
+   * @param {eFTLConnection} connection The connection whose state has changed.
+   * @param {number} state The connection has changed to this state.
+   * @see eFTL#connect
+   */
 
   /**
    * <p>Connect to an eFTL server.</p>
@@ -275,14 +289,18 @@ var WebSocket = WebSocket || require('ws');
    * the eFTL library calls your {@link onConnect} callback, passing an <tt>eFTLConnection</tt> object that
    * you can use to publish and subscribe.</p>
    *
+   * <p>When a pipe-separated list of URLs is specified this call will attempt a connection to each in turn, 
+   * in a random order, until one is connected.</p>
+   *
    * <p>A program that uses more than one server channel must connect separately to each channel.</p>
    *
-   * @param {string} url The call connects to the eFTL server at this URL. The URL can be in either of these forms:
+   * @param {string} url The call connects to the eFTL server at this URL. This can be a single URL, or a 
+   * pipe ('|') separated list of URLs. URLs can be in either of these forms:
    * <ul>
    *  <li><tt>ws://host:port/channel</tt></li>
    *  <li><tt>wss://host:port/channel</tt></li>
    * </ul>
-   * Optionally, the URL can contain the username, password, and/or client identifier:
+   * Optionally, URLs can contain the username, password, and/or client identifier:
    * <ul>
    *  <li><tt>ws://username:password@host:port/channel?clientId=&lt;identifier&gt;</tt></li>
    *  <li><tt>wss://username:password@host:port/channel?clientId=&lt;identifier&gt;</tt></li>
@@ -293,14 +311,19 @@ var WebSocket = WebSocket || require('ws');
    * @param {string} [options.username] Connect using this username if not specified with the URL.
    * @param {string} [options.password] Connect using this password if not specified with the URL.
    * @param {string} [options.clientId] Connect using this client identifier if not specified with the URL.
-   * @param {number} [options.autoReconnectAttempts] Specify the maximum number of autoreconnect attempts if the connection is lost.
-   * @param {number} [options.autoReconnectMaxDelay] Specify the maximum delay (in milliseconds) between autoreconnect attempts.
+   * @param {number} [options.autoReconnectAttempts] Specify the maximum number of auto-reconnect attempts if the connection is lost.
+   * The default value is 256 attempts.
+   * @param {number} [options.autoReconnectMaxDelay] Specify the maximum delay (in milliseconds) between auto-reconnect attempts.
+   * The default value is 30 seconds.
+   * @param {number} [options.maxPendingAcks] Specify the maximum number of unacknowledged messages allowed for the client.
+   * Once reached the client will stop receiving additional messages until previously received messages are acknowledged.
    * @param {boolean} [options.trustAll] Specify <code>true</code> to skip eFTL server certificate authentication. 
    * This option should only be used during development and testing. See {@link eFTL#setTrustCertificates}.
    * @param {onConnect} [options.onConnect] A new connection to the eFTL server is ready to use.
    * @param {onError} [options.onError] An error prevented an operation.
    * @param {onDisconnect} [options.onDisconnect] A connection to the eFTL server has closed.
    * @param {onReconnect} [options.onReconnect] A connection to the eFTL server has re-opened and is ready to use.
+   * @param {onStateChange} [options.onStateChange] The connection state has changed.
    *
    * @see eFTLConnection
    *
@@ -309,21 +332,24 @@ var WebSocket = WebSocket || require('ws');
     if (_isUndefined(url) || _isNull(url)) {
       throw new TypeError("The URL is null or undefined.");
     }
-    url = url.trim();
-    if (!(url.startsWith('ws:') || url.startsWith('wss:'))) {
-      throw new SyntaxError("The URL's scheme must be either 'ws' or 'wss'.");
-    }
-    var connection = new eFTLConnection();
-    connection.open(url, options);
+    var urls = [];
+    _each(url.split("|"), function(u) {
+      u = u.trim();
+      if (!(u.startsWith('ws:') || u.startsWith('wss:'))) {
+        throw new SyntaxError("The URL's scheme must be either 'ws' or 'wss'.");
+      }
+      urls.push(u);
+    });
+    // shuffle the URLs
+    _shuffle(urls);
+    var connection = new eFTLConnection(urls, options);
+    connection.open();
   };
 
   /**
    * Set the certificates to trust when making a secure connection.
    *
    * <p>Self-signed server certificates are not supported.
-   *
-   * <p>If you do not set a trust certificate the application trusts
-   * any server certificate.
    *
    * <p>This method is not supported by browsers. Browsers only trust
    * certificate authorities that have been installed by the browser.
@@ -346,6 +372,7 @@ var WebSocket = WebSocket || require('ws');
 
   var EFTL_VERSION = "@EFTL_VERSION_MAJOR@.@EFTL_VERSION_MINOR@.@EFTL_VERSION_UPDATE@ @EFTL_VERSION_RELEASE_TYPE@ V@EFTL_VERSION_BUILD@";
   var EFTL_WS_PROTOCOL = "v1.eftl.tibco.com";
+  var EFTL_PROTOCOL_VER = 1;
 
   var OP_HEARTBEAT = 0;
   var OP_LOGIN = 1;
@@ -359,10 +386,25 @@ var WebSocket = WebSocket || require('ws');
   var OP_ACK = 9;
   var OP_ERROR = 10;
   var OP_DISCONNECT = 11;
+  var OP_REQUEST = 13;
+  var OP_REQUEST_REPLY = 14;
+  var OP_REPLY = 15;
+  var OP_MAP_CREATE = 16;
+  var OP_MAP_DESTROY = 18;
   var OP_MAP_SET = 20;
   var OP_MAP_GET = 22;
   var OP_MAP_REMOVE = 24;
   var OP_MAP_RESPONSE = 26;
+
+  var ERR_PUBLISH_DISALLOWED = 12;
+  var ERR_PUBLISH_FAILED = 11;
+  var ERR_SUBSCRIPTION_DISALLOWED = 13;
+  var ERR_SUBSCRIPTION_FAILED = 21;
+  var ERR_SUBSCRIPTION_INVALID = 22;
+  var ERR_MAP_REQUEST_DISALLOWED = 14;
+  var ERR_MAP_REQUEST_FAILED = 30;
+
+  var ERR_TIMEOUT = 99;
 
   var USER_PROP = "user";
   var USERNAME_PROP = "username";
@@ -370,6 +412,7 @@ var WebSocket = WebSocket || require('ws');
   var CLIENT_ID_PROP = "clientId";
   var AUTO_RECONNECT_ATTEMPTS_PROP = "autoReconnectAttempts";
   var AUTO_RECONNECT_MAX_DELAY_PROP = "autoReconnectMaxDelay";
+  var MAX_PENDING_ACKS_PROP = "maxPendingAcks";
 
   var OP_FIELD = "op";
   var USER_FIELD = "user";
@@ -389,8 +432,12 @@ var WebSocket = WebSocket || require('ws');
   var ID_FIELD = "id";
   var MSG_FIELD = "msg";
   var TO_FIELD = "to";
+  var REPLY_TO_FIELD = "reply_to";
   var BODY_FIELD = "body";
   var SEQ_NUM_FIELD = "seq";
+  var REQ_ID_FIELD = "req";
+  var STORE_MSG_ID_FIELD = "sid";
+  var DELIVERY_COUNT_FIELD = "cnt";
   var DOUBLE_FIELD = "_d_";
   var MILLISECOND_FIELD = "_m_";
   var OPAQUE_FIELD = "_o_";
@@ -400,7 +447,18 @@ var WebSocket = WebSocket || require('ws');
   var CONNECT_TIMEOUT = "timeout";
   var MAP_FIELD = "map";
   var KEY_FIELD = "key";
+  var DEL_FIELD = "del";
   var VALUE_FIELD = "value";
+  var PROTOCOL_FIELD = "protocol";
+  var MAX_PENDING_ACKS_FIELD = "max_pending_acks";
+
+  var HEADER_PREFIX = "_eftl:"
+  var REPLY_TO_HEADER = HEADER_PREFIX + "replyTo";
+  var REQUEST_ID_HEADER = HEADER_PREFIX + "requestId";
+  var SEQUENCE_NUMBER_HEADER = HEADER_PREFIX + "sequenceNumber";
+  var SUBSCRIPTION_ID_HEADER = HEADER_PREFIX + "subscriptionId";
+  var STORE_MESSAGE_ID_HEADER = HEADER_PREFIX + "storeMessageId";
+  var DELIVERY_COUNT_HEADER = HEADER_PREFIX + "deliveryCount";
 
   var KEY_TYPE = ".k.";
   var SUBSCRIPTION_TYPE = ".s.";
@@ -457,6 +515,71 @@ var WebSocket = WebSocket || require('ws');
     if (arguments.length === 1) {
       _safeExtend(this, arguments[0]);
     }
+  }
+
+  eFTLMessage.prototype.setReceipt = function(sequenceNumber, subscriptionId) {
+    this[SEQUENCE_NUMBER_HEADER] = sequenceNumber;
+    this[SUBSCRIPTION_ID_HEADER] = subscriptionId;
+  }
+
+  eFTLMessage.prototype.getReceipt = function() {
+    return {
+      sequenceNumber: this[SEQUENCE_NUMBER_HEADER],
+      subscriptionId: this[SUBSCRIPTION_ID_HEADER],
+    };
+  }
+
+  eFTLMessage.prototype.setReplyTo = function(replyTo, requestId) {
+    this[REPLY_TO_HEADER] = replyTo;
+    this[REQUEST_ID_HEADER] = requestId;
+  }
+
+  eFTLMessage.prototype.getReplyTo = function() {
+    return {
+      replyTo: this[REPLY_TO_HEADER],
+      requestId: this[REQUEST_ID_HEADER],
+    };
+  }
+
+  eFTLMessage.prototype.setStoreMessageId = function(msgId) {
+    this[STORE_MESSAGE_ID_HEADER] = msgId;
+  }
+
+  /**
+   * Get the message's unique store identifier assigned
+   * by the persistence service.
+   *
+   * @memberOf eFTLMessage
+   * @returns {number} The message identifier.
+   */
+  eFTLMessage.prototype.getStoreMessageId = function() {
+    return this[STORE_MESSAGE_ID_HEADER];
+  }
+
+  eFTLMessage.prototype.setDeliveryCount = function(deliveryCount) {
+    this[DELIVERY_COUNT_HEADER] = deliveryCount;
+  }
+
+  /**
+   * Get the message's delivery count assigned
+   * by the persistence service.
+   *
+   * @memberOf eFTLMessage
+   * @returns {number} The message delivery count.
+   */
+  eFTLMessage.prototype.getDeliveryCount = function() {
+    return this[DELIVERY_COUNT_HEADER];
+  }
+
+  eFTLMessage.prototype.toJSON = function() {
+    var result = {};
+    for (var k in this) {
+      // skip internal headers
+      if (!k.startsWith(HEADER_PREFIX)) {
+        result[k] = this[k];
+      }
+    }
+    return result;
   }
 
   /**
@@ -694,16 +817,18 @@ var WebSocket = WebSocket || require('ws');
     var str = "{";
     _each(_keys(this), function(kn) {
       var val = msg.get(kn);
-      if (str.length > 1)
-        str += ", ";
-      str += kn;
-      str += "=";
-      if (_isArray(val)) {
-        str += "[";
-        str += val;
-        str += "]";
-      } else {
-        str += val;
+      if (!kn.startsWith(HEADER_PREFIX)) {
+        if (str.length > 1)
+          str += ", ";
+        str += kn;
+        str += "=";
+        if (_isArray(val)) {
+          str += "[";
+          str += val;
+          str += "]";
+        } else {
+          str += val;
+        }
       }
     });
     str += "}";
@@ -739,6 +864,7 @@ var WebSocket = WebSocket || require('ws');
    *
    * @class eFTLKVMap
    *
+   * @param {string} name The key-value map name.
    * @see eFTLConnection#createKVMap
    */
   function eFTLKVMap(connection, name) {
@@ -750,7 +876,7 @@ var WebSocket = WebSocket || require('ws');
    * <p>Set a key-value pair in the map, overwriting any existing value.</p>
    *
    * @memberOf eFTLKVMap
-   * @param {key} key Set the value for this key.
+   * @param {string} key Set the value for this key.
    * @param {eFTLMessage} message Set this value for the key.
    * @param {object} options A JavaScript object holding key-value map callbacks.
    * @param {eFTLKVMap~onSuccess} [options.onSuccess] Process success.
@@ -798,7 +924,7 @@ var WebSocket = WebSocket || require('ws');
 
     connection.requests[sequence] = request;
 
-    if (connection.state === OPEN) {
+    if (connection.state === CONNECTED) {
       connection._send(envelope, sequence, false, data);
     }
   };
@@ -807,7 +933,7 @@ var WebSocket = WebSocket || require('ws');
    * <p>Get a key-value pair from the map.</p>
    *
    * @memberOf eFTLKVMap
-   * @param {key} key Get the value for this key.
+   * @param {string} key Get the value for this key.
    * @param {object} options A JavaScript object holding key-value map callbacks.
    * @param {eFTLKVMap~onSuccess} [options.onSuccess] Process success.
    * @param {eFTLKVMap~onError} [options.onError] Process errors.
@@ -843,7 +969,7 @@ var WebSocket = WebSocket || require('ws');
 
     connection.requests[sequence] = request;
 
-    if (connection.state === OPEN) {
+    if (connection.state === CONNECTED) {
       connection._send(envelope, sequence, false, data);
     }
   };
@@ -852,7 +978,7 @@ var WebSocket = WebSocket || require('ws');
    * <p>Remove a key-value pair from the map.</p>
    *
    * @memberOf eFTLKVMap
-   * @param {key} key Remove the value for this key.
+   * @param {string} key Remove the value for this key.
    * @param {object} options A JavaScript object holding key-value map callbacks.
    * @param {eFTLKVMap~onSuccess} [options.onSuccess] Process success.
    * @param {eFTLKVMap~onError} [options.onError] Process errors.
@@ -890,34 +1016,64 @@ var WebSocket = WebSocket || require('ws');
 
     connection.requests[sequence] = publish;
 
-    if (connection.state === OPEN) {
+    if (connection.state === CONNECTED) {
       connection._send(envelope, sequence, false, data);
     }
   };
 
-  var OPENING = 0;
-  var OPEN = 1;
-  var CLOSING = 2;
-  var CLOSED = 3;
+  /** 
+   * @constant 
+   * @memberOf eFTL
+   */
+  var CONNECTING = 0;
+  /** 
+   * @constant 
+   * @memberOf eFTL
+   */
+  var CONNECTED = 1;
+  /** 
+   * @constant 
+   * @memberOf eFTL
+   */
+  var RECONNECTING = 2;
+  /** 
+   * @constant 
+   * @memberOf eFTL
+   */
+  var DISCONNECTING = 3;
+  /** 
+   * @constant 
+   * @memberOf eFTL
+   */
+  var DISCONNECTED = 4;
+
+  // allow the connection states to be exported through the eFTL object
+  [['CONNECTING',CONNECTING],['CONNECTED',CONNECTED],['RECONNECTING',RECONNECTING],['DISCONNECTING',DISCONNECTING],['DISCONNECTED',DISCONNECTED]].forEach(function(property) {
+    Object.defineProperty(eFTL.prototype, property[0], {
+      get: function() { return property[1]; }
+    })
+  });
 
   /**
    * <p>A connection object represents a program's connection to an eFTL server.</p>
    * <p>The eFTL JavaScript library creates new instances of eFTLConnection internally.</p>
    * <p>Programs use connection objects to send messages, and subscribe to messages.</p>
-   * <p>Programs receive connection objects through {@link onConnect}, {@link onError}, {@link onDisconnect},
+   * <p>Programs receive connection objects through {@link onConnect}, {@link onError}, {@link onDisconnect}, 
    * and {@link onReconnect} callbacks.</p>
    *
    * @class eFTLConnection
    *
    * @see eFTL#connect
    */
-  function eFTLConnection() {
-    this.connectOptions = null;
-    this.accessPointURL = null;
+  function eFTLConnection(urls, options) {
+    this.urlList = urls;
+    this.urlIndex = 0;
+    this.connectOptions = options;
     this.webSocket = null;
-    this.state = CLOSED;
+    this.state = DISCONNECTED;
     this.clientId = null;
     this.reconnectToken = null;
+    this.protocol = 0;
     this.timeout = 600000;
     this.heartbeat = 240000;
     this.maxMessageSize = 0;
@@ -927,7 +1083,7 @@ var WebSocket = WebSocket || require('ws');
     this.sequenceCounter = 0;
     this.subscriptionCounter = 0;
     this.reconnectCounter = 0;
-    this.autoReconnectAttempts = 5;
+    this.autoReconnectAttempts = 256;
     this.autoReconnectMaxDelay = 30000;
     this.reconnectTimer = null;
     this.connectTimer = null;
@@ -935,7 +1091,6 @@ var WebSocket = WebSocket || require('ws');
     this.isOpen = false;
     this.qos = true;
     this.requests = {};
-    this.lastSequenceNumber = 0;
   }
 
   // Function to call user code callbacks, and log a message if an exception
@@ -949,13 +1104,20 @@ var WebSocket = WebSocket || require('ws');
     }
   };
 
+  eFTLConnection.prototype._setState = function(state) {
+    if (this.state != state) {
+        this.state = state;
+        this._caller(this.connectOptions.onStateChange, this.connectOptions, [this, this.state]);
+    }
+  }
+
   /**
    * Determine whether this connection to the eFTL server is open or closed.
    * @memberOf eFTLConnection
    * @returns {boolean} <tt>true</tt> if this connection is open; <tt>false</tt> otherwise.
    */
   eFTLConnection.prototype.isConnected = function() {
-    return this.state === OPEN;
+    return this.state === CONNECTED;
   };
 
   /**
@@ -977,6 +1139,20 @@ var WebSocket = WebSocket || require('ws');
     return new eFTLKVMap(this, name);
   }
 
+  /**
+   * <p>Remove a key-value map.</p>
+   *
+   * @memberOf eFTLConnection
+   * @param {string} name The key-value map name.
+   * @see eFTLConnection#createKVMap
+   */
+  eFTLConnection.prototype.removeKVMap = function(name) {
+    var envelope = {};
+    envelope[OP_FIELD] = OP_MAP_DESTROY;
+    envelope[MAP_FIELD] = name;
+    this._send(envelope, 0, false);
+  };
+
   eFTLConnection.prototype._send = function(message, seqNum, forceSend) {
     // the 4th argument provided by a call is already stringified - used by heartbeats
     var data = arguments.length === 4 ? arguments[3] : JSON.stringify(message);
@@ -984,7 +1160,7 @@ var WebSocket = WebSocket || require('ws');
     this._debug('>>', message);
 
     if (this.webSocket) {
-      if (this.state < CLOSING || forceSend) {
+      if (this.state < DISCONNECTING || forceSend) {
         try {
           this.webSocket.send(data);
 
@@ -1003,6 +1179,12 @@ var WebSocket = WebSocket || require('ws');
     subscription.options = options;
     subscription.id = subId;
     subscription.pending = true;
+    subscription.lastSeqNum = 0;
+    subscription.autoAck = true;
+
+    if (options["ack"] !== undefined) {
+      subscription.autoAck = (options["ack"] === "auto");
+    }
 
     var subMessage = {};
     subMessage[OP_FIELD] = OP_SUBSCRIBE;
@@ -1010,7 +1192,7 @@ var WebSocket = WebSocket || require('ws');
     subMessage[MATCHER_FIELD] = options.matcher;
     subMessage[DURABLE_FIELD] = options.durable;
 
-    //include options like loopback
+    //include options
     var opts = _safeExtend({}, options);
     delete opts["matcher"];
     delete opts["durable"];
@@ -1022,7 +1204,7 @@ var WebSocket = WebSocket || require('ws');
     return subId;
   };
 
-  eFTLConnection.prototype._ack = function(sequenceNumber) {
+  eFTLConnection.prototype._acknowledge = function(sequenceNumber, subscriptionId) {
     if (!this.qos || !sequenceNumber) {
       return;
     }
@@ -1030,21 +1212,23 @@ var WebSocket = WebSocket || require('ws');
     var envelope = {};
     envelope[OP_FIELD] = OP_ACK;
     envelope[SEQ_NUM_FIELD] = sequenceNumber;
+    if (subscriptionId !== undefined) {
+        envelope[ID_FIELD] = subscriptionId;
+    }
     this._send(envelope, 0, false);
   };
 
-
-  eFTLConnection.prototype._sendMessage = function(message, options) {
-    var envelope = {};
-
-    envelope[OP_FIELD] = OP_MESSAGE;
-
-    var body = new eFTLMessage(message);
-    envelope[BODY_FIELD] = body;
-
+  eFTLConnection.prototype._sendMessage = function(message, op, to, reqId, timeout, options) {
     var sequence = this._nextSequence();
-    if (this.qos) {
-      envelope[SEQ_NUM_FIELD] = sequence;
+
+    var envelope = {};
+    envelope[OP_FIELD] = op;
+    envelope[SEQ_NUM_FIELD] = sequence;
+    envelope[BODY_FIELD] = new eFTLMessage(message);
+
+    if (to) {
+      envelope[TO_FIELD] = to;
+      envelope[REQ_ID_FIELD] = reqId;
     }
 
     var publish = {};
@@ -1058,11 +1242,20 @@ var WebSocket = WebSocket || require('ws');
     if (this.maxMessageSize > 0 && data.length > this.maxMessageSize)
       throw new Error("Message exceeds maximum message size of " + this.maxMessageSize);
 
+    if (timeout > 0) {
+      var connection = this;
+      publish.timer = setTimeout(function() {
+        connection._pendingError(sequence, ERR_TIMEOUT, "request timeout");
+      }, timeout);
+    }
+
     this.requests[sequence] = publish;
 
-    if (this.state === OPEN) {
+    if (this.state === CONNECTED) {
       this._send(envelope, sequence, false, data);
     }
+
+    return publish;
   };
 
   eFTLConnection.prototype._disconnect = function() {
@@ -1077,9 +1270,13 @@ var WebSocket = WebSocket || require('ws');
   }
 
   eFTLConnection.prototype._close = function(reason, notifyServer) {
-    if (this.state !== OPENING && this.state !== OPEN) return;
+    if (this.state != CONNECTED &&
+        this.state != CONNECTING &&
+        this.state != RECONNECTING) {
+        return;
+    }
 
-    this.state = CLOSING;
+    this._setState(DISCONNECTING);
 
     if (this.timeoutCheck) {
       clearInterval(this.timeoutCheck);
@@ -1104,7 +1301,6 @@ var WebSocket = WebSocket || require('ws');
 
     var sub = this.subscriptions[subId];
     if (sub != null && sub.pending) {
-      // don't notify when we restore subscriptions.
       sub.pending = false;
       var options = sub.options;
       this._caller(options.onSubscribe, options, [subId]);
@@ -1119,32 +1315,51 @@ var WebSocket = WebSocket || require('ws');
     var reason = message[REASON_FIELD];
 
     var sub = this.subscriptions[subId];
-    if (sub != null) {
+
+    // remove the subscription only if it's untryable
+    if (errCode == ERR_SUBSCRIPTION_INVALID) {
       delete this.subscriptions[subId];
+    }
+
+    if (sub != null) {
+      sub.pending = true;
       var options = sub.options;
       this._caller(options.onError, options, [subId, errCode, reason]);
     }
   };
 
   eFTLConnection.prototype._handleEvent = function(message) {
-    var to = message[TO_FIELD];
+    var subId = message[TO_FIELD];
     var seqNum = message[SEQ_NUM_FIELD];
+    var msgId = message[STORE_MSG_ID_FIELD];
+    var deliveryCount = message[DELIVERY_COUNT_FIELD];
+    var reqId = message[REQ_ID_FIELD];
+    var replyTo = message[REPLY_TO_FIELD];
     var data = message[BODY_FIELD];
-    var sub = this.subscriptions[to];
+    var sub = this.subscriptions[subId];
 
-    if (!this.qos || !seqNum || seqNum > this.lastSequenceNumber) {
-      if (sub && sub.options != null) {
+    if (sub && sub.options != null) {
+      if (!seqNum || seqNum > sub.lastSeqNum) {
         var wsMessage = new eFTLMessage(data);
+        if (!sub.autoAck && seqNum) {
+          wsMessage.setReceipt(seqNum, subId);
+        }
+        if (replyTo) {
+          wsMessage.setReplyTo(replyTo, reqId);
+        }
+        wsMessage.setStoreMessageId(msgId ? msgId : 0);
+        wsMessage.setDeliveryCount(deliveryCount ? deliveryCount : 0);
         this._debug('<<', data);
         this._caller(sub.options.onMessage, sub.options, [wsMessage]);
+        // track last sequence number
+        if (sub.autoAck && seqNum) {
+          sub.lastSeqNum = seqNum;
+        }
       }
-
-      if (this.qos && seqNum) {
-        this.lastSequenceNumber = seqNum;
-      }
+      // ack last sequence number, server will ack all messages less or equal
+      if (sub.autoAck && seqNum)
+        this._acknowledge(seqNum, subId);
     }
-    // ack last sequence number, server will ack all messages less or equal
-    this._ack(seqNum);
   };
 
   eFTLConnection.prototype._handleEvents = function(messages) {
@@ -1158,7 +1373,7 @@ var WebSocket = WebSocket || require('ws');
     var connection = this;
 
     webSocket.onopen = function(arg) {
-      var url = parseURL(connection.accessPointURL);
+      var url = parseURL(connection._getURL());
 
       var auth = (url.auth ? url.auth.split(':') : []);
       var username = auth[0];
@@ -1168,6 +1383,7 @@ var WebSocket = WebSocket || require('ws');
       var loginMessage = {};
 
       loginMessage[OP_FIELD] = OP_LOGIN;
+      loginMessage[PROTOCOL_FIELD] = EFTL_PROTOCOL_VER;
       loginMessage[CLIENT_TYPE_FIELD] = "js";
       loginMessage[CLIENT_VERSION_FIELD] = EFTL_VERSION;
 
@@ -1192,6 +1408,13 @@ var WebSocket = WebSocket || require('ws');
         loginMessage[CLIENT_ID_FIELD] = clientId;
       } else {
         loginMessage[CLIENT_ID_FIELD] = connection.connectOptions[CLIENT_ID_PROP];
+      }
+
+      if (_isNumber(connection.connectOptions[MAX_PENDING_ACKS_PROP])) {
+        var maxPendingAcks = connection.connectOptions[MAX_PENDING_ACKS_PROP];
+        if (maxPendingAcks > 0) {
+            loginMessage[MAX_PENDING_ACKS_FIELD] = connection.connectOptions[MAX_PENDING_ACKS_PROP];
+        }
       }
 
       if (!_isBoolean(connection.connectOptions[QOS_FIELD])) {
@@ -1227,9 +1450,9 @@ var WebSocket = WebSocket || require('ws');
     webSocket.onclose = function(evt) {
       if (webSocket === null) return;
 
-      if (connection.state === CLOSED) return;
+      if (connection.state === DISCONNECTED) return;
 
-      connection.state = CLOSED;
+      connection._setState(DISCONNECTED);
 
       if (connection.connectTimer) {
           clearTimeout(connection.connectTimer);
@@ -1247,14 +1470,8 @@ var WebSocket = WebSocket || require('ws');
         openConnections.splice(index, 1);
       }
 
-      // Not every browser is setting the wasClean flag. Therefore,
-      // also check for a 1006 code which indicates an abnormal
-      // closure (i.e., the server did not send a close frame).
-      if (evt.wasClean || evt.code != 1006) {
-        connection.isOpen = false;
-        connection._clearPending(11, "Closed");
-        connection._caller(connection.connectOptions.onDisconnect, connection.connectOptions, [connection, evt.code, (evt.reason ? evt.reason : "Connection failed")]);
-      } else if (!connection.isOpen || !connection._scheduleReconnect()) {
+      // Reconnect when the close code reflects an unexpected error (1006) or a server restart (1012).
+      if ((evt.code != 1006 && evt.code != 1012) || !connection._scheduleReconnect()) {
         connection.isOpen = false;
         connection._clearPending(11, "Closed");
         connection._caller(connection.connectOptions.onDisconnect, connection.connectOptions, [connection, evt.code, (evt.reason ? evt.reason : "Connection failed")]);
@@ -1301,6 +1518,9 @@ var WebSocket = WebSocket || require('ws');
               case OP_ACK:
                 connection._handleAck(msg);
                 break;
+              case OP_REQUEST_REPLY:
+                connection._handleReply(msg);
+                break;
               case OP_MAP_RESPONSE:
                 connection._handleMapResponse(msg);
                 break;
@@ -1326,14 +1546,13 @@ var WebSocket = WebSocket || require('ws');
     this.timeout = 1000 * message[TIMEOUT_FIELD];
     this.heartbeat = 1000 * message[HEARTBEAT_FIELD];
     this.maxMessageSize = message[MAX_SIZE_FIELD];
-
+    this.protocol = (message[PROTOCOL_FIELD] || 0);
+    this.qos = ((message[QOS_FIELD] || "") + "").toLowerCase() === "true";
 
     if (!resume) {
       this._clearPending(11, "Reconnect");
       this.lastSequenceNumber = 0;
     }
-
-    this.qos = ((message[QOS_FIELD] || "") + "").toLowerCase() === "true";
 
     var connection = this;
 
@@ -1356,23 +1575,23 @@ var WebSocket = WebSocket || require('ws');
       }, this.heartbeat);
     }
 
-    this.state = OPEN;
+    this._setState(CONNECTED);
     this.reconnectCounter = 0;
 
-    if (_keys(this.subscriptions).length > 0 && !resume) {
-      _each(this.subscriptions, function(value, key) {
-        value.pending = true;
-      });
-    }
+    // rest URL list to start auto-reconnect attempts from the beginning
+    this._resetURLList();
 
+    // restore the subscriptions
     if (_keys(this.subscriptions).length > 0) {
       _each(this.subscriptions, function(value, key) {
-        if (value.pending) {
-          connection._subscribe(key, value.options);
+        if (!resume) {
+            value.lastSeqNum = 0;
         }
+        connection._subscribe(key, value.options);
       });
     }
 
+    // re-send unacknowledged messages
     this._sendPending();
 
     if (reconnectId && !this.isReconnecting) {
@@ -1391,7 +1610,7 @@ var WebSocket = WebSocket || require('ws');
 
     this._caller(this.connectOptions.onError, this.connectOptions, [this, errCode, reason]);
 
-    if (this.state === OPENING) {
+    if (this.state === CONNECTING || this.state === RECONNECTING) {
       this._close(reason, false);
     }
   };
@@ -1401,8 +1620,26 @@ var WebSocket = WebSocket || require('ws');
     var errCode = message[ERR_CODE_FIELD];
     var reason = message[REASON_FIELD];
     if (!_isUndefined(sequence)) {
-      if (_isNull(errCode) || _isUndefined(errCode)) {
+      if (_isUndefined(errCode) || _isNull(errCode)) {
         this._pendingComplete(sequence);
+      } else {
+        this._pendingError(sequence, errCode, reason);
+      }
+    }
+  };
+
+  eFTLConnection.prototype._handleReply = function(message) {
+    var sequence = message[SEQ_NUM_FIELD];
+    var body = message[BODY_FIELD];
+    var errCode = message[ERR_CODE_FIELD];
+    var reason = message[REASON_FIELD];
+    if (!_isUndefined(sequence)) {
+      if (_isUndefined(errCode) || _isNull(errCode)) {
+        if (_isUndefined(body) || _isNull(body)) {
+          this._pendingComplete(sequence);
+        } else {
+          this._pendingResponse(sequence, new eFTLMessage(body));
+        }
       } else {
         this._pendingError(sequence, errCode, reason);
       }
@@ -1449,6 +1686,9 @@ var WebSocket = WebSocket || require('ws');
       if (req.options != null) {
         this._caller(req.options.onComplete, req.options, [req.message]);
       }
+      if (req.timer) {
+          clearTimeout(req.timer);
+      }
     }
   }
 
@@ -1458,6 +1698,9 @@ var WebSocket = WebSocket || require('ws');
       delete this.requests[sequence];
       if (req.options != null) {
         this._caller(req.options.onComplete, req.options, [response]);
+      }
+      if (req.timer) {
+          clearTimeout(req.timer);
       }
     }
   }
@@ -1470,6 +1713,9 @@ var WebSocket = WebSocket || require('ws');
         this._caller(req.options.onError, req.options, [req.message, errCode, reason]);
       } else {
         this._caller(this.connectOptions.onError, this.connectOptions, [this, errCode, reason]);
+      }
+      if (req.timer) {
+          clearTimeout(req.timer);
       }
     }
   }
@@ -1510,13 +1756,28 @@ var WebSocket = WebSocket || require('ws');
     return ++this.subscriptionCounter;
   };
 
-  eFTLConnection.prototype.open = function(url, options) {
-    this.connectOptions = options;
-    this.accessPointURL = url;
-    this.state = OPENING;
+  eFTLConnection.prototype._resetURLList = function() {
+    this.urlIndex = 0;
+  };
 
-    if (url.indexOf('?') > 0) {
-      url = url.substring(0, url.indexOf('?'));
+  eFTLConnection.prototype._nextURL = function() {
+    if (++this.urlIndex < this.urlList.length) {
+      return true;
+    } else {
+      this.urlIndex = 0;
+      return false;
+    }
+  };
+
+  eFTLConnection.prototype._getURL = function() {
+    return this.urlList[this.urlIndex];
+  };
+
+  eFTLConnection.prototype.open = function() {
+    if (this.isReconnecting) {
+        this._setState(RECONNECTING);
+    } else {
+        this._setState(CONNECTING);
     }
 
     try {
@@ -1530,7 +1791,7 @@ var WebSocket = WebSocket || require('ws');
         options.rejectUnauthorized = false;
       }
 
-      this.webSocket = new WebSocket(url, [EFTL_WS_PROTOCOL], options);
+      this.webSocket = new WebSocket(this._getURL(), [EFTL_WS_PROTOCOL], options);
       this._initWS(this.webSocket);
 
       openConnections.push(this);
@@ -1560,11 +1821,13 @@ var WebSocket = WebSocket || require('ws');
    * @callback onSubscribe
    * @desc <p>A new subscription is ready to receive messages.</p>
    * <p>The eFTL library may invoke this method after the first message arrives.</p>
-   * <p>To close the subscription, call {@link eFTLConnection#unsubscribe} with the subscription identifier.</p>
+   * <p>To close the subscription, call {@link eFTLConnection#unsubscribe} or 
+   * {@link eFTLConnection#closeSubscription} with the subscription identifier.</p>
    *
    * @param {object} subscriptionId The subscription identifier.
    * @see eFTLConnection#subscribe
    * @see eFTLConnection#unsubscribe
+   * @see eFTLConnection#closeSubscription
    */
 
   /**
@@ -1585,21 +1848,31 @@ var WebSocket = WebSocket || require('ws');
    * receive messages, the eFTL library calls your {@link onSubscribe} callback.</p>
    *
    * <p>A matcher can narrow subscription interest in the inbound message stream.</p>
-   * <p>It is good practice to subscribe to
-   * messages published to a specific destination
-   * by using the message field name <code>_dest</code>.
    * <p>
+   * An acknowledgment mode for the subscription can be set to automatically acknowledge consumed
+   * messages, require explicit client acknowledgment of the consumed messages, or to disable
+   * message acknowledgment altogether. The default is to automatically acknowledge consumed messages.
+   * <p>
+   * When explicit client acknowledgment is specified the eFTL server will stop delivering messages 
+   * to the client once the server's configured maximum number of unacknowledged messages is reached.
+   * <p>
+   * When communicating with EMS, to subscribe to messages published on a specific EMS
+   * destination use a subscription matcher that includes the message field name <code>_dest</code>.
+   * To distinguish between topics and queues the destination name can be prefixed with
+   * either "TOPIC:" or "QUEUE:", for example "TOPIC:MyDest" or "QUEUE:MyDest". A destination name
+   * with no prefix is a topic.
    * @example
-   * <caption>To subscribe to messages published to a specific destination,
+   * <caption>To subscribe to messages published on a specific EMS destination,
    * create a subscription matcher for that destination;
    * for example:</caption>
-   * var matcher = '{"_dest":"myTopic"}';
+   * var matcher = '{"_dest":"MyDest"}';
    *
    * @memberOf eFTLConnection
    * @param {object} options A JavaScript object holding subscription callbacks.
    *
    * @param {string} [options.matcher] The subscription uses this content matcher to narrow the message stream.
    * @param {string} [options.durable] The subscription is associated with this durable name.
+   * @param {string} [options.ack] An optional message acknowledgment mode; 'auto', 'client', or 'none'. Default is 'auto'.
    * @param {string} [options.type] An optional durable type; 'shared' or 'last-value'.
    * @param {string} [options.key] The key field for 'last-value' durable subscriptions.
    * @param {onSubscribe} [options.onSubscribe] The new subscription is ready.
@@ -1608,15 +1881,67 @@ var WebSocket = WebSocket || require('ws');
    * @returns {object} The subscription identifier.
    *
    * @see eFTLConnection#unsubscribe
+   * @see eFTLConnection#closeSubscription
+   * @see eFTLConnection#acknowledge
+   * @see eFTLConnection#acknowledgeAll
    */
   eFTLConnection.prototype.subscribe = function(options) {
-    var subId = this.clientId + SUBSCRIPTION_TYPE + this._nextSubscriptionSequence();
+    var subId = this._nextSubscriptionSequence().toString(10);
     this._subscribe(subId, options);
     return subId;
   };
 
   /**
    * <p>Close a subscription.</p>
+   * <p>
+   * For durable subscriptions, this call will cause the persistence
+   * service to stop delivering messages while leaving the durable 
+   * subscription to continue accumulating messages. Any unacknowledged
+   * messages will be made available for redelivery.
+   * <p>Programs receive subscription identifiers via their {@link onSubscribe} handlers.</p>
+   * @memberOf eFTLConnection
+   * @param {object} subscriptionId Close this subscription.
+   * @see eFTLConnection#subscribe
+   */
+  eFTLConnection.prototype.closeSubscription = function(subscriptionId) {
+    if (this.protocol < 1) {
+      throw new Error("close subscriptions is not supported with this server");
+    }
+
+    var unsubMessage = {};
+    unsubMessage[OP_FIELD] = OP_UNSUBSCRIBE;
+    unsubMessage[ID_FIELD] = subscriptionId;
+    unsubMessage[DEL_FIELD] = false;
+
+    this._send(unsubMessage, 0, false);
+    delete this.subscriptions[subscriptionId];
+  };
+
+  /**
+   * <p>Close all subscriptions.</p>
+   * <p>
+   * For durable subscriptions, this call will cause the persistence
+   * service to stop delivering messages while leaving the durable 
+   * subscriptions to continue accumulating messages. Any unacknowledged
+   * messages will be made available for redelivery.
+   * @memberOf eFTLConnection
+   * @see eFTLConnection#subscribe
+   */
+  eFTLConnection.prototype.closeAllSubscriptions = function() {
+    var self = this;
+    if (_keys(this.subscriptions).length > 0) {
+      _each(this.subscriptions, function(value, key) {
+        self.closeSubscription(key);
+      });
+    }
+  };
+
+  /**
+   * <p>Unsubscribe from messages on a subscription.</p>
+   * <p>
+   * For durable subscriptions, this call will cause the persistence
+   * service to remove the durable subscription, along with any
+   * persisted messages. 
    * <p>Programs receive subscription identifiers via their {@link onSubscribe} handlers.</p>
    * @memberOf eFTLConnection
    * @param {object} subscriptionId Close this subscription.
@@ -1632,7 +1957,11 @@ var WebSocket = WebSocket || require('ws');
   };
 
   /**
-   * <p>Close all subscriptions.</p>
+   * <p>Unsubscribe from messages on all subscriptions.</p>
+   * <p>
+   * For durable subscriptions, this call will cause the persistence
+   * service to remove the durable subscription, along with any
+   * persisted messages. 
    * @memberOf eFTLConnection
    * @see eFTLConnection#subscribe
    */
@@ -1643,6 +1972,40 @@ var WebSocket = WebSocket || require('ws');
         self.unsubscribe(key);
       });
     }
+  };
+
+  /**
+   * <p>Acknowledge this message.</p>
+   * <p>
+   * Messages consumed from subscriptions with a client acknowledgment mode
+   * must be explicitly acknowledged. The eFTL server will stop delivering
+   * messages to the client once the server's configured maximum number of
+   * unacknowledged messages is reached.
+   * </p>
+   * @memberOf eFTLConnection
+   * @param {object} message The message being acknowledged.
+   * @see eFTLConnection#acknowledgeAll
+   */
+  eFTLConnection.prototype.acknowledge = function(message) {
+    var receipt = message.getReceipt();
+    this._acknowledge(receipt.sequenceNumber);
+  };
+
+  /**
+   * <p>Acknowledge all messages up to and including this message.</p>
+   * <p>
+   * Messages consumed from subscriptions with a client acknowledgment mode
+   * must be explicitly acknowledged. The eFTL server will stop delivering
+   * messages to the client once the server's configured maximum number of
+   * unacknowledged messages is reached.
+   * </p>
+   * @memberOf eFTLConnection
+   * @param {object} message The message being acknowledged.
+   * @see eFTLConnection#acknowledge
+   */
+  eFTLConnection.prototype.acknowledgeAll = function(message) {
+    var receipt = message.getReceipt();
+    this._acknowledge(receipt.sequenceNumber, receipt.subscriptionId);
   };
 
   /**
@@ -1664,16 +2027,28 @@ var WebSocket = WebSocket || require('ws');
    */
 
   /**
+   * @callback onReply
+   * @desc <p>A request operation has received a reply.</p>
+   *
+   * @param {eFTLMessage} reply The reply message.
+   * @see eFTLConnection#sendRequest
+   */
+
+  /**
    * <p>Publish a one-to-many message to all subscribing clients.</p>
    * <p>This call returns immediately; publishing continues asynchronously.
    * When the publish completes successfully, the eFTL library calls your
    * {@link onComplete} callback.</p>
-   * <p>It is good practice to publish each message to a specific
-   * destination by using the message field name <code>_dest</code>.
+   * <p>
+   * When communicating with EMS, to publish a messages on a specific EMS
+   * destination include the message field name <code>_dest</code>.
+   * To distinguish between topics and queues the destination can be prefixed with
+   * either "TOPIC:" or "QUEUE:", for example "TOPIC:MyDest" or "QUEUE:MyDest". A 
+   * destination with no prefix is a topic.
    * @example
-   * <caption>To direct a message to a specific destination,
+   * <caption>To publish a message on a specific EMS destination
    * add a string field to the message; for example:</caption>
-   * message.set("_dest", "myTopic");
+   * message.set("_dest", "MyDest");
    *
    * @memberOf eFTLConnection
    * @param {eFTLMessage} message Publish this message.
@@ -1683,7 +2058,54 @@ var WebSocket = WebSocket || require('ws');
    */
   eFTLConnection.prototype.publish = function(message, options) {
     assertEFTLMessageInstance(message, "Message");
-    this._sendMessage(message, options);
+    this._sendMessage(message, OP_MESSAGE, null, 0, 0, options);
+  };
+
+  /**
+   * <p>Publish a request message.</p>
+   * <p>This call returns immediately. When the reply is received
+   * the eFTL library calls your {@link onReply} callback.</p>
+   *
+   * @memberOf eFTLConnection
+   * @param {eFTLMessage} request The request message to publish.
+   * @param {number} timeout The number of milliseconds to wait for a reply.
+   * @param {object} options A JavaScript object holding request callbacks.
+   * @param {onReply} [options.onReply] Process reply.
+   * @param {onError} [options.onError] Process request errors.
+   */
+  eFTLConnection.prototype.sendRequest = function(request, timeout, options) {
+    assertEFTLMessageInstance(request, "Message");
+    if (this.protocol < 1) {
+      throw new Error("Send request is not supported with this server");
+    }
+    if (options) {
+      options.onComplete = options.onReply
+    }
+    this._sendMessage(request, OP_REQUEST, null, 0, timeout, options);
+  };
+
+  /**
+   * <p>Send a reply message in response to a request message.</p>
+   * <p>This call returns immediately. When the send completes
+   * successfully, the eFTL library calls your {@link onComplete} callback.</p>
+   *
+   * @memberOf eFTLConnection
+   * @param {eFTLMessage} reply The reply message to send.
+   * @param {eFTLMessage} request The request message.
+   * @param {object} options A JavaScript object holding request callbacks.
+   * @param {onComplete} [options.onComplete] Process reply completion.
+   * @param {onError} [options.onError] Process request errors.
+   */
+  eFTLConnection.prototype.sendReply = function(reply, request, options) {
+    assertEFTLMessageInstance(request, "Message");
+    if (this.protocol < 1) {
+      throw new Error("Send reply is not supported with this server");
+    }
+    var replyTo = request.getReplyTo();
+    if (!replyTo.replyTo) {
+      throw new TypeError("Not a request message.");
+    }
+    this._sendMessage(reply, OP_REPLY, replyTo.replyTo, replyTo.requestId, 0, options);
   };
 
   /**
@@ -1693,14 +2115,37 @@ var WebSocket = WebSocket || require('ws');
    * @private
    */
   eFTLConnection.prototype._scheduleReconnect = function() {
-    if (this.reconnectCounter < this.autoReconnectAttempts) {
-      var ms = Math.min(Math.pow(2, this.reconnectCounter++) * 1000, this.autoReconnectMaxDelay);
+    // schedule a connect only if not previously connected
+    // and there are additional URLs to try in the URL list
+    //
+    // schedule a reconnect only if previously connected and
+    // the number of reconnect attempts has not been exceeded
+    if (!this.isOpen && this._nextURL()) {
+      var connection = this;
+
+      this.reconnectTimer = setTimeout(function() {
+        connection.reconnectTimer = null;
+        connection.isReconnecting = false;
+        connection.open();
+      }, 0);
+
+      return true;
+    } else if (this.isOpen && this.reconnectCounter < this.autoReconnectAttempts) {
+      var ms = 0;
+
+      // backoff once all URLs have been tried
+      if (!this._nextURL()) {
+          // add jitter by applying a randomness factor of 0.5
+          var jitter = Math.random() + 0.5; 
+          ms = Math.min(Math.pow(2, this.reconnectCounter++) * 1000 * jitter, this.autoReconnectMaxDelay);
+      }
+
       var connection = this;
 
       this.reconnectTimer = setTimeout(function() {
         connection.reconnectTimer = null;
         connection.isReconnecting = true;
-        connection.open(connection.accessPointURL, connection.connectOptions);
+        connection.open();
       }, ms);
 
       return true;
@@ -1722,9 +2167,9 @@ var WebSocket = WebSocket || require('ws');
    * @memberOf eFTLConnection
    */
   eFTLConnection.prototype.reconnect = function() {
-    if (this.state !== CLOSED) return;
+    if (this.state !== DISCONNECTED) return;
     this.isReconnecting = false;
-    this.open(this.accessPointURL, this.connectOptions);
+    this.open();
   };
 
   /**

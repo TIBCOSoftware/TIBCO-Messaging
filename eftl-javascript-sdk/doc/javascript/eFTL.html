@@ -61,7 +61,7 @@ Programs use the <tt>eFTL</tt> object to connect to an eFTL server.</div>
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 219
+        eftl.js, line 228
     </li></ul></dd>
      -->
     
@@ -97,6 +97,260 @@ Programs use the <tt>eFTL</tt> object to connect to an eFTL server.</div>
     
     
     
+        <h3 class="subsection-title">Members</h3>
+        
+        <dl>
+            
+<dt>
+    <h4 class="name" id=".CONNECTED"><span class="type-signature">&lt;static, constant> </span>CONNECTED<span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    
+
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!--     
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        eftl.js, line 1033
+    </li></ul></dd>
+     -->
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id=".CONNECTING"><span class="type-signature">&lt;static, constant> </span>CONNECTING<span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    
+
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!--     
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        eftl.js, line 1028
+    </li></ul></dd>
+     -->
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id=".DISCONNECTED"><span class="type-signature">&lt;static, constant> </span>DISCONNECTED<span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    
+
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!--     
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        eftl.js, line 1048
+    </li></ul></dd>
+     -->
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id=".DISCONNECTING"><span class="type-signature">&lt;static, constant> </span>DISCONNECTING<span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    
+
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!--     
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        eftl.js, line 1043
+    </li></ul></dd>
+     -->
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id=".RECONNECTING"><span class="type-signature">&lt;static, constant> </span>RECONNECTING<span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    
+
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!--     
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        eftl.js, line 1038
+    </li></ul></dd>
+     -->
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+</dd>
+
+        </dl>
+    
     
     
         <h3 class="subsection-title">Methods</h3>
@@ -117,6 +371,9 @@ Programs use the <tt>eFTL</tt> object to connect to an eFTL server.</div>
 <p>This call returns immediately; connecting continues asynchronously. When the connection is ready to use,
 the eFTL library calls your <a href="global.html#onConnect">onConnect</a> callback, passing an <tt>eFTLConnection</tt> object that
 you can use to publish and subscribe.</p>
+
+<p>When a pipe-separated list of URLs is specified this call will attempt a connection to each in turn, 
+in a random order, until one is connected.</p>
 
 <p>A program that uses more than one server channel must connect separately to each channel.</p>
     </div>
@@ -168,12 +425,13 @@ you can use to publish and subscribe.</p>
             
             
             
-            <td class="description last">The call connects to the eFTL server at this URL. The URL can be in either of these forms:
+            <td class="description last">The call connects to the eFTL server at this URL. This can be a single URL, or a 
+pipe ('|') separated list of URLs. URLs can be in either of these forms:
 <ul>
  <li><tt>ws://host:port/channel</tt></li>
  <li><tt>wss://host:port/channel</tt></li>
 </ul>
-Optionally, the URL can contain the username, password, and/or client identifier:
+Optionally, URLs can contain the username, password, and/or client identifier:
 <ul>
  <li><tt>ws://username:password@host:port/channel?clientId=&lt;identifier&gt;</tt></li>
  <li><tt>wss://username:password@host:port/channel?clientId=&lt;identifier&gt;</tt></li>
@@ -353,7 +611,8 @@ Optionally, the URL can contain the username, password, and/or client identifier
             
             
             
-            <td class="description last">Specify the maximum number of autoreconnect attempts if the connection is lost.</td>
+            <td class="description last">Specify the maximum number of auto-reconnect attempts if the connection is lost.
+The default value is 256 attempts.</td>
         </tr>
 	
 	
@@ -386,7 +645,42 @@ Optionally, the URL can contain the username, password, and/or client identifier
             
             
             
-            <td class="description last">Specify the maximum delay (in milliseconds) between autoreconnect attempts.</td>
+            <td class="description last">Specify the maximum delay (in milliseconds) between auto-reconnect attempts.
+The default value is 30 seconds.</td>
+        </tr>
+	
+	
+	
+        <tr>
+            
+                <td class="name"><code>maxPendingAcks</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+            
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+                    
+                
+                    
+                
+                </td>
+            
+            
+            
+            
+            <td class="description last">Specify the maximum number of unacknowledged messages allowed for the client.
+Once reached the client will stop receiving additional messages until previously received messages are acknowledged.</td>
         </tr>
 	
 	
@@ -556,6 +850,39 @@ This option should only be used during development and testing. See <a href="eFT
         </tr>
 	
 	
+	
+        <tr>
+            
+                <td class="name"><code>onStateChange</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#onStateChange">onStateChange</a></span>
+
+
+            
+            </td>
+            
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+                    
+                
+                    
+                
+                </td>
+            
+            
+            
+            
+            <td class="description last">The connection state has changed.</td>
+        </tr>
+	
+	
 	</tbody>
 </table>
             </td>
@@ -589,7 +916,7 @@ This option should only be used during development and testing. See <a href="eFT
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 305
+        eftl.js, line 331
     </li></ul></dd>
      -->
     
@@ -665,7 +992,7 @@ This option should only be used during development and testing. See <a href="eFT
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 340
+        eftl.js, line 369
     </li></ul></dd>
      -->
     
@@ -726,9 +1053,6 @@ This option should only be used during development and testing. See <a href="eFT
         Set the certificates to trust when making a secure connection.
 
 <p>Self-signed server certificates are not supported.
-
-<p>If you do not set a trust certificate the application trusts
-any server certificate.
 
 <p>This method is not supported by browsers. Browsers only trust
 certificate authorities that have been installed by the browser.
@@ -821,7 +1145,7 @@ certificate authorities that have been installed by the browser.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 331
+        eftl.js, line 360
     </li></ul></dd>
      -->
     
@@ -865,10 +1189,10 @@ certificate authorities that have been installed by the browser.
     <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="eFTLConnection.html">eFTLConnection</a></li><li><a href="eFTLKVMap.html">eFTLKVMap</a></li><li><a href="eFTLMessage.html">eFTLMessage</a></li></ul><h3>Namespaces</h3><ul><li><a href="eFTL.html">eFTL</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
-<br clear="both">
+<br class="clear">
 
 <footer>
-    &copy;2014-2018 TIBCO Software Inc - Licensed under a BSD-style license. Refer to [LICENSE]
+    &copy;2014-2020 TIBCO Software Inc - All Rights Reserved.
 </footer>
 
 
