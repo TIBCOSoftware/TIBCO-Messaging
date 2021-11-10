@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-$Date: 2015-07-31 16:05:02 -0700 (Fri, 31 Jul 2015) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * All Rights Reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  */
@@ -11,11 +11,12 @@ using System.Threading;
 using TIBCO.EFTL;
 
 public class KVRemove {
-    public static String url = "ws://localhost:9191/channel";
-    public static String username = null;
-    public static String password = null;
-    public static String name = "myMap";
-    public static String key = "myKey";
+
+    static String url = "ws://localhost:8585/map";
+    static String username = "user";
+    static String password = "password";
+    static String name = "sample_map";
+    static String key = "key1";
 
     private static void Usage () {
         Console.WriteLine ();
@@ -59,7 +60,7 @@ public class KVRemove {
             // Create the map.
             IKVMap map = connection.CreateKVMap (name);
 
-            // Asynchronously get the key-value pair.
+            // Asynchronously remove the key-value pair.
             map.Remove (key, new KVMapListener (connection));
         }
 

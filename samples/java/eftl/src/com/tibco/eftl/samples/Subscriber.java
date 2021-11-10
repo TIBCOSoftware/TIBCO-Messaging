@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-$Date: 2015-07-08 14:41:02 -0700 (Wed, 08 Jul 2015) $ TIBCO Software Inc.
+ * Copyright (c) 2013-2021 TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -17,22 +17,22 @@ import java.util.TimerTask;
 import com.tibco.eftl.*;
 
 /*
- * This is a sample of a basic eFTL subscriber program which
- * subscribes to the specified destination and receives the
- * requested messages.
+ * This is a sample of a basic eFTL subscriber program.
  */
 
 public class Subscriber extends Thread {
     
-    String url = "ws://localhost:9191/channel";
+    String url = "ws://localhost:8585/channel";
     String username = null;
     String password = null;
-    String clientId = "sample-java";
-    String destination = "sample";
-    String durableName = "sample";
+    String clientId = "sample-java-client";
+    String durableName = "sample-durable";
     String trustStoreFilename = null;
     String trustStorePassword = "";
-    
+    boolean trustAll = false;
+
+    boolean clientAcknowledge = false;
+
     public Subscriber(String[] args) {
         
          System.out.printf("#\n# %s\n#\n# %s\n#\n",
@@ -63,12 +63,6 @@ public class Subscriber extends Thread {
                 } else {
                     printUsage();
                 }
-            } else if (args[i].equalsIgnoreCase("--destination") || args[i].equals("-d")) {
-                if (i+1 < args.length && !args[i+1].startsWith("-")) {
-                    destination = args[++i];
-                } else {
-                    printUsage();
-                }
             } else if (args[i].equalsIgnoreCase("--durableName") || args[i].equals("-n")) {
                 if (i+1 < args.length && !args[i+1].startsWith("-")) {
                     durableName = args[++i];
@@ -87,6 +81,10 @@ public class Subscriber extends Thread {
                 } else {
                     printUsage();
                 }
+            } else if (args[i].equalsIgnoreCase("--trustAll")) {
+                trustAll = true;
+            } else if (args[i].equalsIgnoreCase("--clientAcknowledge")) { 
+                clientAcknowledge = true;
             } else if (args[i].startsWith("-")) {
                 printUsage();
             } else {
@@ -104,10 +102,11 @@ public class Subscriber extends Thread {
         System.out.println("  -u, --username <username>");
         System.out.println("  -p, --password <password>");
         System.out.println("  -i, --clientId <client id>");
-        System.out.println("  -d, --destination <destination>");
         System.out.println("  -n, --durableName <durable name>");
         System.out.println("      --trustStore <trust store filename>");
         System.out.println("      --trustStorePassword <trust store password");
+        System.out.println("      --trustAll");
+        System.out.println("      --clientAcknowledge");
         System.out.println();
         System.exit(1);
     }
@@ -126,7 +125,7 @@ public class Subscriber extends Thread {
                     in.close();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                e.printStackTrace(System.out);
             }
         }
         return null;
@@ -147,10 +146,12 @@ public class Subscriber extends Thread {
         System.out.printf("Connecting to the eFTL server at %s\n", url);
         
         // Set the trust store if specified on the command line.
-        // Otherwise, all server certificates will be trusted
-        // when a secure (wss://) connection is established.
         EFTL.setSSLTrustStore(loadTrustStore(trustStoreFilename, 
                                              trustStorePassword));
+
+        // In a development-only environment there may be a need to 
+        // skip server certificate authentication.
+        EFTL.setSSLTrustAll(trustAll); 
 
         // Asynchronously connect to the eFTL server.
         EFTL.connect(url, props, new ConnectionListener() {
@@ -206,8 +207,18 @@ public class Subscriber extends Thread {
     
     public void subscribe(final Connection connection) {
         
+        final Properties props = new Properties();
+
+        // Set the subscription properties.
+        //
+        // Configure the subscription for client acknowledgments if requested.
+        //
+        if (clientAcknowledge) {
+            props.setProperty(EFTL.PROPERTY_ACKNOWLEDGE_MODE, EFTL.ACKNOWLEDGE_MODE_CLIENT);
+        }
+
         // Create a subscription matcher for messages containing a
-        // destination field that matches the specified destination.
+        // field named "type" with the value "hello".
         //
         // When connected to an FTL channel the content matcher
         // can be used to match any field in a published message.
@@ -228,13 +239,12 @@ public class Subscriber extends Thread {
         // when connecting as standard durable subscriptions are 
         // mapped to a specific client identifier.
         // 
-        final String matcher = String.format("{\"%s\":\"%s\"}", 
-                Message.FIELD_NAME_DESTINATION, destination);
+        final String matcher = "{\"type\":\"hello\"}";
         
         System.out.printf("Subscribing to %s\n", matcher);
         
         // Asynchronously subscribe to messages with a content matcher.
-        connection.subscribe(matcher, durableName, new SubscriptionListener() {
+        connection.subscribe(matcher, durableName, props, new SubscriptionListener() {
 
             @Override
             public void onMessages(Message[] messages) {
@@ -242,6 +252,10 @@ public class Subscriber extends Thread {
                 // Invoked when matching messages are received.
                 for (Message message : messages) {
                     System.out.printf("Received message %s\n", message);
+
+                    if (clientAcknowledge) {
+                        connection.acknowledge(message);
+                    }
                 }
             }
 
@@ -255,7 +269,7 @@ public class Subscriber extends Thread {
                 new Timer(true).schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        // Remove the durable subscription.
+                        // This will permanently remove a durable subscription.
                         connection.unsubscribe(subscriptionId);
 
                         // Disconnect from the eFTL server.
@@ -280,7 +294,7 @@ public class Subscriber extends Thread {
         try {
             new Subscriber(args).start();
         } catch (Throwable t) {
-            t.printStackTrace();
+            t.printStackTrace(System.out);
         }
     }
 }

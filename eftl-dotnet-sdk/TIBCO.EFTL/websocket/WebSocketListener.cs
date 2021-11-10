@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketListener.cs 75907 2014-10-06 19:32:56Z bmahurka $
+ * $Id: WebSocketListener.cs 75907 2014-10-06 19:32:56Z $
  *
  */
 using System;

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-2021 TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.c 128796 2020-09-24 19:20:18Z bpeterse $
+ * $Id: eftl.c 131938 2021-02-18 17:31:00Z $
  *
  */
 
@@ -1256,7 +1256,7 @@ tibeftlConnection_scheduleReconnect(
                 // add jitter by applying a randomness factor of 0.5 
                 double jitter = (rand() / (RAND_MAX + 1.0)) + 0.5;
                 backoff = (int64_t) (pow(2.0, (double) (conn->reconnectAttempts++)) * 1000.0 * jitter);
-                if (backoff > conn->autoReconnectMaxDelay)
+                if (backoff > conn->autoReconnectMaxDelay || backoff <= 0)
                     backoff = conn->autoReconnectMaxDelay;
             }
 

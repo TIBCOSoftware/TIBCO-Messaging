@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-01-13 09:13:35 -0800 (Mon, 13 Jan 2020) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * Copyright (c) 2001-$Date: 2020-12-09 15:23:51 -0800 (Wed, 09 Dec 2020) $ TIBCO Software Inc.
+ * All rights reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: ConnectionListener.java 120856 2020-01-13 17:13:35Z bpeterse $
+ * $Id: ConnectionListener.java 130510 2020-12-09 23:23:51Z bmahurka $
  *
  */
 package com.tibco.eftl;
@@ -107,7 +107,18 @@ public interface ConnectionListener
      * Administrators configure permission to publish.
      */
     public static final int PUBLISH_DISALLOWED = 12;
-    
+
+    public enum ConnectionState
+    {
+        INITIAL,
+        DISCONNECTED,
+        CONNECTING,
+        CONNECTED,
+        DISCONNECTING,
+        RECONNECTING
+    };
+
+
     /**
      * A new connection to the eFTL server is ready to use.
      * <p>
@@ -173,4 +184,19 @@ public interface ConnectionListener
      *               in error reporting and logging.
      */
     public void onError(Connection connection, int code, String reason);
+
+
+    /**
+     * Connection state callback.
+     * <p>
+     * A connection state callback is invoked whenever the state
+     * of the connection changes.
+     * </p>
+     * @param connection The connection on which the state changed.
+     * @param state The current state of the connection.
+     * @since 6.7.0
+     */
+    public default void onStateChange(Connection connection, ConnectionState state) {
+        // do nothing.
+    }
 }

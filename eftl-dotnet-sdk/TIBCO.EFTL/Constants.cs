@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-06-22 14:31:05 -0700 (Mon, 22 Jun 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-12-09 15:23:51 -0800 (Wed, 09 Dec 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: Constants.cs 126482 2020-06-22 21:31:05Z bpeterse $
+ * $Id: Constants.cs 130510 2020-12-09 23:23:51Z $
  *
  */
 using System;
@@ -195,6 +195,22 @@ namespace TIBCO.EFTL
 
         /// Message array field.
         MESSAGE_ARRAY
+    };
+
+    /// <summary>
+    /// Connection State Change constants 
+    /// </summary>
+    /// <description>
+    /// Enumerates the connection states possible.
+    /// </description>
+    public enum ConnectionState
+    {
+       INITIAL,
+       DISCONNECTED,
+       CONNECTING,
+       CONNECTED,
+       DISCONNECTING,
+       RECONNECTING
     };
 
     /// <summary>

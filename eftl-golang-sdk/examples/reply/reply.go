@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2001-$Date: 2020-07-09 13:18:24 -0700 (Thu, 09 Jul 2020) $ TIBCO Software Inc.
+// Copyright (c) 2001-2021 TIBCO Software Inc.
 // All Rights Reserved. Confidential & Proprietary.
 // For more information, please contact:
 // TIBCO Software Inc., Palo Alto, California, USA
@@ -31,6 +31,7 @@ func main() {
 	if len(os.Args) > 1 {
 		url = os.Args[1]
 	}
+        log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
 
 	// channel for receiving connection errors
 	errChan := make(chan error, 1)

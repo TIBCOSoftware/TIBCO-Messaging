@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-09-29 20:29:25 +0000 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -32,7 +32,7 @@ extern "C" {
 /// @endcond
 
 /**
- * @mainpage TIBCO eFTL&trade; @EFTL_VERSION_MAJOR@.@EFTL_VERSION_MINOR@.@EFTL_VERSION_UPDATE@ @EFTL_VERSION_RELEASE_TYPE@
+ * @mainpage TIBCO eFTL&trade; 6.7.0  
  *
  * @section intro Introduction
  *
@@ -45,7 +45,7 @@ extern "C" {
  *
  * @section Copyrights Copyright Notice
  *
- * Copyright &copy; @TIB_COPYRIGHT_YEARS@ TIBCO Software Inc. Licensed under a BSD-style license. Refer to [LICENSE]
+ * Copyright &copy; 2013-2021 TIBCO Software Inc. All Rights Reserved. Confidential & Proprietary.
  *
  * This documentation contains proprietary and confidential information
  * of TIBCO Software Inc. Use, disclosure, or reproduction is prohibited

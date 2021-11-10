@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-08-20 11:01:59 -0700 (Thu, 20 Aug 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-2021 TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: websocket.c 128030 2020-08-20 18:01:59Z bpeterse $
+ * $Id: websocket.c 128030 2020-08-20 18:01:59Z $
  *
  */
 

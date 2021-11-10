@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: ProtocolOpConstants.cs 126482 2020-06-22 21:31:05Z bpeterse $
+ * $Id: ProtocolOpConstants.cs 126482 2020-06-22 21:31:05Z $
  *
  */
 using System;

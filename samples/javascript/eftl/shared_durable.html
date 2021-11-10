@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <meta charset="utf-8"/>
-<html>
+<html lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shared Durable</title>
-    <!--
-        This sample requires Twitter bootstrap for CSS. <http://getbootstrap.com/>,
-    -->
     <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
 </head>
 
@@ -16,22 +13,19 @@
 
     <label>eFTL Server URL</label>
     <form class='form-inline'>
-        <input type="text" name="url" class='span6' value="ws://localhost:9191/channel"/> <button type='button' class="btn" id="connectButton">Connect</button>
+        <input type="text" name="url" class='span6' value="ws://localhost:8585/channel"/> <button type='button' class="btn" id="connectButton">Connect</button>
     </form>
 
     <a class='close log' id="clearLogButton">x</a>
     <table id='log' class='wide table table-bordered table-striped log'>
-        <tr><th align='center'>Log</th></tr>
+        <caption></caption>
+        <tr><th scope="col">Log</th></tr>
         <tbody id='logbody'></tbody>
     </table>
 </div>
 
 <script type="text/javascript" src="eftl.js"></script>
-<!--
- This sample requires jQuery, you can get your own copy of JQuery, at
- <http://jquery.com/>
- This sample references a copy of jQuery hosted by Google.
--->
+
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/3.5.0/jquery.min.js"></script>
 
 <script type="text/javascript">
@@ -60,8 +54,8 @@
                 addSuccess("Connected to eFTL server");
                 setTimeout(updateButtons);
 
-                // Asynchronously subscribe to messages with a content
-                // matcher whose destination field equals "sample".
+                // Asynchronously subscribe to messages containing
+                // a field named "type" with a value of "hello".
                 //
                 // To create a shared durable subscription, one where 
                 // messages are load-balanced among multiple instances,
@@ -80,8 +74,8 @@
                 // the EMS topic on which to subscribe.
 
                 connection.subscribe({
-                    matcher: '{"_dest":"sample"}',
-                    durable: 'sample-shared',
+                    matcher: '{"type":"hello"}',
+                    durable: 'sample-shared-durable',
                     type: 'shared',
                     onSubscribe: function (id) {
                         addSuccess("Subscribed");

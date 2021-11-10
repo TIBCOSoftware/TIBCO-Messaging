@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: ICompletionListener.cs 82627 2015-10-27 05:07:01Z bmahurka $
+ * $Id: ICompletionListener.cs 82627 2015-10-27 05:07:01Z $
  *
  */
 using System;

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * Copyright (c) 2009-$Date: 2021-02-18 09:31:00 -0800 (Thu, 18 Feb 2021) $ TIBCO Software Inc.
+ * All Rights Reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketConnection.cs 128906 2020-09-29 20:29:25Z bpeterse $
+ * $Id: WebSocketConnection.cs 131938 2021-02-18 17:31:00Z $
  */
 using System;
 using System.Collections;
@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Net;
 using System.Net.Security;
+using System.Reflection;
 
 namespace TIBCO.EFTL 
 {
@@ -84,6 +85,8 @@ namespace TIBCO.EFTL
                     }
                 }
 
+                setState(ConnectionState.CONNECTING);
+
                 if (String.Compare("wss", this.getURL().Scheme, true) == 0) 
                 {
                     bool trustAll = false;
@@ -147,6 +150,8 @@ namespace TIBCO.EFTL
 
         public void Disconnect() 
         {
+            setState(ConnectionState.DISCONNECTING);
+
             if (Interlocked.CompareExchange(ref connected, 0, 1) == 1) 
             {
                 if (cancelReconnect()) 
@@ -631,6 +636,8 @@ namespace TIBCO.EFTL
 
         public void OnClose(int code, String reason) 
         {
+            setState(ConnectionState.DISCONNECTED);
+
             if (Interlocked.CompareExchange(ref connecting, 0, 1) == 1) 
             {
                 // Reconnect when the close code reflects a server restart.
@@ -659,6 +666,8 @@ namespace TIBCO.EFTL
 
         public void OnError(Exception cause) 
         {
+            setState(ConnectionState.DISCONNECTED);
+
             if (Interlocked.CompareExchange(ref connecting, 0, 1) == 1) 
             {
                 if (!scheduleReconnect()) 
@@ -756,6 +765,8 @@ namespace TIBCO.EFTL
 
         private void handleWelcome(JsonObject message) 
         {
+            setState(ConnectionState.CONNECTED);
+
             // a non-null reconnect token indicates a prior connection
             bool invokeOnReconnect = (reconnectId != null);
             bool resume = false;
@@ -1110,6 +1121,8 @@ Console.WriteLine(e);
         {
             bool scheduled = false;
 
+            setState(ConnectionState.RECONNECTING);
+
             // schedule a connect only if not previously connected
             // and there are additional URLs to try in the URL list
             //
@@ -1152,7 +1165,10 @@ Console.WriteLine(e);
                         // add jitter by applying a randomness factor of 0.5
                         double jitter = rand.NextDouble() + 0.5;
                         // exponential backoff truncated to 30 seconds
-                        timer.Interval = Math.Min((long) (Math.Pow(2.0, reconnectAttempts++) * 1000 * jitter), GetReconnectMaxDelay());
+                        long backoff = (long)(Math.Pow(2.0, reconnectAttempts++) * 1000 * jitter);
+                        if (backoff > GetReconnectMaxDelay() || backoff <= 0)
+                            backoff = GetReconnectMaxDelay();
+                        timer.Interval = backoff;
                     }
 
                     scheduled = true;
@@ -1327,6 +1343,25 @@ Console.WriteLine(e);
         private Uri getURL()
         {
             return urlList[urlIndex];
+        }
+
+        private void setState(ConnectionState state)
+        {
+            // Check of the object implements the OnStateChange callback
+            Type typeInstance = this.listener.GetType();
+            if (typeInstance != null)
+            {
+               MethodInfo methodInfo = typeInstance.GetMethod("OnStateChange");
+               if (methodInfo != null)
+               {
+                   ParameterInfo[] parameterInfo = methodInfo.GetParameters();
+                   object classInstance = Activator.CreateInstance(typeInstance, null);
+                   if (parameterInfo.Length != 0)
+                   {
+                       var result = methodInfo.Invoke(classInstance, new object[] {this, state});
+                   }
+               }
+            }
         }
     }
 }

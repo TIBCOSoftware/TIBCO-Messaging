@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2001-$Date: 2020-10-06 09:36:16 -0700 (Tue, 06 Oct 2020) $ TIBCO Software Inc.
+// Copyright (c) 2001-2021 TIBCO Software Inc.
 // Licensed under a BSD-style license. Refer to [LICENSE]
 // For more information, please contact:
 // TIBCO Software Inc., Palo Alto, California, USA
@@ -922,12 +922,12 @@ func (conn *Connection) handleReconnect(err error) {
 		// add jitter by applying a randomness factor of 0.5
 		jitter := rand.Float64() + 0.5
 		// exponential backoff truncated to max delay
-		dur := time.Duration(math.Pow(2.0, float64(conn.reconnectAttempts))*jitter) * time.Second
-		if dur > conn.Options.AutoReconnectMaxDelay {
-			dur = conn.Options.AutoReconnectMaxDelay
+		backoff := time.Duration(math.Pow(2.0, float64(conn.reconnectAttempts))*jitter) * time.Second
+		if backoff > conn.Options.AutoReconnectMaxDelay || backoff <= 0 {
+			backoff = conn.Options.AutoReconnectMaxDelay
 		}
 		conn.reconnectAttempts++
-		conn.reconnectTimer = time.AfterFunc(dur, func() {
+		conn.reconnectTimer = time.AfterFunc(backoff, func() {
 			conn.mu.Lock()
 			defer conn.mu.Unlock()
 			for _, url := range conn.urlList {

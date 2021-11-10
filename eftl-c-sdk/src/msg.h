@@ -1,10 +1,10 @@
 /*
- * Copyright (c) $Date: 2020-09-25 08:29:03 -0700 (Fri, 25 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2021 TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: msg.h 128828 2020-09-25 15:29:03Z bpeterse $
+ * $Id: msg.h 128828 2020-09-25 15:29:03Z $
  *
  */
 

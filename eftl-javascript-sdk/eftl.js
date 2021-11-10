@@ -1,10 +1,10 @@
 /*
- * Copyright (c) $Date: 2020-10-06 09:36:16 -0700 (Tue, 06 Oct 2020) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * Copyright (c) $Date: 2021-02-18 09:31:00 -0800 (Thu, 18 Feb 2021) $ TIBCO Software Inc.
+ * All rights reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.js 129135 2020-10-06 16:36:16Z bpeterse $
+ * $Id: eftl.js 131938 2021-02-18 17:31:00Z bmahurka $
  */
 // Node.js requires a WebSocket implementation (npm install ws)
 var WebSocket = WebSocket || require('ws');
@@ -2137,7 +2137,10 @@ var WebSocket = WebSocket || require('ws');
       if (!this._nextURL()) {
           // add jitter by applying a randomness factor of 0.5
           var jitter = Math.random() + 0.5; 
-          ms = Math.min(Math.pow(2, this.reconnectCounter++) * 1000 * jitter, this.autoReconnectMaxDelay);
+          var backoff = Math.pow(2, this.reconnectCounter++) * 1000 * jitter;
+          if (backoff > this.autoReconnectMaxDelay || backoff <= 0) 
+		backoff = this.autoReconnectMaxDelay;
+          ms = backoff;
       }
 
       var connection = this;

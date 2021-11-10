@@ -18,7 +18,7 @@ The field data types within eFTL messages are similar to those in FTL messages, 
 However, the field data types within eFTL messages are not similar to those in EMS messages. For details of message translation, see “Message Translation: TIBCO eFTL and TIBCO EMS” in TIBCO eFTL Concepts (https://docs.tibco.com/pub/eftl/6.6.0/doc/pdf/TIB_eftl_6.6_concepts.pdf).
 
 ## Installation
-The eFTL python library is hosted on PyPI and can be installed with `pip install eftl`
+The eFTL python library is hosted on PyPI and can be installed with `pip3 install eftl`
 
 ## Documentation
 https://docs.tibco.com/pub/eftl/6.6.0/doc/html/api-reference/python/connection.m.html

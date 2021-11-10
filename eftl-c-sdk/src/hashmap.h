@@ -1,10 +1,10 @@
 /*
- * Copyright (c) $Date: 2020-03-11 12:11:05 -0700 (Wed, 11 Mar 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2021 TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: hashmap.h 122649 2020-03-11 19:11:05Z bpeterse $
+ * $Id: hashmap.h 122649 2020-03-11 19:11:05Z $
  *
  */
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2001-$Date: 2018-06-11 14:08:24 -0700 (Mon, 11 Jun 2018) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * All rights reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *

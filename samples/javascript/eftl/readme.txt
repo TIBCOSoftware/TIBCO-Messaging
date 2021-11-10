@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-$Date: 2018-05-15 08:24:48 -0700 (Tue, 15 May 2018) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * Copyright 2013-2021 TIBCO Software Inc.
+ * All Rights Reserved. Confidential and Proprietary.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  */
@@ -19,6 +19,11 @@
  into the same directory and open the *.html files using
  a browser.
 
+ Note that depending on your Windows security settings
+ Microsoft's Internet Explorer and Edge browsers may
+ prevent the use of "localhost" in the URL. Therefore,
+ a fully qualified domain name in the URL is recommended 
+ when using these browsers.
 
  Samples Description
  ---------------------------------------------

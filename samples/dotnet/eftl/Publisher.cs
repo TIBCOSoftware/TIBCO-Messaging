@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-$Date: 2015-07-31 16:05:02 -0700 (Fri, 31 Jul 2015) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * All Rights Reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  */
@@ -13,17 +13,16 @@ using TIBCO.EFTL;
 
 public class Publisher
 {
-    public static IConnection connection = null;
+    static IConnection connection = null;
 
-    public static String url = "ws://localhost:9191/channel";
-    public static String username = null;
-    public static String password = null;
-    public static String destination = "sample";
-    public static int count = 10;
-    public static int rate = 1;
+    static String url = "ws://localhost:8585/channel";
+    static String username = "user";
+    static String password = "password";
+    static int count = 10;
+    static int rate = 1;
 
-    public static CountdownEvent latch = new CountdownEvent(1);
-    public static Hashtable options = new Hashtable();
+    static CountdownEvent latch = new CountdownEvent(1);
+    static Hashtable options = new Hashtable();
         
     private static void Usage() 
     {
@@ -33,7 +32,6 @@ public class Publisher
         Console.WriteLine("options:");
         Console.WriteLine("  -u, --username <username>");
         Console.WriteLine("  -p, --password <password>");
-        Console.WriteLine("  -d, --destination <destination>");
         Console.WriteLine("  -c, --count <count>");
         Console.WriteLine("  -r, --rate <messages per second>");
         Console.WriteLine();
@@ -105,21 +103,19 @@ public class Publisher
         return connection.IsConnected();
     }
 
-    public void Publish(String destination, int count, int rate)
+    public void Publish(int count, int rate)
     {
         for (int i = 1; i <= count; i++)
         {
             IMessage msg = connection.CreateMessage();
 
-            // Publish messages with a destination field.
+            // Publish "hello" messages. 
             //
             // When connected to an EMS channel the destination field must
             // be present and set to the EMS topic on which to publish the 
             // message.
             //
-            msg.SetString(MessageConstants.FIELD_NAME_DESTINATION, destination);
-
-            // Populate additional fields
+            msg.SetString("type", "hello");
             msg.SetString("text", "This is a sample eFTL message");
             msg.SetLong("long", (long) i);
             msg.SetDateTime("time", new DateTime());
@@ -156,12 +152,6 @@ public class Publisher
                 } else {
                     Usage();
                 }
-            } else if (args[i].Equals("--destination") || args[i].Equals("-d")) {
-                if (i+1 < args.Length && !args[i+1].StartsWith("-")) {
-                    destination = args[++i];
-                } else {
-                    Usage();
-                }
             } else if (args[i].Equals("--count") || args[i].Equals("-c")) {
                 if (i+1 < args.Length && !args[i+1].StartsWith("-")) {
                     count = Int32.Parse(args[++i]);
@@ -189,7 +179,7 @@ public class Publisher
     
             try {
                 if (client.IsConnected()) {
-                    client.Publish(destination, count, rate);
+                    client.Publish(count, rate);
                 }
             } finally {
                 client.Close();

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * Copyright (c) 2001-$Date: 2021-02-18 09:31:00 -0800 (Thu, 18 Feb 2021) $ TIBCO Software Inc.
+ * All rights reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketConnection.java 128906 2020-09-29 20:29:25Z bpeterse $
+ * $Id: WebSocketConnection.java 131938 2021-02-18 17:31:00Z bmahurka $
  */
 package com.tibco.eftl.impl;
 
@@ -139,6 +139,8 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
             webSocket.setTrustAll(trustAll);
             webSocket.setConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS);
             webSocket.setSocketTimeout(connectTimeout, TimeUnit.MILLISECONDS);
+
+            setState(ConnectionListener.ConnectionState.CONNECTING);
             webSocket.open();
         }
     }
@@ -178,6 +180,8 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     @Override
     public void disconnect() 
     {
+        setState(ConnectionListener.ConnectionState.DISCONNECTING);
+
         if (connected.compareAndSet(true, false))
         {
             if (cancelReconnect())
@@ -671,6 +675,8 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     @Override
     public void onClose(int code, String reason) 
     {
+        setState(ConnectionListener.ConnectionState.DISCONNECTED);
+
         if (connecting.compareAndSet(true, false))
         {
             // Reconnect when the close code reflects a server restart.
@@ -700,6 +706,8 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     @Override
     public void onError(Throwable cause) 
     {
+        setState(ConnectionListener.ConnectionState.DISCONNECTED);
+
         if (connecting.compareAndSet(true, false))
         {
             if (!scheduleReconnect())
@@ -812,6 +820,8 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         
         webSocket.setSocketTimeout(timeout, TimeUnit.MILLISECONDS);
         
+        setState(ConnectionListener.ConnectionState.CONNECTED);
+
         // connected
         connected.set(true);
 
@@ -1058,6 +1068,8 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     {
         boolean scheduled = false;
 
+        setState(ConnectionListener.ConnectionState.RECONNECTING);
+
         // schedule a connect only if not previously connected
         // and there are additional URLs to try in the URL list
         //
@@ -1081,7 +1093,9 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
                     // add jitter by applying a randomness factor of 0.5
                     double jitter = Math.random() + 0.5;
                     // exponential backoff truncated to max delay
-                    backoff = Math.min((long) (Math.pow(2.0, reconnectAttempts++) * 1000 * jitter), getReconnectMaxDelay());
+                    backoff = (long)(Math.pow(2.0, reconnectAttempts++) * 1000 * jitter);
+                    if (backoff > getReconnectMaxDelay() || backoff <= 0) 
+                        backoff = getReconnectMaxDelay();
                 }
 
                 // set only when auto-reconnecting
@@ -1260,5 +1274,10 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     private URI getURL()
     {
         return urlList.get(urlIndex);
+    }
+
+    private void setState(ConnectionListener.ConnectionState state)
+    {
+        listener.onStateChange(this, state);
     }
 }

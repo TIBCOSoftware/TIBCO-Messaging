@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-$Date: 2018-05-15 10:24:48 -0500 (Tue, 15 May 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2013-2021 TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -21,14 +21,15 @@ import com.tibco.eftl.*;
 
 public class KVRemove extends Thread {
 
-    String url = "ws://localhost:9191/channel";
+    String url = "ws://localhost:8585/map";
     String username = null;
     String password = null;
     String clientId = null;
     String trustStoreFilename = null;
     String trustStorePassword = "";
-    String map = "myMap";
-    String key = "myKey";
+    boolean trustAll = false;
+    String map = "sample_map";
+    String key = "key1";
 
     public KVRemove(String[] args) {
 
@@ -82,6 +83,8 @@ public class KVRemove extends Thread {
                 } else {
                     printUsage();
                 }
+            } else if (args[i].equalsIgnoreCase("--trustAll")) {
+                trustAll = true;
             } else if (args[i].startsWith("-")) {
                 printUsage();
             } else {
@@ -103,6 +106,7 @@ public class KVRemove extends Thread {
         System.out.println("  -k, --key <key>");
         System.out.println("      --trustStore <trust store filename>");
         System.out.println("      --trustStorePassword <trust store password");
+        System.out.println("      --trustAll");
         System.out.println();
         System.exit(1);
     }
@@ -121,7 +125,7 @@ public class KVRemove extends Thread {
                     in.close();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                e.printStackTrace(System.out);
             }
         }
         return null;
@@ -142,9 +146,11 @@ public class KVRemove extends Thread {
         System.out.printf("Connecting to the eFTL server at %s\n", url);
 
         // Set the trust store if specified on the command line.
-        // Otherwise, all server certificates will be trusted
-        // when a secure (wss://) connection is established.
         EFTL.setSSLTrustStore(loadTrustStore(trustStoreFilename, trustStorePassword));
+
+        // In a development-only environment there may be a need to 
+        // skip server certificate authentication.
+        EFTL.setSSLTrustAll(trustAll); 
 
         // Asynchronously connect to the eFTL server.
         EFTL.connect(url, props, new ConnectionListener() {
@@ -217,7 +223,7 @@ public class KVRemove extends Thread {
         try {
             new KVRemove(args).start();
         } catch (Throwable t) {
-            t.printStackTrace();
+            t.printStackTrace(System.out);
         }
     }
 }

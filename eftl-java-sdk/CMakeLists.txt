@@ -4,7 +4,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/com/tibco/eftl/Version.java.confi
 file(GLOB_RECURSE eftl_client_java_sources src/*.java ${CMAKE_CURRENT_BINARY_DIR}/eftl_config/*.java)
 set(eftl_client_java_sources ${eftl_client_java_sources} PARENT_SCOPE)
 
-set(CMAKE_JAVA_COMPILE_FLAGS -source 1.7 -target 1.7)
+set(CMAKE_JAVA_COMPILE_FLAGS -source 1.8 -target 1.8)
 add_jar(eftl_client_java
         SOURCES ${eftl_client_java_sources}
         OUTPUT_NAME tibeftl)
@@ -50,7 +50,7 @@ add_custom_command(OUTPUT hydra_doc
                     -overview ${CMAKE_BINARY_DIR}/eftl/overview.html
                     -doctitle "TIBCO eFTL&trade; ${EFTL_VERSION_MAJOR}.${EFTL_VERSION_MINOR}.${EFTL_VERSION_UPDATE} ${TIB_VERSION_RELEASE_TYPE}"
                     -header "TIBCO eFTL&trade; ${EFTL_VERSION_MAJOR}.${EFTL_VERSION_MINOR}.${EFTL_VERSION_UPDATE} ${TIB_VERSION_RELEASE_TYPE}"
-                    -footer "<small>Copyright &copy; ${TIB_COPYRIGHT_YEARS} TIBCO Software Inc., Licensed under a BSD-style license. Refer to [LICENSE].</small>"
+                    -footer "<small>Copyright &copy; ${TIB_COPYRIGHT_YEARS} TIBCO Software Inc., All rights reserved.</small>"
                     -public -quiet -notimestamp
                     ${JAVA_PACKAGE_NAMES})
 

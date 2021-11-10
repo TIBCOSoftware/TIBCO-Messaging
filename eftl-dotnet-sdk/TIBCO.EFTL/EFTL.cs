@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: EFTL.cs 128906 2020-09-29 20:29:25Z bpeterse $
+ * $Id: EFTL.cs 128906 2020-09-29 20:29:25Z $
  *
  */
 using System;

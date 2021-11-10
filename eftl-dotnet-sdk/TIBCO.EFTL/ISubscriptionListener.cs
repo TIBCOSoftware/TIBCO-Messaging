@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: ISubscriptionListener.cs 85385 2016-04-12 18:27:33Z dinitz $
+ * $Id: ISubscriptionListener.cs 85385 2016-04-12 18:27:33Z $
  *
  */
 using System;

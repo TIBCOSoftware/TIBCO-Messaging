@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2009-$Date: 2019-07-25 13:43:33 -0700 (Thu, 25 Jul 2019) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * All Rights Reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocket.cs 113204 2019-07-25 20:43:33Z bpeterse $
+ * $Id: WebSocket.cs 113204 2019-07-25 20:43:33Z $
  */
 
 using System;

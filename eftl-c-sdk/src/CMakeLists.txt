@@ -1,10 +1,10 @@
 #
-# Copyright (c) 2014-$Date: 2017-08-24 14:37:19 -0700 (Thu, 24 Aug 2017) $ TIBCO Software Inc.
+# Copyright (c) 2014-2021 TIBCO Software Inc.
 # Licensed under a BSD-style license. Refer to [LICENSE]
 # For more information, please contact:
 # TIBCO Software Inc., Palo Alto, California, USA
 # 
-# $Id: eftl.c 95684 2017-08-24 21:37:19Z bpeterse $
+# $Id: eftl.c 95684 2017-08-24 21:37:19Z $
 #
 cmake_minimum_required(VERSION 2.8)
 

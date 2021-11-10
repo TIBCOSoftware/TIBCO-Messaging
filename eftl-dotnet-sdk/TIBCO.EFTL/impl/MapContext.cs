@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: PublishContext.cs 85026 2016-03-28 17:11:38Z bpeterse $
+ * $Id: PublishContext.cs 85026 2016-03-28 17:11:38Z $
  *
  */
 

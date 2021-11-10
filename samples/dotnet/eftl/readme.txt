@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2009-$Date: 2018-09-04 17:57:51 -0500 (Tue, 04 Sep 2018) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
+ * @COPYRIGHT_BANNER@
  */
 
  This directory contains C# client samples for TIBCO eFTL.
@@ -28,20 +25,51 @@
 
  4. Execute:
 
-      nmake
+      Windows:
+         nmake -f Makefile.Windows (builds .NET framework and .NET core apps)
+      Linux:
+         make -f Makefile.Linux  (builds only .NET core apps)
+      MacOS
+         make -f Makefile.Darwin (builds only .NET core apps)
 
     This command compiles the samples. 
 
- 5. Now run the samples by executing:
+.NET Framework (Windows Only)
+--------------
+ 5. Now run the samples build for .NET framework by executing:
 
-      Subscriber.exe
-      Publisher.exe
+      net472\Subscriber.exe
+      net472\Publisher.exe
+
+
+.NET core (Linux, Windows, MacOS)
+------------
+
+ 6. In order to the run the samples build for .NET core execute:
+
+      Linux and Mac:
+        dotnet netcoreapp2.1/Subscriber.dll
+        dotnet netcoreapp2.1/Publisher.dll
+      Windows:
+        dotnet netcoreapp2.1\Subscriber.dll
+        dotnet netcoreapp2.1\Publisher.dll
       
  NOTE: Connecting to a secure tibeftlServer (via the wss:// protocol) requires 
  that the .NET client install the server trust certificate in the Microsoft 
  Certificate store under "Trusted Root Certification Authorities".
 
+ 7. In order to build individual apps execute:
+      
+     Linux/Mac/Windows: 
+     -----------------
+      
+     dotnet build --configuration Release -f netcoreapp2.1 Publisher.csproj (to build Publisher app for .NET core)
+     
+     Windows only:
+     ------------
 
+     dotnet build --configuration Release -f net472 Publisher.csproj (to build Publisher app for .NET Framework)
+     
 Samples description.
 ---------------------------------------------
 
@@ -64,6 +92,16 @@ Samples description.
 
       Basic subscriber program that demonstrates the use of
       last-value durable subscriptions.
+
+ Request
+
+      Basic request program that demonstrates the use of
+      sending a request and receiving a reply.
+
+ Reply
+
+      Basic reply program that demonstrates the use of
+      sending a reply in response to a request.
 
  KVSet
 

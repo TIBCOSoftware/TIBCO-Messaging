@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JSONMessage.cs 91161 2017-01-31 21:28:19Z bmahurka $
+ * $Id: JSONMessage.cs 91161 2017-01-31 21:28:19Z $
  *
  */
 

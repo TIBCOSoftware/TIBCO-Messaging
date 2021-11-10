@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: IConnection.cs 99237 2018-02-06 00:15:48Z bpeterse $
+ * $Id: IConnection.cs 99237 2018-02-06 00:15:48Z $
  *
  */
 using System;

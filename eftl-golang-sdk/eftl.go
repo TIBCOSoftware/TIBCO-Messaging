@@ -9,4 +9,4 @@
 package eftl
 
 // Version of eFTL Go client.
-const Version = "@EFTL_VERSION_MAJOR@.@EFTL_VERSION_MINOR@.@EFTL_VERSION_UPDATE@"
+const Version = "6.7.0"

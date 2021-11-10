@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: BasicSubscription.cs 126238 2020-06-16 16:06:49Z bpeterse $
+ * $Id: BasicSubscription.cs 126238 2020-06-16 16:06:49Z $
  *
  */
 

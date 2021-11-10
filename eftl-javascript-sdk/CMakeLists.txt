@@ -27,4 +27,5 @@ add_custom_target(jslibout ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/eftl.js)
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/*.js)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eftl.js DESTINATION sdks/javascript/lib COMPONENT development)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc/javascript DESTINATION doc/eftl/html COMPONENT documentation)
 

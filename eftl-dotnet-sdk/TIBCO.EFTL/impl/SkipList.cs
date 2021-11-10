@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2009-$Date: 2018-09-04 15:57:51 -0700 (Tue, 04 Sep 2018) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * All Rights Reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: SkipList.cs 103512 2018-09-04 22:57:51Z bpeterse $
+ * $Id: SkipList.cs 103512 2018-09-04 22:57:51Z $
  */
 using System;
 using System.Collections;

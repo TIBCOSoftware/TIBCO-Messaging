@@ -2,7 +2,9 @@
  @COPYRIGHT_BANNER@
 '''
 
+
 """Documentation of the TIBCO eFTL™ Python application programming interface."""
+
 import asyncio
 import datetime
 import json
@@ -422,8 +424,7 @@ class EftlMessage():
         Set a string field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -439,8 +440,7 @@ class EftlMessage():
         Set a string array field in a message.
 
         :param field_name: The call sets this field
-        :param values: The call sets this value, to remove
-                      the field, supply None.
+        :param values: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -461,8 +461,7 @@ class EftlMessage():
         Set a long field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -478,8 +477,7 @@ class EftlMessage():
         Set a long array field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -499,8 +497,7 @@ class EftlMessage():
         Set a double field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -528,8 +525,7 @@ class EftlMessage():
         Set a double array field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -554,8 +550,7 @@ class EftlMessage():
         Set a datetime field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -572,8 +567,7 @@ class EftlMessage():
         Set a datetime array field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -598,8 +592,7 @@ class EftlMessage():
         Set a message field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -615,8 +608,7 @@ class EftlMessage():
         Set a message array field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -636,8 +628,7 @@ class EftlMessage():
         Set an opaque field in a message.
 
         :param field_name: The call sets this field
-        :param value: The call sets this value, to remove
-                      the field, supply None.
+        :param value: The call sets this value.
         :return:
         """
         if isinstance(field_name, str):
@@ -1282,6 +1273,7 @@ class EftlConnection():
             else:
                 return
         except:
+                self.factory.conn._set_status(Eftl.DISCONNECTED)
                 logger.debug("Reconnnect task raised an exception ..")
 
         will_reconnect = self._schedule_reconnect()
@@ -1751,10 +1743,7 @@ class EftlConnection():
         :return: The EftlMessage object
 
         """
-        if not self._permanently_closed():
-            return EftlMessage()
-        else:
-            raise ConnectionError("Connection is closed.")
+        return EftlMessage()
 
     async def _async_sleep(self, t):
         await asyncio.sleep(t)
@@ -1772,10 +1761,10 @@ class EftlConnection():
                 self.first_retry_delay = random.random() + 0.5
                 reconn_delay = self.first_retry_delay
             else:
-                reconn_delay = min(
-                            (2 ** self.reconnect_counter) * self.first_retry_delay, 
-                            self.auto_reconnect_max_delay
-                            )
+                backoff = (2 ** self.reconnect_counter) * self.first_retry_delay
+                if backoff > self.auto_reconnect_max_delay or backoff <= 0:
+                    backoff = self.auto_reconnect_max_delay
+                reconn_delay =  backoff
             self.reconnect_counter += 1
         else:
             # look if it is necessary
@@ -2085,7 +2074,7 @@ class EftlConnection():
                 self._send(unsub_message, 0, False)
 
             def _unsubscribe_all(self):
-                for k in self.factory.conn.subscriptions:
+                for k in list(self.factory.conn.subscriptions):
                     self._unsubscribe(k)
 
             def _close_subscription(self, sub_id):

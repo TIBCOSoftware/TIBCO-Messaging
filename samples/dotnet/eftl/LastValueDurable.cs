@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-$Date: 2015-07-30 12:57:32 -0700 (Thu, 30 Jul 2015) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
+ * All Rights Reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  */
@@ -13,19 +13,18 @@ using TIBCO.EFTL;
 
 public class Subscriber 
 {
-    public static IConnection connection = null;
+    static IConnection connection = null;
 
-    public static String url = "ws://localhost:9191/channel";
-    public static String username = null;
-    public static String password = null;
-    public static String durable = "sample-last-value";
-    public static String destination = "sample";
-    public static String matcher = null;
-    public static int count = 10;
-    public static int received = 0;
+    static String url = "ws://localhost:8585/channel";
+    static String username = "user";
+    static String password = "password";
+    static String durable = "sample-lastvalue-durable";
+    static String matcher = null;
+    static int count = 10;
+    static int received = 0;
 
-    public static CountdownEvent latch = new CountdownEvent(1);
-    public static Hashtable options = new Hashtable();
+    static CountdownEvent latch = new CountdownEvent(1);
+    static Hashtable options = new Hashtable();
 
     private static void Usage() 
     {
@@ -35,7 +34,6 @@ public class Subscriber
         Console.WriteLine("options:");
         Console.WriteLine("  -u, --username <username>]");
         Console.WriteLine("  -p, --password <password>]");
-        Console.WriteLine("  -d, --destination <destination>]");
         Console.WriteLine("  -n, --name <durable name>");
         Console.WriteLine("  -c, --count <count>");
         Console.WriteLine();
@@ -125,11 +123,11 @@ public class Subscriber
         Subscriber.connection.Disconnect();
     }
 
-    public void Subscribe(String destination, String durable, int count)
+    public void Subscribe(String durable, int count)
     {
         try {
             // Create a subscription matcher for messages containing a
-            // destination field that matches the specified destination.
+            // field named "type" with a value of "hello".
             //
             // When connected to an FTL channel the content matcher
             // can be used to match any field in a published message.
@@ -147,7 +145,7 @@ public class Subscriber
             //
             // The durable name is used to create a durable subscription.
             //
-            matcher = String.Format("{{\"{0}\":\"{1}\"}}", MessageConstants.FIELD_NAME_DESTINATION, destination);
+            matcher = "{\"type\":\"hello\"}";
             
             // Set the durable subscription type to last-value.
             //
@@ -155,7 +153,7 @@ public class Subscriber
             // matcher the messages will be sorted.
             //
             options.Add(EFTL.PROPERTY_DURABLE_TYPE, DurableType.LAST_VALUE);
-            options.Add(EFTL.PROPERTY_DURABLE_KEY, "_dest");
+            options.Add(EFTL.PROPERTY_DURABLE_KEY, "type");
 
             // Asynchronously subscribe to matching messages.
             String subscriptionId = connection.Subscribe(matcher, durable, options, new SubscriptionListener());
@@ -188,12 +186,6 @@ public class Subscriber
                 } else {
                     Usage();
                 }
-            } else if (args[i].Equals("--destination") || args[i].Equals("-d")) {
-                if (i+1 < args.Length && !args[i+1].StartsWith("-")) {
-                    destination = args[++i];
-                } else {
-                    Usage();
-                }
             } else if (args[i].Equals("--name") || args[i].Equals("-n")) {
                 if (i+1 < args.Length && !args[i+1].StartsWith("-")) {
                     durable = args[++i];
@@ -223,7 +215,7 @@ public class Subscriber
                 if (client.IsConnected())
                 {
                     latch.Reset();
-                    client.Subscribe(destination, durable, count);            
+                    client.Subscribe(durable, count);            
                 }
             }
             catch (Exception) {}

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2015-10-26 21:47:25 -0700 (Mon, 26 Oct 2015) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2020-12-09 15:23:51 -0800 (Wed, 09 Dec 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: IConnectionListener.cs 82604 2015-10-27 04:47:25Z bmahurka $
+ * $Id: IConnectionListener.cs 130510 2020-12-09 23:23:51Z $
  *
  */
 using System;
@@ -105,5 +105,15 @@ namespace TIBCO.EFTL
         /// </param>
         ////
         void OnError(IConnection connection, int code, String reason);
+    }
+
+    // The following extension methods can be accessed by instances of any
+    // class that implements IConnectionListener.
+    public static class EFTLExtension
+    {
+        public static void OnStateChange(this IConnectionListener listener, IConnection connection, ConnectionState state)
+        {
+            // nothing to do
+        }
     }
 }

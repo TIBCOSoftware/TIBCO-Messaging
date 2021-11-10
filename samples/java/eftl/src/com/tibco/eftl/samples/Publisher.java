@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-$Date: 2015-07-08 14:41:02 -0700 (Wed, 08 Jul 2015) $ TIBCO Software Inc.
+ * Copyright (c) 2013-2021 TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -17,18 +17,17 @@ import com.tibco.eftl.*;
 
 /*
  * This is a sample of a basic eFTL publisher program which
- * publishes the requested number of messages to the specified
- * destination at the desired rate.
+ * publishes the requested number of messages at the desired rate.
  */
 
 public class Publisher extends Thread {
     
-    String url = "ws://localhost:9191/channel";
+    String url = "ws://localhost:8585/channel";
     String username = null;
     String password = null;
-    String destination = "sample";
     String trustStoreFilename = null;
     String trustStorePassword = "";
+    boolean trustAll = false;
     int messageCount = 10;
     int messageTotal = 0;
     int messageRate = 1;
@@ -57,12 +56,6 @@ public class Publisher extends Thread {
                 } else {
                     printUsage();
                 }
-            } else if (args[i].equalsIgnoreCase("--destination") || args[i].equals("-d")) {
-                if (i+1 < args.length && !args[i+1].startsWith("-")) {
-                    destination = args[++i];
-                } else {
-                    printUsage();
-                }
             } else if (args[i].equalsIgnoreCase("--count") || args[i].equals("-c")) {
                 if (i+1 < args.length && !args[i+1].startsWith("-")) {
                     messageCount = Integer.valueOf(args[++i]);
@@ -87,6 +80,8 @@ public class Publisher extends Thread {
                 } else {
                     printUsage();
                 }
+            } else if (args[i].equalsIgnoreCase("--trustAll")) {
+                trustAll = true;
             } else if (args[i].startsWith("-")) {
                 printUsage();
             } else {
@@ -103,11 +98,11 @@ public class Publisher extends Thread {
         System.out.println("options:");
         System.out.println("  -u, --username <username>");
         System.out.println("  -p, --password <password>");
-        System.out.println("  -d, --destination <destination>");
         System.out.println("  -c, --count <count>");
         System.out.println("  -r, --rate <messages per second>");
         System.out.println("      --trustStore <trust store filename>");
         System.out.println("      --trustStorePassword <trust store password");
+        System.out.println("      --trustAll");
         System.out.println();
         System.exit(1);
     }
@@ -126,7 +121,7 @@ public class Publisher extends Thread {
                     in.close();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                e.printStackTrace(System.out);
             }
         }
         return null;
@@ -145,10 +140,12 @@ public class Publisher extends Thread {
         System.out.printf("Connecting to the eFTL server at %s\n", url);
         
         // Set the trust store if specified on the command line.
-        // Otherwise, all server certificates will be trusted
-        // when a secure (wss://) connection is established.
         EFTL.setSSLTrustStore(loadTrustStore(trustStoreFilename, 
                                              trustStorePassword));
+
+        // In a development-only environment there may be a need to 
+        // skip server certificate authentication.
+        EFTL.setSSLTrustAll(trustAll); 
 
         // Asynchronously connect to the eFTL server. 
         EFTL.connect(url, props, new ConnectionListener() {
@@ -209,15 +206,13 @@ public class Publisher extends Thread {
             // Create a message.
             final Message message = connection.createMessage();
             
-            // Publish messages with a destination field.
+            // Publish "hello" messages. 
             //
             // When connected to an EMS channel the destination field  must
             // be present and set to the EMS topic on which to publish the
             // message.
             //
-            message.setString(Message.FIELD_NAME_DESTINATION, destination);
-            
-            // Add additional fields to the message.
+            message.setString("type", "hello");
             message.setString("text", "This is a sample eFTL message");
             message.setLong("long", (long) i);
             message.setDate("time", new Date());
@@ -253,7 +248,9 @@ public class Publisher extends Thread {
             try {
                 // Rate-limit the publishing
                 Thread.sleep(1000/(messageRate > 0 ? messageRate : 1));
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -262,7 +259,7 @@ public class Publisher extends Thread {
         try {
             new Publisher(args).start();
         } catch (Throwable t) {
-            t.printStackTrace();
+            t.printStackTrace(System.out);
         }
     }
 }
