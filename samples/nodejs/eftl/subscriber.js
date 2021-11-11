@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-$Date: 2018-05-15 14:49:05 -0500 (Tue, 15 May 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -10,11 +10,12 @@
 const eFTL = require('eftl');
 const fs = require('fs');
 
+const url = (process.argv[2] || "ws://localhost:8585/channel");
+
 console.log(eFTL.getVersion());
 
 // Set the server certificate chain for secure connections.
 // Self-signed server certificates are not supported.
-// If not set the eFTL client will trust any server certificate.
 //
 //eFTL.setTrustCertificates(fs.readFileSync('./ca.pem'));
 
@@ -32,27 +33,36 @@ console.log(eFTL.getVersion());
 // The onDisconnect function is invoked following a failed
 // connection attempt to the eFTL server.
 //
-eFTL.connect('ws://localhost:9191/channel', {
-    username: undefined,
-    password: undefined,
-    clientId: 'sample-node',
+eFTL.connect(url, {
+    username: 'user',
+    password: 'password',
+    trustAll: false,
+    clientId: 'sample-node-client',
     onConnect: connection => {
         console.log('Connected to eFTL server');
         subscribe(connection);
     },
     onDisconnect: (connection, code, reason) => {
         console.log('Disconnected from eFTL server: ' + reason);
+    },
+    onError: (connection, code, reason) => {
+        console.log('Error from eFTL server: ' + reason);
     }
 });
 
 // Subscribe to eFTL messages using a durable subscription.
 //
 // This subscription defines a matcher that will match published 
-// messages with a '_dest' field set to 'sample'.
+// messages containing a field named "type" with a value of "hello".
 //
 // The durable name is used to create a durable subscription. When
 // setting a durable name also set the clientId in the connect
 // method as durable subscriptions are mapped to specific clientIds.
+//
+// The subscription's message acknowledgment mode can be set to
+// 'auto', 'client', or 'none'. When set to 'client' the consumed
+// messages must be explicitly acknowledged. The default message
+// acknowledgment mode is 'auto'.
 //
 // The onSubscribe function is invoked following a successful
 // subscription.
@@ -64,13 +74,15 @@ eFTL.connect('ws://localhost:9191/channel', {
 //
 function subscribe(connection) {
     connection.subscribe({
-        matcher: `{"_dest":"sample"}`,
-        durable: 'sample',
+        matcher: `{"type":"hello"}`,
+        durable: 'sample-durable',
+        ack: 'client',
         onSubscribe: id => {
             console.log('Subscribed');
 
             // Unsubscribe and disconnect after 30 seconds.
             setTimeout(function() {
+                // This will permanently remove a durable subscription.
                 connection.unsubscribe(id);
                 connection.disconnect();
             }, 30000);

@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.h.config 128906 2020-09-29 20:29:25Z bpeterse $
+ * $Id: eftl.h.config 128906 2020-09-29 20:29:25Z $
  *
  */
 

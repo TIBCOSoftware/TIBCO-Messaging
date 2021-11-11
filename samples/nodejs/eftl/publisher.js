@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-$Date: 2018-05-15 14:49:05 -0500 (Tue, 15 May 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2020-07-09 13:18:24 -0700 (Thu, 09 Jul 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -10,6 +10,8 @@
 const eFTL = require('eftl');
 const fs = require('fs');
 
+const url = (process.argv[2] || "ws://localhost:8585/channel");
+
 console.log(eFTL.getVersion());
 
 var timer;
@@ -17,7 +19,6 @@ var counter = 0;
 
 // Set the server certificate chain for secure connections.
 // Self-signed server certificates are not supported.
-// If not set the eFTL client will trust any server certificate.
 //
 //eFTL.setTrustCertificates(fs.readFileSync('./ca.pem'));
 
@@ -32,16 +33,20 @@ var counter = 0;
 // The onDisconnect function is invoked following a failed
 // connection attempt to the eFTL server.
 //
-eFTL.connect('ws://localhost:9191/channel', {
-    username: undefined,
-    password: undefined,
+eFTL.connect(url, {
+    username: 'user',
+    password: 'password',
+    trustAll: false,
     onConnect: connection => {
         console.log('Connected to eFTL server');
-        setInterval(publish, 1000, connection);
+        timer = setInterval(publish, 1000, connection);
     },
     onDisconnect: (connection, code, reason) => {
-        console.log('Error connecting to eFTL server: ' + reason);
+        console.log('Disconnected from eFTL server: ' + reason);
         clearInterval(timer);
+    },
+    onError: (connection, code, reason) => {
+        console.log('Error from eFTL server: ' + reason);
     }
 });
 
@@ -49,7 +54,7 @@ eFTL.connect('ws://localhost:9191/channel', {
 // 
 function publish(connection) {
     var msg = connection.createMessage();
-    msg.set('_dest', 'sample');
+    msg.set('type', 'hello');
     msg.set('text', 'This is a sample eFTL message');
     msg.set('long', ++counter);
     msg.set('time', new Date());

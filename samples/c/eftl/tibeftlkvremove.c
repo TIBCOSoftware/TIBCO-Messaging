@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-$Date: 2018-06-06 13:30:42 -0500 (Wed, 06 Jun 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2010-$Date: 2020-05-27 09:56:45 -0700 (Wed, 27 May 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -14,7 +14,7 @@
 
 #include "tib/eftl.h"
 
-#define DEFAULT_URL "ws://localhost:9191/channel"
+#define DEFAULT_URL "ws://localhost:8585/map"
 
 void
 onError(
@@ -49,11 +49,13 @@ main(int argc, char** argv)
     // connect to the server
     conn = tibeftl_Connect(err, url, &opts, onError, NULL);
 
+    printf("key-value remove\n");
+
     // create a key-value map
-    map = tibeftl_CreateKVMap(err, conn, "MyMap");
+    map = tibeftl_CreateKVMap(err, conn, "sample_map");
 
     // remove the key-value pair from the map.
-    tibeftlKVMap_Remove(err, map, "MyKey");
+    tibeftlKVMap_Remove(err, map, "key1");
 
     // cleanup
     tibeftlKVMap_Destroy(err, map);

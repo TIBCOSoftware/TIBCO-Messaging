@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-$Date: 2018-05-29 13:54:20 -0500 (Tue, 29 May 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2010-$Date: 2020-05-27 09:56:45 -0700 (Wed, 27 May 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -20,14 +20,18 @@
 
 #include "tib/eftl.h"
 
-#define DEFAULT_URL "ws://localhost:9191/channel"
+#define DEFAULT_URL "ws://localhost:8585/channel"
 
 void
 delay(int secs)
 {
+#ifdef _WIN32
+    Sleep(secs * 1000);
+#else
     struct timeval  tv = {secs, 0};
 
     select(0, NULL, NULL, NULL, &tv);
+#endif
 }
 
 void
@@ -80,7 +84,7 @@ main(int argc, char** argv)
     tibeftlOptions              opts = tibeftlOptionsDefault;
     tibeftlSubscriptionOptions  subOpts = tibeftlSubscriptionOptionsDefault;
     const char*                 url = DEFAULT_URL;
-    char                        matcher[64];
+    const char*                 matcher = NULL;
 
     printf("#\n# %s\n#\n# %s\n#\n", argv[0], tibeftl_Version());
 
@@ -99,12 +103,18 @@ main(int argc, char** argv)
     // configure subscription options
     subOpts.durableType = TIBEFTL_DURABLE_TYPE_SHARED;
 
-    // create a matcher to receive messages published to destination "sample"
-    snprintf(matcher, sizeof(matcher), "{\"%s\":\"%s\"}",
-        TIBEFTL_FIELD_NAME_DESTINATION, "sample");
+    // create a subscription matcher to match message fields
+    // with type string or long, or to test for the presences 
+    // or absence of a named message field 
+    //
+    // this matcher matches all messages containing a field
+    // named 'type' with a value of 'hello'
+    matcher = "{\"type\":\"hello\"}";
 
     // create a subscription using the matcher
     sub = tibeftl_SubscribeWithOptions(err, conn, matcher, "sample-shared", &subOpts, onMessage, NULL);
+
+    printf("waiting for messages\n");
 
     // wait for messages
     if (!tibeftlErr_IsSet(err)) {

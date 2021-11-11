@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: version.h.config 90137 2016-12-13 19:04:42Z rselph $
+ * $Id: version.h.config 90137 2016-12-13 19:04:42Z $
  *
  */
 

@@ -10,11 +10,12 @@
 const eFTL = require('eftl');
 const fs = require('fs');
 
+const url = (process.argv[2] || "ws://localhost:8585/channel");
+
 console.log(eFTL.getVersion());
 
 // Set the server certificate chain for secure connections.
 // Self-signed server certificates are not supported.
-// If not set the eFTL client will trust any server certificate.
 //
 //eFTL.setTrustCertificates(fs.readFileSync('./ca.pem'));
 
@@ -29,22 +30,26 @@ console.log(eFTL.getVersion());
 // The onDisconnect function is invoked following a failed
 // connection attempt to the eFTL server.
 //
-eFTL.connect('ws://localhost:9191/channel', {
-    username: undefined,
-    password: undefined,
+eFTL.connect(url, {
+    username: 'user',
+    password: 'password',
+    trustAll: false,
     onConnect: connection => {
         console.log('Connected to eFTL server');
         subscribe(connection);
     },
     onDisconnect: (connection, code, reason) => {
         console.log('Disconnected from eFTL server: ' + reason);
+    },
+    onError: (connection, code, reason) => {
+        console.log('Error from eFTL server: ' + reason);
     }
 });
 
 // Subscribe to eFTL messages using a last-value durable subscription.
 //
 // This subscription defines a matcher that will match published 
-// messages with a '_dest' field set to 'sample'.
+// messages containing a field named "type" with a value of "hello".
 //
 // The durable name is used to create a durable subscription. The
 // type specifies a last-value durable subscription. The key
@@ -60,10 +65,10 @@ eFTL.connect('ws://localhost:9191/channel', {
 //
 function subscribe(connection) {
     connection.subscribe({
-        matcher: `{"_dest":"sample"}`,
-        durable: 'sample-last-value',
+        matcher: `{"type":"hello"}`,
+        durable: 'sample-lastvalue-durable',
         type: 'last-value',
-        key: '_dest',
+        key: 'type',
         onSubscribe: id => {
             console.log('Subscribed');
         },

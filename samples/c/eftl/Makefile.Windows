@@ -1,6 +1,6 @@
 ######################################################################
-# Copyright (c) 2010-$Date: 2017-05-22 09:41:21 -0700 (Mon, 22 May 2017) $ TIBCO Software Inc.
-# Licensed under a BSD-style license. Refer to [LICENSE]
+# Copyright (c) 2010-2019 TIBCO Software Inc.
+# All Rights Reserved. Confidential & Proprietary
 # For more information, please contact:
 # TIBCO Software Inc., Palo Alto, California, USA
 #
@@ -18,7 +18,7 @@ CFLAGS=/MD /O2 /DNDEBUG /nologo /GF /W3 /EHsc -D_WINDOWS /c
 
 LIBS= $(TIBEFTL_DIR)\lib\tibeftl.lib ws2_32.lib
 
-PROGS = tibeftlpub.exe tibeftlsub.exe tibeftlshared.exe tibeftllastvalue.exe tibeftlkvset.exe tibeftlkvget.exe tibeftlkvremove.exe
+PROGS = tibeftlpub.exe tibeftlsub.exe tibeftlrequest.exe tibeftlreply.exe tibeftlshared.exe tibeftllastvalue.exe tibeftlkvset.exe tibeftlkvget.exe tibeftlkvremove.exe
 all: $(PROGS)
 
 clean: 	
@@ -33,6 +33,12 @@ tibeftlpub.exe: tibeftlpub.obj
 
 tibeftlsub.exe: tibeftlsub.obj 
 	$(LINK) $(LDFLAGS) tibeftlsub.obj $(LIBS) /out:$@
+
+tibeftlrequest.exe: tibeftlrequest.obj 
+	$(LINK) $(LDFLAGS) tibeftlrequest.obj $(LIBS) /out:$@
+
+tibeftlreply.exe: tibeftlreply.obj 
+	$(LINK) $(LDFLAGS) tibeftlreply.obj $(LIBS) /out:$@
 
 tibeftlshared.exe: tibeftlshared.obj 
 	$(LINK) $(LDFLAGS) tibeftlshared.obj $(LIBS) /out:$@

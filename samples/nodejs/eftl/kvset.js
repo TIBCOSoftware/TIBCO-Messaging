@@ -10,6 +10,8 @@
 const eFTL = require('eftl');
 const fs = require('fs');
 
+const url = (process.argv[2] || "ws://localhost:8585/map");
+
 console.log(eFTL.getVersion());
 
 // Set the server certificate chain for secure connections.
@@ -29,15 +31,19 @@ console.log(eFTL.getVersion());
 // The onDisconnect function is invoked following a failed
 // connection attempt to the eFTL server.
 //
-eFTL.connect('ws://localhost:9191/channel', {
-    username: undefined,
-    password: undefined,
+eFTL.connect(url, {
+    username: 'user',
+    password: 'password',
+    trustAll: true,
     onConnect: connection => {
         console.log('Connected to eFTL server');
         setKeyValue(connection);
     },
     onDisconnect: (connection, code, reason) => {
         console.log('Disconnected from eFTL server: ' + reason);
+    },
+    onError: (connection, code, reason) => {
+        console.log('Error from eFTL server: ' + reason);
     }
 });
 
@@ -49,8 +55,8 @@ function setKeyValue(connection) {
     msg.set('long', 101);
     msg.set('time', new Date());
 
-    var map = connection.createKVMap('MyMap');
-    map.set('MyKey', msg, {
+    var map = connection.createKVMap('sample_map');
+    map.set('key1', msg, {
         onSuccess: (key, value) => {
             console.log('Set: ' + key + '=' + value);
             connection.disconnect();

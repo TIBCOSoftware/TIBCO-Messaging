@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2013-$Date: 2018-05-15 14:49:05 -0500 (Tue, 15 May 2018) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
+ * @COPYRIGHT_BANNER@
  */
 
  This directory contains Node.js client samples for TIBCO eFTL.
@@ -48,6 +45,16 @@
 
         Basic subscriber program that demonstrates the use of
         last-value durable subscriptions.
+
+ request.js
+
+        Basic subscriber program that demonstrates the use of
+        sending a request and receiving a reply.
+
+ reply.js
+
+        Basic subscriber program that demonstrates the use of
+        sending a reply in response to a request.
 
  kvset.js
 

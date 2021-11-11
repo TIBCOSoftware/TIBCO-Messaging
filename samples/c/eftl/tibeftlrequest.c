@@ -6,7 +6,7 @@
  */
 
 /*
- * This is a sample of a basic C eFTL key-value map get.
+ * This is a sample of a basic C eFTL publisher.
  */
 
 #include <stdio.h>
@@ -14,7 +14,7 @@
 
 #include "tib/eftl.h"
 
-#define DEFAULT_URL "ws://localhost:8585/map"
+#define DEFAULT_URL "ws://localhost:8585/channel"
 
 void
 onError(
@@ -31,10 +31,11 @@ main(int argc, char** argv)
 {
     tibeftlErr          err;
     tibeftlConnection   conn;
-    tibeftlKVMap        map;
-    tibeftlMessage      msg;
+    tibeftlMessage      request;
+    tibeftlMessage      reply;
     tibeftlOptions      opts = tibeftlOptionsDefault;
     const char*         url = DEFAULT_URL;
+    char                buffer[1024];
 
     printf("#\n# %s\n#\n# %s\n#\n", argv[0], tibeftl_Version());
 
@@ -50,31 +51,27 @@ main(int argc, char** argv)
     // connect to the server
     conn = tibeftl_Connect(err, url, &opts, onError, NULL);
 
-    // create a key-value map
-    map = tibeftl_CreateKVMap(err, conn, "sample_map");
+    // create the request message 
+    request = tibeftlMessage_Create(err);
+    tibeftlMessage_SetString(err, request, "type", "request");
+    tibeftlMessage_SetString(err, request, "text", "This is a sample eFTL request message");
 
-    // get the key-value pair from the map.
-    msg = tibeftlKVMap_Get(err, map, "key1");
+    // send the request and wait up to 10 seconds for the reply
+    reply = tibeftl_SendRequest(err, conn, request, 10000);
 
-    if (msg) {
-        char buffer[1024];
-
-        tibeftlMessage_ToString(err, msg, buffer, sizeof(buffer));
-
-        if (tibeftlErr_IsSet(err)) {
-            printf("tibeftlMessage_ToString failed: %d - %s\n",
-                    tibeftlErr_GetCode(err), tibeftlErr_GetDescription(err));
-            tibeftlErr_Clear(err);
-        } else {
-            printf("key-value get\n  %s\n", buffer);
-        }
-    } else {
-        printf("key-value get: not found\n");
+    if (reply)
+    {
+        tibeftlMessage_ToString(err, reply, buffer, sizeof(buffer));
+        printf("received reply message\n  %s\n", buffer);
+    }
+    else
+    {
+        printf("request timed out\n");
     }
 
     // cleanup
-    tibeftlMessage_Destroy(err, msg);
-    tibeftlKVMap_Destroy(err, map);
+    tibeftlMessage_Destroy(err, request);
+    tibeftlMessage_Destroy(err, reply);
 
     // disconnect from server
     tibeftl_Disconnect(err, conn);

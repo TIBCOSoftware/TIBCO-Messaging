@@ -1,7 +1,3 @@
-/*
- * @COPYRIGHT_BANNER@
- */
-
 Running the eFTL Android Sample Applications
 --------------------------------------------
 

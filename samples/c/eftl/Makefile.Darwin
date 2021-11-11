@@ -1,6 +1,6 @@
 ######################################################################
-# Copyright (c) 2010-$Date: 2017-05-22 09:41:21 -0700 (Mon, 22 May 2017) $ TIBCO Software Inc.
-# Licensed under a BSD-style license. Refer to [LICENSE]
+# Copyright (c) 2010-2019 TIBCO Software Inc.
+# All Rights Reserved. Confidential & Proprietary
 # For more information, please contact:
 # TIBCO Software Inc., Palo Alto, California, USA
 #
@@ -12,13 +12,13 @@ TIBEFTL_DIR=../../..
 
 CC = clang
 COMP_FLAGS = -std=gnu11 -m64 -O2 -Wall -Wshadow
-LDFLAGS=-L$(TIBEFTL_DIR)/lib -Wl,-rpath,${TIBEFTL_DIR}/ftl
+LDFLAGS=-L$(TIBEFTL_DIR)/lib -Wl,-rpath,${TIBEFTL_DIR}
 INCFILES=-I$(TIBEFTL_DIR)/include
 CFLAGS=$(COMP_FLAGS) $(INCFILES)
 
 LIBS= -ltibeftl
 
-PROGS = tibeftlpub tibeftlsub tibeftlshared tibeftllastvalue tibeftlkvset tibeftlkvget tibeftlkvremove
+PROGS = tibeftlpub tibeftlsub tibeftlrequest tibeftlreply tibeftlshared tibeftllastvalue tibeftlkvset tibeftlkvget tibeftlkvremove
 all: $(PROGS)
 
 clean: 	
@@ -30,6 +30,12 @@ tibeftlpub: tibeftlpub.o
 
 tibeftlsub: tibeftlsub.o 
 	$(CC) $(LDFLAGS) tibeftlsub.o $(LIBS) -o $@
+
+tibeftlrequest: tibeftlrequest.o 
+	$(CC) $(LDFLAGS) tibeftlrequest.o $(LIBS) -o $@
+
+tibeftlreply: tibeftlreply.o 
+	$(CC) $(LDFLAGS) tibeftlreply.o $(LIBS) -o $@
 
 tibeftlshared: tibeftlshared.o 
 	$(CC) $(LDFLAGS) tibeftlshared.o $(LIBS) -o $@

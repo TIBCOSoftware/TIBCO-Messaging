@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-$Date: 2020-07-09 13:18:24 -0700 (Thu, 09 Jul 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2010-$Date: 2020-06-25 09:10:25 -0700 (Thu, 25 Jun 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -34,7 +34,7 @@ delay(int secs)
 }
 
 void
-onMessage(
+onRequest(
     tibeftlConnection   conn,
     tibeftlSubscription sub,
     int                 cnt,
@@ -43,6 +43,7 @@ onMessage(
 {
     int*                done = (int*)arg;
     tibeftlErr          err;
+    tibeftlMessage      reply;
     char                buffer[1024];
     int                 i;
 
@@ -50,13 +51,24 @@ onMessage(
 
     for (i = 0; i < cnt; i++) {
         tibeftlMessage_ToString(err, msg[i], buffer, sizeof(buffer));
+        printf("received request message\n  %s\n", buffer);
 
+        // create the reply message
+        reply = tibeftlMessage_Create(err);
+        tibeftlMessage_SetString(err, reply, "type", "reply");
+        tibeftlMessage_SetString(err, reply, "text", "This is a sample eFTL reply message");
+
+        // send the reply
+        tibeftl_SendReply(err, conn, reply, msg[i]);
+
+        // destroy the reply message
+        tibeftlMessage_Destroy(err, reply);
+
+        // check for errors
         if (tibeftlErr_IsSet(err)) {
-            printf("tibeftlMessage_ToString failed: %d - %s\n",
+            printf("tibeftlConnection_SendReply failed: %d - %s\n",
                     tibeftlErr_GetCode(err), tibeftlErr_GetDescription(err));
             tibeftlErr_Clear(err);
-        } else {
-            printf("received message\n  %s\n", buffer);
         }
     }
 
@@ -84,7 +96,6 @@ main(int argc, char** argv)
     tibeftlOptions             opts = tibeftlOptionsDefault;
     tibeftlConnection          conn;
     tibeftlSubscription        sub;
-    tibeftlSubscriptionOptions subopts = tibeftlSubscriptionOptionsDefault;
     const char*                url = DEFAULT_URL;
     const char*                matcher = NULL;
     int                        done = 0;
@@ -99,37 +110,24 @@ main(int argc, char** argv)
     // configure options
     opts.username = NULL;
     opts.password = NULL;
-    opts.clientId = "sample-c-client";
 
     // connect to the server
     conn = tibeftl_Connect(err, url, &opts, onError, NULL);
 
-    // create a subscription matcher to match message fields
-    // with type string or long, or to test for the presences 
-    // or absence of a named message field 
-    //
-    // this matcher matches all messages containing a field
-    // named 'type' with a value of 'hello'
-    matcher = "{\"type\":\"hello\"}";
-
-    // configure subscription options
-    subopts.acknowledgeMode = TIBEFTL_ACKNOWLEDGE_MODE_AUTO;
+    // create a matcher to receive request messages 
+    matcher = "{\"type\":\"request\"}";
 
     // create a subscription using the matcher
-    //
-    // always set the client identifier when creating a durable subscription
-    // as durable subscriptions are mapped to the client identifier
-    //
-    sub = tibeftl_SubscribeWithOptions(err, conn, matcher, "sample-durable", &subopts, onMessage, &done);
+    sub = tibeftl_SubscribeWithOptions(err, conn, matcher, NULL, NULL, onRequest, &done);
 
-    printf("waiting for messages\n");
+    printf("waiting for request messages\n");
 
     // wait for a message
     do {
         delay(1);
     } while (!done && !tibeftlErr_IsSet(err));
 
-    // unsubscribe, this will permanently remove a durable subscription
+    // cleanup
     tibeftl_Unsubscribe(err, conn, sub);
 
     // disconnect from server

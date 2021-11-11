@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-$Date: 2018-05-29 13:54:20 -0500 (Tue, 29 May 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2010-$Date: 2020-05-27 09:56:45 -0700 (Wed, 27 May 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -14,7 +14,7 @@
 
 #include "tib/eftl.h"
 
-#define DEFAULT_URL "ws://localhost:9191/channel"
+#define DEFAULT_URL "ws://localhost:8585/channel"
 
 void
 onError(
@@ -49,9 +49,11 @@ main(int argc, char** argv)
     // connect to the server
     conn = tibeftl_Connect(err, url, &opts, onError, NULL);
 
-    // publish a message to destination "sample"
+    printf("publishing 'hello' message\n");
+
+    // publish a message 
     msg = tibeftlMessage_Create(err);
-    tibeftlMessage_SetString(err, msg, TIBEFTL_FIELD_NAME_DESTINATION, "sample");
+    tibeftlMessage_SetString(err, msg, "type", "hello");
     tibeftlMessage_SetString(err, msg, "text", "This is a sample eFTL message");
     tibeftlMessage_SetTime(err, msg, "time", (int64_t)(time(NULL) * 1000));
 
