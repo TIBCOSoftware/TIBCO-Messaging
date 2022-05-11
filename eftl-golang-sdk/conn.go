@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2001-2021 TIBCO Software Inc.
+// Copyright (c) 2001-$Date: 2022-02-01 16:49:49 -0800 (Tue, 01 Feb 2022) $ TIBCO Software Inc.
 // Licensed under a BSD-style license. Refer to [LICENSE]
 // For more information, please contact:
 // TIBCO Software Inc., Palo Alto, California, USA
@@ -9,11 +9,15 @@ package eftl
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,6 +25,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type eftlError struct {
@@ -40,7 +46,6 @@ var (
 	ErrMessageTooBig    = &eftlError{msg: "message too big"}
 	ErrNotAuthenticated = &eftlError{msg: "not authenticated"}
 	ErrForceClose       = &eftlError{msg: "server has forcibly closed the connection"}
-	ErrNotAuthorized    = &eftlError{msg: "not authorized for the operation"}
 	ErrBadHandshake     = &eftlError{msg: "bad handshake"}
 	ErrNotFound         = &eftlError{msg: "not found"}
 	ErrRestart          = &eftlError{msg: "server restart"}
@@ -72,6 +77,35 @@ const (
 	DISCONNECTING
 	RECONNECTING
 )
+
+// These constants specify input values for the SetLogLevel function.
+type LogLevel zerolog.Level
+
+const (
+	LogLevelOff     LogLevel = LogLevel(zerolog.Disabled)
+	LogLevelSevere  LogLevel = LogLevel(zerolog.FatalLevel)
+	LogLevelWarn    LogLevel = LogLevel(zerolog.WarnLevel)
+	LogLevelError   LogLevel = LogLevel(zerolog.ErrorLevel)
+	LogLevelInfo    LogLevel = LogLevel(zerolog.InfoLevel)
+	LogLevelDebug   LogLevel = LogLevel(zerolog.DebugLevel)
+)
+
+
+var logger zerolog.Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
+
+
+func SetLogFile(filename string) {
+    f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+    if err != nil {
+        // Can we log an error before we have our logger? :)
+        log.Error().Err(err).Msg("there was an error creating/opening the log file")
+    }
+    logger = zerolog.New(f).With().Timestamp().Logger()
+}
+
+func SetLogLevel(level LogLevel) {
+    zerolog.SetGlobalLevel(zerolog.Level(level))
+}
 
 func (e State) String() string {
 	switch e {
@@ -110,7 +144,23 @@ type Options struct {
 
 	// TLSConfig specifies the TLS configuration to use when creating a secure
 	// connection to the server.
+	// This option is deprecated. Use the TrustStore or TrustAll fields to
+	// specify non-default behavior for secure connections.
 	TLSConfig *tls.Config
+
+	// Sets the trust store used for secure connections. The trust store is a 
+	// file containing one or more PEM encoded certificates used to authenticate
+	// the server's certificate on secure connections. If the trust store is not
+	// specified, the system default CA certificates will be used. This option
+	// is ignored if the deprecated TLSConfig field is non-nil, or if TrustAll
+	// is set to true.
+	TrustStore string
+
+	// Sets whether or not to skip server certifiate authentication. Specify 
+	// true to accept any server certificate. This option should only be used
+	// during development and testing. This option is ignored if the deprecated
+	// TLSConfig field is non-nil.
+	TrustAll bool
 
 	// Timeout specifies the duration for a synchronous operation with the
 	// server to complete. The default is 60 seconds.
@@ -297,6 +347,11 @@ const (
 	DefaultReconnectMaxDelay = 30 * time.Second
 )
 
+// init for setting default log level to warn
+func init() {
+	zerolog.SetGlobalLevel(zerolog.WarnLevel)
+}
+
 // Connect establishes a connection to the server at the specified url.
 //
 // When a pipe-separated list of URLs is specified this call will attempt
@@ -343,7 +398,9 @@ func Connect(urlStr string, opts *Options, errorChan chan error) (*Connection, e
 	// connect to the server
 	conn.setState(CONNECTING)
 	for _, url := range conn.urlList {
+		logger.Debug().Msgf("Connecting to url %s", url.String())
 		if err = conn.connect(url); err == nil {
+			logger.Debug().Msgf("Successfully connected to url %s", url.String())
 			return conn, nil // success
 		}
 	}
@@ -365,6 +422,7 @@ func (conn *Connection) Reconnect() error {
 	// connect to the server
 	conn.setState(CONNECTING)
 	for _, url := range conn.urlList {
+		logger.Debug().Msgf("Application driven reconnect url %s", url.String())
 		if err = conn.connect(url); err == nil {
 			return nil // success
 		}
@@ -372,6 +430,8 @@ func (conn *Connection) Reconnect() error {
 	conn.setState(DISCONNECTED)
 	return err
 }
+
+
 
 // Disconnect closes the connection to the server.
 func (conn *Connection) Disconnect() {
@@ -563,6 +623,7 @@ func (conn *Connection) SubscribeWithOptions(matcher string, durable string, opt
 		return nil, ErrNotConnected
 	}
 	subscriptionChan := make(chan *Subscription, 1)
+	logger.Debug().Msgf("Creating subscription: [durable: %s, matcher: %s]", durable, matcher)
 	conn.subscribe(matcher, durable, options, messageChan, subscriptionChan)
 	select {
 	case sub := <-subscriptionChan:
@@ -582,6 +643,7 @@ func (conn *Connection) SubscribeWithOptionsAsync(matcher string, durable string
 	if !conn.isConnected() {
 		return ErrNotConnected
 	}
+	logger.Debug().Msgf("Creating subscription: [durable: %s, matcher: %s]", durable, matcher)
 	conn.subscribe(matcher, durable, options, messageChan, subscriptionChan)
 	return nil
 }
@@ -599,6 +661,7 @@ func (conn *Connection) CloseSubscription(sub *Subscription) error {
 	if conn.protocol < 1 {
 		return ErrNotSupported
 	}
+	logger.Debug().Msgf("Closing subscription durable: %s, matcher: %s, subscriptionId: %s", sub.Durable, sub.Matcher, sub.subscriptionID)
 	// send unsubscribe protocol
 	conn.sendMessage(Message{
 		"op":  opUnsubscribe,
@@ -623,7 +686,9 @@ func (conn *Connection) CloseAllSubscriptions() error {
 	if conn.protocol < 1 {
 		return ErrNotSupported
 	}
+	logger.Debug().Msg("Closing All Subscriptions:")
 	for _, sub := range conn.subs {
+		logger.Debug().Msgf("Closing subscription: [durable: %s, matcher: %s, subscriptionId: %s]", sub.Durable, sub.Matcher, sub.subscriptionID)
 		// send unsubscribe protocol
 		conn.sendMessage(Message{
 			"op":  opUnsubscribe,
@@ -645,6 +710,7 @@ func (conn *Connection) Unsubscribe(sub *Subscription) error {
 	if !conn.isConnected() {
 		return ErrNotConnected
 	}
+	logger.Debug().Msgf("Unsubscribing subscription: [durable: %s, matcher: %s, subscriptionId: %s]", sub.Durable, sub.Matcher, sub.subscriptionID)
 	// send unsubscribe protocol
 	conn.sendMessage(Message{
 		"op": opUnsubscribe,
@@ -664,7 +730,9 @@ func (conn *Connection) UnsubscribeAll() error {
 	if !conn.isConnected() {
 		return ErrNotConnected
 	}
+	logger.Debug().Msg("Unsubscribing All Subscriptions:")
 	for _, sub := range conn.subs {
+		logger.Debug().Msgf("Unsubscribing subscription: [durable: %s, matcher: %s, subscriptionId: %s]", sub.Durable, sub.Matcher, sub.subscriptionID)
 		// send unsubscribe protocol
 		conn.sendMessage(Message{
 			"op": opUnsubscribe,
@@ -687,6 +755,7 @@ func (conn *Connection) Acknowledge(msg Message) error {
 	if !ok {
 		return nil
 	}
+	logger.Debug().Msgf("Acknowledging message: [seq: %d, msg: %s]", seq, msg)
 	// send acknowledge protocol
 	conn.sendMessage(Message{
 		"op":  opAck,
@@ -710,6 +779,7 @@ func (conn *Connection) AcknowledgeAll(msg Message) error {
 	if !ok {
 		return nil
 	}
+	logger.Debug().Msgf("Acknowledging all msgs for susbcriber %s upto sequence num: %d", sid, seq)
 	// send acknowledge protocol
 	conn.sendMessage(Message{
 		"op":  opAck,
@@ -753,18 +823,64 @@ func (conn *Connection) subscribe(matcher string, durable string, options Subscr
 }
 
 func (conn *Connection) connect(uri *url.URL) error {
+	// create tls client config
+	tlsConfig := conn.Options.TLSConfig
+	if tlsConfig == nil {
+		if conn.Options.TrustAll {
+			tlsConfig = &tls.Config{
+				InsecureSkipVerify: true,
+			}
+		} else if conn.Options.TrustStore != "" {
+			caCerts, err := ioutil.ReadFile(conn.Options.TrustStore)
+			if err != nil {
+				return err
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCerts)
+			tlsConfig = &tls.Config{
+				RootCAs: caCertPool,
+			}
+		}
+	}
+
 	// create websocket connection
 	d := &websocket.Dialer{
 		HandshakeTimeout: conn.Options.HandshakeTimeout,
 		Subprotocols:     []string{subprotocol},
-		TLSClientConfig:  conn.Options.TLSConfig,
+		TLSClientConfig:  tlsConfig,
 	}
+	headers := make(http.Header)
+
 	u := &url.URL{
 		Scheme: uri.Scheme,
 		Host:   uri.Host,
 		Path:   uri.Path,
 	}
-	ws, resp, err := d.Dial(u.String(), nil)
+	if cid := uri.Query().Get("clientId"); cid != "" {
+		u.RawQuery = fmt.Sprintf("client_id=%s", cid)
+	} else if conn.Options.ClientID != "" {
+		u.RawQuery = fmt.Sprintf("client_id=%s", conn.Options.ClientID)
+	}
+
+	user := ""
+	pass := ""
+	if uri.User != nil {
+		user = uri.User.Username()
+		pass, _ = uri.User.Password()
+	} else {
+		user = conn.Options.Username
+		pass = conn.Options.Password
+	}
+
+	if user != "" || pass != "" {
+		auth := fmt.Sprintf("%s:%s", user, pass)
+		auth64 := base64.StdEncoding.EncodeToString([]byte(auth))
+		value := fmt.Sprintf("Basic %s", auth64)
+
+		headers["Authorization"] = []string{value}
+	}
+
+	ws, resp, err := d.Dial(u.String(), headers)
 	if err == websocket.ErrBadHandshake {
 		if resp.StatusCode == http.StatusNotFound {
 			return ErrNotFound
@@ -931,9 +1047,13 @@ func (conn *Connection) handleReconnect(err error) {
 			conn.mu.Lock()
 			defer conn.mu.Unlock()
 			for _, url := range conn.urlList {
+				logger.Debug().Msgf("Reconnecting to url %s after connection error: %s, reconnect attempt %d", 
+							url.String(), err.Error(), conn.reconnectAttempts)
 				if e := conn.connect(url); e == nil {
+					logger.Debug().Msgf("Successfully reconnected to url %s", url.String())
 					return
 				}
+				logger.Debug().Msgf("Reconnect attempt %d failed to connect to url %s", conn.reconnectAttempts, url.String())
 			}
 			conn.setState(DISCONNECTED)
 			conn.handleReconnect(err)
@@ -993,6 +1113,7 @@ func (conn *Connection) handleMessage(msg Message) {
 				body[replyToHeader] = replyTo
 				body[requestIdHeader] = reqId
 			}
+			logger.Debug().Msgf("Pushing message to user's message channel: %s", msg)
 			if sub.MessageChan != nil {
 				sub.MessageChan <- body
 			}
@@ -1002,6 +1123,7 @@ func (conn *Connection) handleMessage(msg Message) {
 		}
 		if sub.autoAck() && seq != 0 {
 			// acknowledge message receipt
+			logger.Debug().Msgf("Auto acknowledging message after callback returned msg: %s", msg)
 			conn.sendMessage(Message{
 				"op":  opAck,
 				"seq": seq,
@@ -1033,12 +1155,8 @@ func (conn *Connection) handleUnsubscribed(msg Message) {
 	if sid, ok := msg["id"].(string); ok {
 		if sub, ok := conn.subs[sid]; ok {
 			errCode, _ := msg["err"].(int64)
-			if errCode == ErrCodeSubscriptionDisallowed {
-				sub.Error = ErrNotAuthorized
-			} else {
-				reason, _ := msg["reason"].(string)
-				sub.Error = fmt.Errorf("%d: %s", errCode, reason)
-			}
+			reason, _ := msg["reason"].(string)
+			sub.Error = fmt.Errorf("%d: %s", errCode, reason)
 			if errCode == ErrCodeSubscriptionInvalid {
 				// remove the subscription only if it's untryable
 				delete(conn.subs, sid)
@@ -1060,12 +1178,8 @@ func (conn *Connection) handleAck(msg Message) {
 	if seq, ok := msg["seq"].(int64); ok {
 		var err error
 		if errCode, ok := msg["err"].(int64); ok {
-			if errCode == ErrCodePublishDisallowed {
-				err = ErrNotAuthorized
-			} else {
-				reason, _ := msg["reason"].(string)
-				err = fmt.Errorf("%d: %s", errCode, reason)
-			}
+			reason, _ := msg["reason"].(string)
+			err = fmt.Errorf("%d: %s", errCode, reason)
 		}
 		if comp, ok := conn.reqs[seq]; ok {
 			comp.Error = err
@@ -1086,12 +1200,8 @@ func (conn *Connection) handleReply(msg Message) {
 	if seq, ok := msg["seq"].(int64); ok {
 		var err error
 		if errCode, ok := msg["err"].(int64); ok {
-			if errCode == ErrCodeRequestDisallowed {
-				err = ErrNotAuthorized
-			} else {
-				reason, _ := msg["reason"].(string)
-				err = fmt.Errorf("%d: %s", errCode, reason)
-			}
+			reason, _ := msg["reason"].(string)
+			err = fmt.Errorf("%d: %s", errCode, reason)
 		}
 		if comp, ok := conn.reqs[seq]; ok {
 			comp.Error = err
@@ -1125,12 +1235,8 @@ func (conn *Connection) handleMapResponse(msg Message) {
 	if seq, ok := msg["seq"].(int64); ok {
 		var err error
 		if errCode, ok := msg["err"].(int64); ok {
-			if errCode == ErrCodeMapRequestDisallowed {
-				err = ErrNotAuthorized
-			} else {
-				reason, _ := msg["reason"].(string)
-				err = fmt.Errorf("%d: %s", errCode, reason)
-			}
+			reason, _ := msg["reason"].(string)
+			err = fmt.Errorf("%d: %s", errCode, reason)
 		}
 		if comp, ok := conn.reqs[seq]; ok {
 			comp.Error = err

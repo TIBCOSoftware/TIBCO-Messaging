@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-$Date: 2020-08-19 11:55:34 -0700 (Wed, 19 Aug 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2022-01-18 15:49:26 -0800 (Tue, 18 Jan 2022) $ TIBCO Software Inc.
  * All rights reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocket.java 127983 2020-08-19 18:55:34Z bpeterse $
+ * $Id: WebSocket.java 138887 2022-01-18 23:49:26Z nlindqui $
  *
  */
 package com.tibco.eftl.websocket;
@@ -48,6 +48,9 @@ public class WebSocket implements Runnable {
     private Socket socket;
     private TrustManager[] trustManagers;
     private boolean trustAll;
+    private String username;
+    private String password;
+    private String clientId;
     private AtomicReference<ReadyState> state = 
             new AtomicReference<ReadyState>(ReadyState.INIT);
     
@@ -97,6 +100,18 @@ public class WebSocket implements Runnable {
     
     public void setTrustAll(boolean trustAll) {
         this.trustAll = trustAll;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 
     public void open() {
@@ -248,7 +263,7 @@ public class WebSocket implements Runnable {
             socket.setTcpNoDelay(true);
             
             // send HTTP upgrade request
-            UpgradeRequest request = new UpgradeRequest(uri, protocols);
+            UpgradeRequest request = new UpgradeRequest(uri, protocols, username, password, clientId);
             request.write(socket.getOutputStream());
             
             // read HTTP upgrade response
@@ -381,7 +396,7 @@ public class WebSocket implements Runnable {
         // Perform hostname verification only if one or more trust managers
         // have been provided. Otherwise, any certificate will be accepted.
         
-        if (socket instanceof SSLSocket && trustManagers != null) {
+        if (socket instanceof SSLSocket && !trustAll) {
             SSLSocket sslSocket = (SSLSocket)socket;
 
             boolean verified = false;

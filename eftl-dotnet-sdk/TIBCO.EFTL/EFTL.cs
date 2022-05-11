@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2022-02-04 12:45:15 -0800 (Fri, 04 Feb 2022) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: EFTL.cs 128906 2020-09-29 20:29:25Z $
+ * $Id: EFTL.cs 139387 2022-02-04 20:45:15Z $
  *
  */
 using System;
@@ -257,6 +257,9 @@ namespace TIBCO.EFTL
         ///     <item> <see cref="EFTL.PROPERTY_PASSWORD"/> </item>
         ///     <item> <see cref="EFTL.PROPERTY_TIMEOUT"/> </item>
         ///     <item> <see cref="EFTL.PROPERTY_TRUST_ALL"/> </item>
+        ///     <item> <see cref="EFTL.PROPERTY_AUTO_RECONNECT_ATTEMPTS"/> </item>
+        ///     <item> <see cref="EFTL.PROPERTY_AUTO_RECONNECT_MAX_DELAY"/> </item>
+        ///     <item> <see cref="EFTL.PROPERTY_MAX_PENDING_ACKS"/> </item>
         ///   </list>
         /// </param>
         /// <param name="listener">

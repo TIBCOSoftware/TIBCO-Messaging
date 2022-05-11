@@ -15,21 +15,21 @@ API calls return quickly, which reflects a requirement of mobile device applicat
 ## Message Data Types
 The field data types within eFTL messages are similar to those in FTL messages, except that eFTL messages do not support inbox types.
 
-However, the field data types within eFTL messages are not similar to those in EMS messages. For details of message translation, see “Message Translation: TIBCO eFTL and TIBCO EMS” in TIBCO eFTL Concepts (https://docs.tibco.com/pub/eftl/6.6.0/doc/pdf/TIB_eftl_6.6_concepts.pdf).
+However, the field data types within eFTL messages are not similar to those in EMS messages. For details of message translation, see “Message Translation: TIBCO eFTL and TIBCO EMS” in TIBCO eFTL Concepts (https://docs.tibco.com/pub/eftl/6.8.0/doc/pdf/TIB_eftl_6.8.0_concepts.pdf).
 
 ## Installation
 The eFTL python library is hosted on PyPI and can be installed with `pip3 install eftl`
 
 ## Documentation
-https://docs.tibco.com/pub/eftl/6.6.0/doc/html/api-reference/python/connection.m.html
+https://docs.tibco.com/pub/eftl/6.8.0/doc/html/api-reference/python/connection.html
 
 ## Prerequisites
 Please make sure that you have the FTL Server running with an eFTL service.
 By default, the following sample programs assume that server is running at localhost:8585.
 
 For more information, see 
-https://docs.tibco.com/products/tibco-ftl-enterprise-edition-6-6-0 (FTL), and
-https://docs.tibco.com/products/tibco-eftl-enterprise-edition-6-6-0 (eFTL).
+https://docs.tibco.com/products/tibco-ftl-enterprise-edition-6-8-0 (FTL), and
+https://docs.tibco.com/products/tibco-eftl-enterprise-edition-6-8-0 (eFTL).
 
 ## Sample Programs
 

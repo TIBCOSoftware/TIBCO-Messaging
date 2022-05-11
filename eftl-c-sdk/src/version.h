@@ -12,22 +12,22 @@
 #define INCLUDED_TIBEFTL_VERSION_H
 
 #define EFTL_VERSION_MAJOR_NUM   6
-#define EFTL_VERSION_MINOR_NUM   7
+#define EFTL_VERSION_MINOR_NUM   8
 #define EFTL_VERSION_UPDATE_NUM  0
 #define EFTL_VERSION_BUILD_NUM   8
 
 #define EFTL_VERSION_MAJOR_STRING    "6"
-#define EFTL_VERSION_MINOR_STRING    "7"
+#define EFTL_VERSION_MINOR_STRING    "8"
 #define EFTL_VERSION_UPDATE_STRING   "0"
-#define EFTL_VERSION_BUILD_STRING    "8"
+#define EFTL_VERSION_BUILD_STRING    "10"
 
-#define EFTL_VERSION_STRING_COMPARE  "6.7.0  "
+#define EFTL_VERSION_STRING_COMPARE  "6.8.0  "
 
-#define EFTL_VERSION_STRING_SHORT    "6.7.0   V8"
+#define EFTL_VERSION_STRING_SHORT    "6.8.0   V10"
 
-#define EFTL_VERSION_STRING_LONG     "TIBCO eFTL Version 6.7.0   V8"
+#define EFTL_VERSION_STRING_LONG     "TIBCO eFTL Version 6.8.0   V10"
 
-#define EFTL_VERSION_BANNER  EFTL_VERSION_STRING_LONG "\nCopyright 2013-2021 TIBCO Software Inc.\n" \
-                      "All Rights Reserved. Confidential & Proprietary.\n"
-                      
+#define EFTL_VERSION_BANNER  EFTL_VERSION_STRING_LONG "\nCopyright 2013-2022 TIBCO Software Inc.\n" \
+                                                      "Licensed under a BSD-style license. Refer to [LICENSE] \n"
+
 #endif /* INCLUDED_TIBEFTL_VERSION_H */

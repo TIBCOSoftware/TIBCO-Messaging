@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2021-02-18 09:31:00 -0800 (Thu, 18 Feb 2021) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
  * All rights reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketConnection.java 131938 2021-02-18 17:31:00Z bmahurka $
+ * $Id: WebSocketConnection.java 138851 2022-01-14 22:03:58Z nlindqui $
  */
 package com.tibco.eftl.impl;
 
@@ -133,12 +133,46 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         
             int connectTimeout = getConnectTimeout();
 
+            String user = this.props.getProperty(EFTL.PROPERTY_USERNAME, null);
+            String password = this.props.getProperty(EFTL.PROPERTY_PASSWORD, null);
+            String identifier = this.props.getProperty(EFTL.PROPERTY_CLIENT_ID, null);
+        
+            String userInfo = getURL().getUserInfo();
+            
+            if (userInfo != null)
+            {
+                String[] tokens = userInfo.split(":");
+                
+                user = tokens[0];
+                
+                if (tokens.length > 1)
+                    password = tokens[1];
+            }
+
+            String query = getURL().getQuery();
+        
+            if (query != null)
+            {
+                String[] tokens = query.split("&");
+
+                for (int i = 0; i < tokens.length; i++)
+                {
+                    if (tokens[i].startsWith("clientId=")) 
+                    {
+                        identifier = tokens[i].substring("clientId=".length());
+                    }
+                }
+            }
+
             webSocket = new WebSocket(getURL(), this);
             webSocket.setProtocol(ProtocolConstants.EFTL_WS_PROTOCOL);
             webSocket.setTrustManagers(trustManagers);
             webSocket.setTrustAll(trustAll);
             webSocket.setConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS);
             webSocket.setSocketTimeout(connectTimeout, TimeUnit.MILLISECONDS);
+            webSocket.setUsername(user);
+            webSocket.setPassword(password);
+            webSocket.setClientId(identifier);
 
             setState(ConnectionListener.ConnectionState.CONNECTING);
             webSocket.open();

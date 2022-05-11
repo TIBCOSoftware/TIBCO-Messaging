@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JsonValue.java 84680 2016-03-12 00:29:10Z bpeterse $
+ * $Id: JsonValue.java 84680 2016-03-12 00:29:10Z $
  */
 
 using System;

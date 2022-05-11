@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-2021 TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: websocket.c 128030 2020-08-20 18:01:59Z $
+ * $Id: websocket.c 138851 2022-01-14 22:03:58Z $
  *
  */
 
@@ -410,10 +410,20 @@ static int
 websocket_handshake(
     websocket_t*                ws)
 {
+    const char*                 clientId;
+    char*                       query;
+    int                         queryLen;
+    const char*                 username;
+    const char*                 password;
+    unsigned char*              auth;
+    char*                       auth64;
+    int                         authLen;
+    int                         auth64Len;
+    char*                       request;
+    int                         requestLen;
     unsigned char               nonce[16];
     char                        key[BASE64_ENC_MAX_LEN(sizeof(nonce))];
     char                        buf[1024];
-    char                        request[1024];
     char                        response[1024];
     char                        sha[20];
     char                        expected_key[BASE64_ENC_MAX_LEN(sizeof(sha))];
@@ -430,22 +440,101 @@ websocket_handshake(
 
     static const char*          GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+    // Construct query list.
+    clientId = url_query(ws->url, "clientId");
+
+    if (!clientId && ws->opts.clientId)
+        clientId = ws->opts.clientId;
+
+    if (clientId && *clientId)
+    {
+        queryLen = 11 + strlen(clientId) + 1; // '?client_id=' and null byte
+        query = malloc(queryLen); 
+        snprintf(query, queryLen, "?client_id=%s", clientId);
+    }
+    else
+    {
+        query = NULL;
+        queryLen = 0;
+    }
+
+    // Construct basic auth header.
+    username = url_username(ws->url);
+    password = url_password(ws->url);
+
+    if (!username && ws->opts.username)
+        username = ws->opts.username;
+    if (!password && ws->opts.password)
+        password = ws->opts.password;
+
+    if ((username && *username) || (password && *password))
+    {
+        authLen = 1;
+
+        if (username)
+            authLen += strlen(username);
+        if (password)
+            authLen += strlen(password);
+
+        auth64Len = BASE64_ENC_MAX_LEN(authLen);
+
+        auth = malloc(authLen + 1); // +1 for null byte
+        auth64 = malloc(auth64Len);
+
+        snprintf((char *) auth, authLen + 1, "%s:%s",
+                 username ? username : "",
+                 password ? password : "");
+
+        base64_encode(auth, authLen, auth64, auth64Len);
+    }
+    else
+    {
+        authLen = 0;
+        auth64Len = 0;
+        auth = NULL;
+        auth64 = NULL;
+    }
+
+    // Construct key.
     for (i = 0; i < 16; i++)
         nonce[i] = (unsigned int)rand() & 0xff;
 
     base64_encode(nonce, 16, key, sizeof(key));
 
-    snprintf(request, 1024, "GET %s HTTP/1.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nHost: %s:%s\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n",
-            url_path(ws->url), url_host(ws->url), url_port(ws->url), key);
+    // Construct upgrade request.
+    requestLen = 200 + strlen(url_path(ws->url)) + queryLen + strlen(url_host(ws->url)) + strlen(url_port(ws->url)) + auth64Len + sizeof(key);
+    request = malloc(requestLen);
 
+    snprintf(request, 1024,
+             "GET %s%s HTTP/1.1\r\n"
+             "Upgrade: websocket\r\n"
+             "Connection: Upgrade\r\n"
+             "Host: %s:%s\r\n"
+             "%s%s%s"
+             "Sec-WebSocket-Key: %s\r\n"
+             "Sec-WebSocket-Version: 13\r\n\r\n",
+             url_path(ws->url), query ? query : "", 
+             url_host(ws->url), url_port(ws->url),
+             auth64 ? "Authorization: Basic " : "",
+             auth64 ? auth64 : "", auth64 ? "\r\n" : "",
+             key);
+
+    // Send upgrade request.
     websocket_write(ws, request, strlen(request));
+
+    free(auth);
+    free(auth64);
+    free(query);
+    free(request);
 
     i = 0;
 
     do
     {
         n = websocket_read(ws, response + i, 1023 - i);
-        i += n;
+
+        if (n > 0)
+            i += n;
 
         // null terminate the buffer
         response[i] = '\0';
@@ -1125,8 +1214,15 @@ websocket_create(
 
     mutex_init(&ws->mtx);
 
-    if (opts && opts->ver == 0)
+    if (opts)
     {
+        if (opts->username)
+            ws->opts.username = strdup(opts->username);
+        if (opts->password)
+            ws->opts.password = strdup(opts->password);
+        if (opts->clientId)
+            ws->opts.clientId = strdup(opts->clientId);
+
         if (opts->origin)
             ws->opts.origin = strdup(opts->origin);
         if (opts->protocol)
@@ -1166,12 +1262,13 @@ websocket_destroy(
     websocket_frame_destroy(ws->frame);
     websocket_frame_destroy(ws->fragment);
 
-    if (ws->opts.origin)
-        free((char*)ws->opts.origin);
-    if (ws->opts.protocol)
-        free((char*)ws->opts.protocol);
-    if (ws->opts.trustStore)
-        free((char*)ws->opts.trustStore);
+    free((char*)ws->opts.username);
+    free((char*)ws->opts.password);
+    free((char*)ws->opts.clientId);
+
+    free((char*)ws->opts.origin);
+    free((char*)ws->opts.protocol);
+    free((char*)ws->opts.trustStore);
 
     free(ws);
 }

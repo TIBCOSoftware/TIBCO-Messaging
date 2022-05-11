@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009-$Date: 2019-07-25 13:43:33 -0700 (Thu, 25 Jul 2019) $ TIBCO Software Inc.
- * All Rights Reserved.
+ * Copyright (c) 2009-$Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
+ * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocket.cs 113204 2019-07-25 20:43:33Z $
+ * $Id: WebSocket.cs 138851 2022-01-14 22:03:58Z $
  */
 
 using System;
@@ -67,6 +67,33 @@ namespace TIBCO.EFTL
 
             // turn off pongs from client to server.
             options.KeepAliveInterval = new System.TimeSpan(0);
+        }
+
+        internal void setUserInfo(String username, String password)
+        {
+            if (!String.IsNullOrEmpty(username) || !String.IsNullOrEmpty(password))
+            {
+                String auth = String.Format("{0}:{1}", username != null ? username : "",
+                                            password != null ? password : "");
+                String auth64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(auth));
+
+                options.SetRequestHeader("Authorization", String.Format("Basic {0}", auth64));
+            }
+        }
+
+        private static bool ignoreCert(Object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
+        }
+
+        private static bool verifyCert(Object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return (sslPolicyErrors == SslPolicyErrors.None);
+        }
+
+        internal void setTrustAll(bool trustAll)
+        {
+            // options.RemoteCertificateValidationCallback requires a higher runtime version
         }
 
         internal void setProtocol(String protocol) 

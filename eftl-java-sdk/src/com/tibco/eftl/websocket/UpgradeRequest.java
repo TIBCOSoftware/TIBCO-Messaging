@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-$Date: 2020-05-05 14:34:09 -0700 (Tue, 05 May 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
  * All rights reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: UpgradeRequest.java 124749 2020-05-05 21:34:09Z bpeterse $
+ * $Id: UpgradeRequest.java 138851 2022-01-14 22:03:58Z nlindqui $
  *
  */
 package com.tibco.eftl.websocket;
@@ -21,6 +21,9 @@ public class UpgradeRequest {
     private final URI uri;
     private final String[] protocols;
     private final String key;
+    private final String username;
+    private final String password;
+    private final String clientId;
     
     private static final SecureRandom random = new SecureRandom();
     
@@ -30,10 +33,13 @@ public class UpgradeRequest {
         return Base64.encode(bytes);
     }
     
-    public UpgradeRequest(URI uri, List<String> protocols) {
+    public UpgradeRequest(URI uri, List<String> protocols, String username, String password, String clientId) {
         this.uri = uri;
         this.protocols = protocols.toArray(new String[0]);
         this.key = generateKey();
+        this.username = username;
+        this.password = password;
+        this.clientId = clientId;
     }
     
     public String getKey() {
@@ -56,6 +62,10 @@ public class UpgradeRequest {
         } else {
             request.append(uri.getPath());
         }
+        if (clientId != null &&
+            !clientId.isEmpty()) {
+            request.append("?client_id=").append(clientId);
+        }
         request.append(" HTTP/1.1\r\n");
 
         request.append("Host: ").append(uri.getHost());
@@ -66,6 +76,18 @@ public class UpgradeRequest {
 
         request.append("Upgrade: websocket\r\n");
         request.append("Connection: Upgrade\r\n");
+
+        if ((username != null && !username.isEmpty()) ||
+            (password != null && !password.isEmpty())) {
+            StringBuilder auth = new StringBuilder(256);
+            auth.append(username != null ? username : "");
+            auth.append(":");
+            auth.append(password != null ? password : "");
+
+            String auth64 = Base64.encode(auth.toString().getBytes());
+            request.append("Authorization: Basic ").append(auth64).append("\r\n");
+        }
+
         request.append("Sec-WebSocket-Key: ").append(getKey()).append("\r\n");
         request.append("Sec-WebSocket-Version: 13\r\n");
 

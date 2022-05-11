@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 TIBCO Software Inc.
+ * Copyright (c) $Date: 2020-06-30 11:44:20 -0700 (Tue, 30 Jun 2020) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA

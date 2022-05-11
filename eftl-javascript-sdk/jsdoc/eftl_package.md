@@ -1,6 +1,6 @@
-# TIBCO eFTL™ 6.7.0
+# TIBCO eFTL™ 6.6.0
 
-This document is the JavaScript API specification for TIBCO eFTL™ 6.7.0
+This document is the JavaScript API specification for TIBCO eFTL™ 6.6.0
 
 ### Introduction
 
@@ -12,7 +12,7 @@ TIBCO eFTL™ sample applications can be found in the samples directory.
 
 ### Copyright Notice
 
-Copyright © 2014-2021 TIBCO Software Inc. Licensed under a BSD-style license. Refer to [LICENSE].
+Copyright © 2014-2020 TIBCO Software Inc. All rights reserved.
 
 This documentation contains proprietary and confidential information of TIBCO Software Inc. Use, disclosure, or reproduction is prohibited without the prior express written permission of TIBCO Software Inc.
 

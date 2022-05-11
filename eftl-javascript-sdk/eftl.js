@@ -1,10 +1,10 @@
 /*
- * Copyright (c) $Date: 2021-02-18 09:31:00 -0800 (Thu, 18 Feb 2021) $ TIBCO Software Inc.
+ * Copyright (c) $Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
  * All rights reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.js 131938 2021-02-18 17:31:00Z bmahurka $
+ * $Id: eftl.js 138851 2022-01-14 22:03:58Z nlindqui $
  */
 // Node.js requires a WebSocket implementation (npm install ws)
 var WebSocket = WebSocket || require('ws');
@@ -1791,7 +1791,43 @@ var WebSocket = WebSocket || require('ws');
         options.rejectUnauthorized = false;
       }
 
-      this.webSocket = new WebSocket(this._getURL(), [EFTL_WS_PROTOCOL], options);
+      var url = parseURL(this._getURL());
+
+      var auth = (url.auth ? url.auth.split(':') : []);
+      var username = auth[0];
+      var password = auth[1];
+      var clientId = getQueryVariable(url, "clientId");
+
+      if (_isUndefined(username)) {
+        if (this.connectOptions.hasOwnProperty(USERNAME_PROP)) {
+          username = this.connectOptions[USERNAME_PROP];
+        } else {
+          username = this.connectOptions[USER_PROP];
+        }
+      }
+
+      if (_isUndefined(password)) {
+        password = this.connectOptions[PASSWORD_PROP];
+      }
+
+      if (_isUndefined(clientId)) {
+        clientId = this.connectOptions[CLIENT_ID_PROP];
+      }
+
+      var urlString = "";
+
+      if (_isString(username) || _isString(password)) {
+        urlString = url.protocol + "//" + (username || "") + ":"
+                    + (password || "") + "@" + url.host + url.pathname;
+      } else {
+        urlString = url.protocol + "//" + url.host + url.pathname;
+      }
+
+      if (_isString(clientId) && clientId != "") {
+        urlString = urlString + "?client_id=" + clientId;
+      }
+
+      this.webSocket = new WebSocket(urlString, [EFTL_WS_PROTOCOL], options);
       this._initWS(this.webSocket);
 
       openConnections.push(this);

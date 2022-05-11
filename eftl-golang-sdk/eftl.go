@@ -9,4 +9,4 @@
 package eftl
 
 // Version of eFTL Go client.
-const Version = "6.7.0"
+const Version = "6.8.0 V10"

@@ -31,6 +31,6 @@ namespace TIBCO.EFTL
 
         public static readonly String EFTL_VERSION_BANNER = EFTL_VERSION_STRING_LONG + 
             "\nCopyright 2009-2013 TIBCO Software Inc.\n" +
-            "Licensed under a BSD-style license. Refer to [LICENSE].\n";
+            "All rights reserved.\n";
     }
 }

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-29 13:29:25 -0700 (Tue, 29 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2022-02-04 12:44:54 -0800 (Fri, 04 Feb 2022) $ TIBCO Software Inc.
  * All rights reserved.
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: EFTL.java 128906 2020-09-29 20:29:25Z bpeterse $
+ * $Id: EFTL.java 139386 2022-02-04 20:44:54Z nstelton $
  *
  */
 package com.tibco.eftl;
@@ -320,6 +320,9 @@ public class EFTL
      *             <li> {@link #PROPERTY_PASSWORD}
      *             <li> {@link #PROPERTY_TIMEOUT}
      *             <li> {@link #PROPERTY_NOTIFICATION_TOKEN}
+     *             <li> {@link #PROPERTY_AUTO_RECONNECT_ATTEMPTS}
+     *             <li> {@link #PROPERTY_AUTO_RECONNECT_MAX_DELAY}
+     *             <li> {@link #PROPERTY_MAX_PENDING_ACKS}
      *            </ul>
      * @param listener Connection events invoke methods of this listener.
      * @throws IllegalArgumentException The URL is invalid.

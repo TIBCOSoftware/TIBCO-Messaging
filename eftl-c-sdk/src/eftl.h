@@ -32,7 +32,7 @@ extern "C" {
 /// @endcond
 
 /**
- * @mainpage TIBCO eFTL&trade; 6.7.0  
+ * @mainpage TIBCO eFTL&trade; 6.8.0  
  *
  * @section intro Introduction
  *

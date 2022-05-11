@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-2021 TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2022-02-03 14:50:04 -0800 (Thu, 03 Feb 2022) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.c 131938 2021-02-18 17:31:00Z $
+ * $Id: eftl.c 139360 2022-02-03 22:50:04Z $
  *
  */
 
@@ -1046,6 +1046,7 @@ tibeftlConnection_onWebSocketOpen(
 {
     tibeftlConnection           conn = (tibeftlConnection)context;
     url_t*                      url;
+    const char*                 query;
     _cJSON*                     opts;
     _cJSON*                     json;
     char*                       text;
@@ -1065,17 +1066,20 @@ tibeftlConnection_onWebSocketOpen(
 
     if (url && url_username(url))
         _cJSON_AddStringToObject(json, "user", url_username(url));
-    else if (conn->username && strlen(conn->username) > 0)
+    else if (conn->username && *conn->username)
         _cJSON_AddStringToObject(json, "user", conn->username);
+
     if (url && url_password(url))
         _cJSON_AddStringToObject(json, "password", url_password(url));
-    else if (conn->password && strlen(conn->password) > 0)
+    else if (conn->password && *conn->password)
         _cJSON_AddStringToObject(json, "password", conn->password);
-    if (url && url_query(url, "clientId"))
-        _cJSON_AddStringToObject(json, "client_id", url_query(url, "clientId"));
-    else if (conn->clientId && strlen(conn->clientId) > 0)
+
+    if (url && (query = url_query(url, "clientId")) && *query)
+        _cJSON_AddStringToObject(json, "client_id", query);
+    else if (conn->clientId && *conn->clientId)
         _cJSON_AddStringToObject(json, "client_id", conn->clientId);
-    if (conn->reconnectToken && strlen(conn->reconnectToken) > 0)
+
+    if (conn->reconnectToken && *conn->reconnectToken)
         _cJSON_AddStringToObject(json, "id_token", conn->reconnectToken);
 
     if (conn->maxPendingAcks > 0) 
@@ -1466,15 +1470,15 @@ tibeftlConnection_create(
 
     if (opts)
     {
-        if (opts->username && !conn->username)
+        if (opts->username)
             conn->username = strdup(opts->username);
-        if (opts->password && !conn->password)
+        if (opts->password)
             conn->password = strdup(opts->password);
-        if (opts->clientId && !conn->clientId)
+        if (opts->clientId)
             conn->clientId = strdup(opts->clientId);
-        if (opts->trustStore && !conn->trustStore)
-            conn->trustStore = strdup(opts->trustStore);
 
+        if (opts->trustStore)
+            conn->trustStore = strdup(opts->trustStore);
         if (opts->trustAll == true)
             conn->trustAll = opts->trustAll;
 
@@ -1511,6 +1515,9 @@ tibeftlConnection_create(
 
     websocket_options_init(websocketOptions);
 
+    websocketOptions.username = conn->username;
+    websocketOptions.password = conn->password;
+    websocketOptions.clientId = conn->clientId;
     websocketOptions.protocol = TIBEFTL_PROTOCOL;
     websocketOptions.trustStore = conn->trustStore;
     websocketOptions.trustAll = conn->trustAll;
@@ -1800,6 +1807,8 @@ tibeftl_Publish(
         if (conn->maxMsgSize > 0 && strlen(text) > conn->maxMsgSize)
         {
             tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "maximum message size exceeded");
+
+            _cJSON_free(text);
         }
         else
         {
@@ -1880,10 +1889,14 @@ tibeftl_SendRequest(
         if (conn->protocol < 1)
         {
             tibeftlErr_Set(err, TIBEFTL_ERR_NOT_SUPPORTED, "send request is not supported with this server");
+
+            _cJSON_free(text);
         }
         else if (conn->maxMsgSize > 0 && strlen(text) > conn->maxMsgSize)
         {
             tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "maximum message size exceeded");
+
+            _cJSON_free(text);
         }
         else
         {
@@ -1987,10 +2000,14 @@ tibeftl_SendReply(
         if (conn->protocol < 1)
         {
             tibeftlErr_Set(err, TIBEFTL_ERR_NOT_SUPPORTED, "send reply is not supported with this server");
+
+            _cJSON_free(text);
         }
         else if (conn->maxMsgSize > 0 && strlen(text) > conn->maxMsgSize)
         {
             tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "maximum message size exceeded");
+
+            _cJSON_free(text);
         }
         else
         {
@@ -2352,7 +2369,9 @@ tibeftl_RemoveKVMap(
     tibeftlConnection           conn,
     const char*                 name)
 {
+    tibeftlCompletion           completion = NULL;
     _cJSON*                     json;
+    int64_t                     seqNum = 0;
     char*                       text;
 
     if (tibeftlErr_IsSet(err))
@@ -2374,16 +2393,20 @@ tibeftl_RemoveKVMap(
 
     if (conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING)
     {
+        seqNum = ++conn->pubSeqNum;
+
         json = _cJSON_CreateObject();
         _cJSON_AddNumberToObject(json, "op", OP_MAP_DESTROY);
+        _cJSON_AddNumberToObject(json, "seq", seqNum);
         _cJSON_AddStringToObject(json, "map", name);
 
         text = _cJSON_PrintUnformatted(json);
 
+        completion = tibeftlConnection_registerRequest(conn, seqNum, text);
+
         websocket_send_text(conn->websocket, text);
 
         _cJSON_Delete(json);
-        _cJSON_free(text);
     }
     else
     {
@@ -2391,6 +2414,24 @@ tibeftl_RemoveKVMap(
     }
 
     mutex_unlock(&conn->mutex);
+
+    if (completion)
+    {
+        if (tibeftlCompletion_wait(completion, WAIT_FOREVER) == TIBEFTL_ERR_TIMEOUT)
+        {
+            tibeftlErr_Set(err, TIBEFTL_ERR_TIMEOUT, "key-value map request timed out");
+        }
+        else if (completion->code)
+        {
+            tibeftlErr_Set(err, completion->code, completion->reason);
+        }
+
+        mutex_lock(&conn->mutex);
+
+        tibeftlConnection_unregisterRequest(conn, seqNum);
+
+        mutex_unlock(&conn->mutex);
+    }
 }
 
 void
@@ -2458,6 +2499,8 @@ tibeftlKVMap_Set(
         if (map->conn->maxMsgSize > 0 && strlen(text) > map->conn->maxMsgSize)
         {
             tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "maximum message size exceeded");
+
+            _cJSON_free(text);
         }
         else
         {

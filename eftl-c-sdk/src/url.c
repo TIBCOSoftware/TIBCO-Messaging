@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2021 TIBCO Software Inc.
+ * Copyright (c) $Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: url.c 123342 2020-03-31 17:23:10Z $
+ * $Id: url.c 138851 2022-01-14 22:03:58Z $
  *
  */
 
@@ -219,9 +219,12 @@ url_destroy(
 
 url_t*
 url_copy(
-    url_t*      url)
+    url_t*          url)
 {
-    url_t*      cpy;
+    url_t*          cpy;
+    url_query_t*    query;
+    url_query_t*    queryCpy;
+    url_query_t*    prev;
 
     if (!url)
         return NULL;
@@ -242,6 +245,27 @@ url_copy(
         cpy->path = strdup(url->path);
 
     cpy->secure = url->secure;
+
+    query = url->query;
+    prev = NULL;
+
+    while (query)
+    {
+        queryCpy = calloc(1, sizeof(*queryCpy));
+
+        if (query->key)
+            queryCpy->key = strdup(query->key);
+        if (query->value)
+            queryCpy->value = strdup(query->value);
+
+        if (!prev)
+            cpy->query = queryCpy;
+        else
+            prev->next = queryCpy;
+
+        query = query->next;
+        prev = queryCpy;
+    }
 
     return cpy;
 }

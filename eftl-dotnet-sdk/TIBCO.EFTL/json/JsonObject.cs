@@ -4,7 +4,7 @@
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JsonObject.java 84689 2016-03-14 16:51:08Z bpeterse $
+ * $Id: JsonObject.java 84689 2016-03-14 16:51:08Z $
  */
 
 using System.Collections.Generic;

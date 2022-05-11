@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>connection API documentation</title>
+<meta name="description" content="@COPYRIGHT_BANNER@" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>connection</code></h1>
+</header>
+<section id="section-intro">
+<p>@COPYRIGHT_BANNER@</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="connection.Eftl"><code class="flex name class">
+<span>class <span class="ident">Eftl</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Programs use Eftl Class to connect to an eFTL server.</p>
+<p>Initialize the Eftl instance.</p></div>
+<h3>Class variables</h3>
+<dl>
+<dt id="connection.Eftl.CONNECTED"><code class="name">var <span class="ident">CONNECTED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="connection.Eftl.CONNECTING"><code class="name">var <span class="ident">CONNECTING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="connection.Eftl.DISCONNECTED"><code class="name">var <span class="ident">DISCONNECTED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="connection.Eftl.DISCONNECTING"><code class="name">var <span class="ident">DISCONNECTING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="connection.Eftl.RECONNECTING"><code class="name">var <span class="ident">RECONNECTING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="connection.Eftl.connect"><code class="name flex">
+<span>async def <span class="ident">connect</span></span>(<span>self, url, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Connect to an eFTL server.</p>
+<p>This call returns immediately; connecting continues asynchronously.
+When the connection is ready to use, the eFTL library calls your
+on_connect method, passing a EftlConnection object that you can
+use to publish and subscribe.</p>
+<p>When a pipe-separated list of URLs is specified this call will attempt
+a connection to each in turn, in a random order, until one is connected.
+A program that uses more than one server channel must connect
+separately to each channel.</p>
+<p>:param:
+url:
+The call connects to the eFTL server at this URL. This can be
+a single URL, or a pipe ('|') separated list of URLs. URLs can
+be in either of these forms</p>
+<pre><code>    ws://host:port/channel
+    wss://host:port/channel
+
+Optionally, the URLs can contain the username, password,
+and/or client identifier
+
+    ws://username:password@host:port/channel?clientId=&lt;identifier&gt;
+    wss://username:password@host:port/channel?clientId=&lt;identifier
+</code></pre>
+<p>:param:
+kwargs
+auto_reconnect_attempts : int, optional
+Maximum number of reconnect attempts. The default is
+256 attempts.
+auto_reconnect_max_delay : optional
+Maximum reconnect delay in milliseconds. The default is
+30 seconds.
+max_pending_acks : optional
+Maximum number of unacknowledged messages allowed for the
+client.
+user : optional
+Login credentials to use if not found in the url.
+password : optional
+Login credentials to use if not found in the url.
+client_id : optional
+User-specified client identifier.
+handshake_timeout : optional
+Seconds to wait for websocket handshake to complete.
+login_timeout : optional
+Seconds to halt waiting for a login message reply. If a
+reply is not received in time, raise an EftlClientError.
+polling_interval : optional
+Seconds to wait between each message reply check.
+trust_all : true/false (optional)
+trust_store :
+certificate path (optional)
+loop : event loop provided by user (optional)
+Callbacks :
+on_connect(connection):
+on_disconnect(connection, loop, code, reason):
+on_reconnect(connection):
+on_error(connection, code, reason):
+on_state_change(connection, state):
+:return:
+The EftlConnection object that can used to publish and subscribe
+Raises</p>
+<hr>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If any provided urls lack a host name or the correct scheme.</dd>
+<dt><code><a title="connection.EftlClientError" href="#connection.EftlClientError">EftlClientError</a></code></dt>
+<dd>If the connection is not established in time.</dd>
+</dl></div>
+</dd>
+<dt id="connection.Eftl.get_version"><code class="name flex">
+<span>def <span class="ident">get_version</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the eFTL Python library version.</p>
+<p>Returns:
+str: The eFTL Python library version</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="connection.EftlAlreadyConnected"><code class="flex name class">
+<span>class <span class="ident">EftlAlreadyConnected</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise when connect method is called but connection is already connected.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="connection.EftlClientError"><code class="flex name class">
+<span>class <span class="ident">EftlClientError</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise when establishing a connection to the server fails.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="connection.EftlConnection"><code class="flex name class">
+<span>class <span class="ident">EftlConnection</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>A websocket wrapper exchanging eftl protocol messages with a server.</p>
+<p>Different functions implement each of the types of protocol messages
+(e.g. publish, subscribe, disconnect). The messages are sent
+asynchronously, but by default these functions halt waiting for a
+reponse. The user may set a timeout for this waiting period if they
+desire.</p>
+<p>Users also may specify callbacks to trigger when messages get
+delivered, fail to get delivered, etc.</p>
+<p>Initialize the connection object, which is unconnected.</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="connection.EftlConnection.acknowledge"><code class="name flex">
+<span>async def <span class="ident">acknowledge</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Acknowledge this message.</p>
+<p>Messages consumed from subscriptions with a client acknowledgment mode
+must be explicitly acknowledged. The eFTL server will stop delivering
+messages to the client once the server's configured maximum number of
+unacknowledged messages is reached.</p>
+<p>:param message: The message being acknowledged
+:return:</p></div>
+</dd>
+<dt id="connection.EftlConnection.acknowledge_all"><code class="name flex">
+<span>async def <span class="ident">acknowledge_all</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Acknowledge all messages up to and including this message.</p>
+<p>Messages consumed from subscriptions with a client acknowledgment mode
+must be explicitly acknowledged. The eFTL server will stop delivering
+messages to the client once the server's configured maximum number of
+unacknowledged messages is reached.</p>
+<p>:param message: The message being acknowledged1
+:return:</p></div>
+</dd>
+<dt id="connection.EftlConnection.close_all_subscriptions"><code class="name flex">
+<span>async def <span class="ident">close_all_subscriptions</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Close all the subscriptions on this connection.</p>
+<p>For durable subscriptions, this call will cause the persistence
+service to stop delivering messages while leaving the durable
+subscriptions to continue accumulating messages. Any unacknowledged
+messages will be made available for redelivery.</p>
+<p>Programs receive subscription identifiers through their
+on_subscribe method.</p></div>
+</dd>
+<dt id="connection.EftlConnection.close_subscription"><code class="name flex">
+<span>async def <span class="ident">close_subscription</span></span>(<span>self, subscription_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Close subscription for specified subscription identifier.</p>
+<p>For durable subscriptions, this call will cause the persistence
+service to stop delivering messages while leaving the durable
+subscriptions to continue accumulating messages. Any unacknowledged
+messages will be made available for redelivery.</p>
+<p>Programs receive subscription identifiers through their
+on_subscribe method.</p></div>
+</dd>
+<dt id="connection.EftlConnection.create_kv_map"><code class="name flex">
+<span>async def <span class="ident">create_kv_map</span></span>(<span>self, name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a new EftlKVMap associated with this connection.</p>
+<p>:param name: name of the KVMap
+:return:
+The KVmap object</p></div>
+</dd>
+<dt id="connection.EftlConnection.create_message"><code class="name flex">
+<span>def <span class="ident">create_message</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create an EftlMessage that can be used to publish or send request/replies.</p>
+<p>:return: The EftlMessage object</p></div>
+</dd>
+<dt id="connection.EftlConnection.disconnect"><code class="name flex">
+<span>async def <span class="ident">disconnect</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Disconnect from the eFTL server.</p>
+<p>Programs may disconnect to free server resources.</p>
+<p>This call returns immediately; disconnecting continues
+asynchronously.</p>
+<p>When the connection has closed, the eFTL library calls your
+on_disconnect callback.</p>
+<p>:return:</p></div>
+</dd>
+<dt id="connection.EftlConnection.get_clientId"><code class="name flex">
+<span>def <span class="ident">get_clientId</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the client identifier for this connection.</p>
+<p>:return: The client's identifier.</p></div>
+</dd>
+<dt id="connection.EftlConnection.is_connected"><code class="name flex">
+<span>def <span class="ident">is_connected</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Determine whether this connection to the eFTL server is open or closed.</p>
+<p>:return: True if this connection is open, False otherwise</p></div>
+</dd>
+<dt id="connection.EftlConnection.publish"><code class="name flex">
+<span>async def <span class="ident">publish</span></span>(<span>self, message, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Publish a one-to-many message to all subscribing clients.</p>
+<p>This call returns immediately; publishing continues
+asynchronously.
+When the publish completes successfully,
+the eFTL library calls your</p>
+<p>:param message: Publish this message.
+:param kwargs:
+callbacks:
+on_publish
+on_error
+:return:</p>
+<p>ValueError
+If the message size exceeds the maximum.
+TypeError
+If the message is not of type EftlMessage
+ConnectionError
+If the connection is closed.</p></div>
+</dd>
+<dt id="connection.EftlConnection.reconnect"><code class="name flex">
+<span>async def <span class="ident">reconnect</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reopen a closed connection.</p>
+<p>You may call this method within your on_disconnect method.</p>
+<p>This call returns immediately; connecting continues asynchronously.
+When the connection is ready to use, the eFTL library calls your
+on_reconnect callback</p>
+<p>Reconnecting automatically re-activates all subscriptions
+on the connection. The eFTL library invokes your
+on_subscribe callback for each successful resubscription.</p>
+<p>:return:</p></div>
+</dd>
+<dt id="connection.EftlConnection.remove_kv_map"><code class="name flex">
+<span>async def <span class="ident">remove_kv_map</span></span>(<span>self, name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Remove a EftlKVMap object.</p>
+<p>:param name: the name of the map
+:return:</p></div>
+</dd>
+<dt id="connection.EftlConnection.send_reply"><code class="name flex">
+<span>async def <span class="ident">send_reply</span></span>(<span>self, requestMessage, replyMessage, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Send a reply message in response to a request message.</p>
+<p>This call returns immediately. When the send completes successfully
+the eFTL library calls your {@link CompletionListener#onCompletion}
+callback.</p>
+<p>:param requestMessage: The reply message to send
+:param replyMessage: The request msg
+:param kwargs:
+callbacks
+:return:</p></div>
+</dd>
+<dt id="connection.EftlConnection.send_request"><code class="name flex">
+<span>async def <span class="ident">send_request</span></span>(<span>self, message, timeout, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Publish a request message.</p>
+<p>This call returns immediately. When the reply is received
+the eFTL library calls your {@link RequestListener#onReply}
+callback.</p>
+<p>:param message: The request message to publish.
+:param timeout: timeout seconds to wait for reply
+:param kwargs:
+callbacks:
+:return:</p></div>
+</dd>
+<dt id="connection.EftlConnection.subscribe"><code class="name flex">
+<span>async def <span class="ident">subscribe</span></span>(<span>self, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Send a message to register a matcher-based subscription.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>timeout</code></strong> :&ensp;<code>optional</code></dt>
+<dd>Number of seconds to halt waiting on acknowledgement from
+the server (default set in EftlConnection.connect()).</dd>
+<dt><strong><code>matcher</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>JSON content matcher to subscribe to.</dd>
+<dt><strong><code>type</code></strong> :&ensp;<code>{"standard", "shared", "last-value"}</code>, optional</dt>
+<dd>Durable type.</dd>
+<dt><strong><code>key</code></strong> :&ensp;<code>optional</code></dt>
+<dd>The last-value index key, if <code>type</code> is "last-value".</dd>
+<dt><strong><code>durable</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Name to give the durable.</dd>
+<dt><strong><code>ack_mode</code></strong> :&ensp;<code>client, None. Default is auto</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>sub_id</code></dt>
+<dd>The subcription identifier of the new subscription.</dd>
+</dl></div>
+</dd>
+<dt id="connection.EftlConnection.unsubscribe"><code class="name flex">
+<span>async def <span class="ident">unsubscribe</span></span>(<span>self, sub_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Unsubscribe from messages on a subscription.</p>
+<p>For durable subscriptions, this call will cause the persistence
+service to remove the durable subscription, along with any
+persisted messages.</p>
+<p>Programs receive subscription identifiers through their
+methods.</p>
+<p>:param sub_id:
+Subscription identifier of the subscription to delete.
+timeout`
+:return:</p></div>
+</dd>
+<dt id="connection.EftlConnection.unsubscribe_all"><code class="name flex">
+<span>async def <span class="ident">unsubscribe_all</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Unsubscribe from all subscriptions.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>timeout</code></strong> :&ensp;<code>optional</code></dt>
+<dd>Number of seconds to halt waiting on acknowledgement from
+the server (default set in EftlConnection.connect()).</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+<dt id="connection.EftlKVMap"><code class="flex name class">
+<span>class <span class="ident">EftlKVMap</span></span>
+<span>(</span><span>connection, name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A key-value map
+object represents a program's connection to an FTL map.</p>
+<p>Programs use key-value map objects to set, get, and remove key-value
+pairs in an FTL map.</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="connection.EftlKVMap.get"><code class="name flex">
+<span>async def <span class="ident">get</span></span>(<span>self, key, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a key from the map, or <c>null</c> if the key is not set.</p>
+<p>:param key: Get the value for this key
+:param kwargs:
+Callbacks:
+on_success:
+on_error:
+:return: The value as a EftlMessage</p></div>
+</dd>
+<dt id="connection.EftlKVMap.remove"><code class="name flex">
+<span>async def <span class="ident">remove</span></span>(<span>self, key, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Remove a key-value pair from the map.</p>
+<p>This call returns immediately; removing continues
+asynchronously.
+When the remove completes successfully,
+the eFTL library calls your on_success callback.</p>
+<p>:param key:
+Revove the value for this key.
+:param kwargs:
+on_success
+on_error
+:return:</p></div>
+</dd>
+<dt id="connection.EftlKVMap.set"><code class="name flex">
+<span>async def <span class="ident">set</span></span>(<span>self, key, value, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a key-value pair in the map, overwriting any existing value.</p>
+<p>This call returns immediately; setting continues
+asynchronously.
+When the set completes successfully,
+the eFTL library calls your on_success callback.</p>
+<p>:param key: Set the value for this key.
+:param value: Set this value for the key.
+:param kwargs:
+on_success
+on_error
+:return:</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="connection.EftlMessage"><code class="flex name class">
+<span>class <span class="ident">EftlMessage</span></span>
+<span>(</span><span>obj=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Programs use message objects to publish messages on an eFTL connection or receive messages for a given subscription.</p>
+<p>Message objects contain typed fields that map names to values.</p>
+<p>Initialize the EftlMessage instance properties.</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="connection.EftlMessage.clear_all_fields"><code class="name flex">
+<span>def <span class="ident">clear_all_fields</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Remove all the fields in this message.</p></div>
+</dd>
+<dt id="connection.EftlMessage.clear_field"><code class="name flex">
+<span>def <span class="ident">clear_field</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Remove the given field from this message.</p>
+<p>:param field_name:</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_datetime"><code class="name flex">
+<span>def <span class="ident">get_datetime</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type datetime</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_datetime_array"><code class="name flex">
+<span>def <span class="ident">get_datetime_array</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type datetime array</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_delivery_count"><code class="name flex">
+<span>def <span class="ident">get_delivery_count</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Message's delivery count assigned by the persistence service.</p>
+<p>:return:
+The message delivery count.</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_double"><code class="name flex">
+<span>def <span class="ident">get_double</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type double</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_double_array"><code class="name flex">
+<span>def <span class="ident">get_double_array</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type double array</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_field_names"><code class="name flex">
+<span>def <span class="ident">get_field_names</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the list of field names.</p>
+<p>:return: The field names of this message as a list object.</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_field_type"><code class="name flex">
+<span>def <span class="ident">get_field_type</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the type of value of this field.</p>
+<p>:param field_name: The name of the field
+:return: type of value of this field.</p>
+<pre><code>Possible return values : 
+        'int' represents Integer
+        'str' represents String
+        'float' represents Float
+        'datetime.datetime' represents datetime.datetime 
+        'message' represents EftlMessage object type
+        'opaque' represents opaque type (bytes)
+        'unknown'
+</code></pre></div>
+</dd>
+<dt id="connection.EftlMessage.get_long"><code class="name flex">
+<span>def <span class="ident">get_long</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type long</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_long_array"><code class="name flex">
+<span>def <span class="ident">get_long_array</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a long array field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type long array</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_message"><code class="name flex">
+<span>def <span class="ident">get_message</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a long field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type message</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_message_array"><code class="name flex">
+<span>def <span class="ident">get_message_array</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a message array field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type message array (list of messages)</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_opaque"><code class="name flex">
+<span>def <span class="ident">get_opaque</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of opaque field from a message.</p>
+<p>:param field_name: The name of the field
+:return: The value of the field if the field is present</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_store_message_id"><code class="name flex">
+<span>def <span class="ident">get_store_message_id</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Message's unique store identifier assigned by the persistence service.</p>
+<p>:return:
+A monotonically increasing long value that represents
+message's unique store identifier</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_string"><code class="name flex">
+<span>def <span class="ident">get_string</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a string field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type string</p></div>
+</dd>
+<dt id="connection.EftlMessage.get_string_array"><code class="name flex">
+<span>def <span class="ident">get_string_array</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the value of a string array field from a message.</p>
+<p>:param field_name: The name of the field</p>
+<p>:return: The value of the field if the field is present
+and has type string array</p></div>
+</dd>
+<dt id="connection.EftlMessage.is_field_set"><code class="name flex">
+<span>def <span class="ident">is_field_set</span></span>(<span>self, field_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return True if the field is set, False otherwise.</p>
+<p>:param field_name: The name of the field
+:return: True if the field is set, False otherwise</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_datetime"><code class="name flex">
+<span>def <span class="ident">set_datetime</span></span>(<span>self, field_name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a datetime field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_datetime_array"><code class="name flex">
+<span>def <span class="ident">set_datetime_array</span></span>(<span>self, field_name, values)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a datetime array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_double"><code class="name flex">
+<span>def <span class="ident">set_double</span></span>(<span>self, field_name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a double field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_double_array"><code class="name flex">
+<span>def <span class="ident">set_double_array</span></span>(<span>self, field_name, values)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a double array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_long"><code class="name flex">
+<span>def <span class="ident">set_long</span></span>(<span>self, field_name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a long field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_long_array"><code class="name flex">
+<span>def <span class="ident">set_long_array</span></span>(<span>self, field_name, values)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a long array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_message"><code class="name flex">
+<span>def <span class="ident">set_message</span></span>(<span>self, field_name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a message field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_message_array"><code class="name flex">
+<span>def <span class="ident">set_message_array</span></span>(<span>self, field_name, values)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a message array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_opaque"><code class="name flex">
+<span>def <span class="ident">set_opaque</span></span>(<span>self, field_name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set an opaque field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_string"><code class="name flex">
+<span>def <span class="ident">set_string</span></span>(<span>self, field_name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a string field in a message.</p>
+<p>:param field_name: The call sets this field
+:param value: The call sets this value.
+:return:</p></div>
+</dd>
+<dt id="connection.EftlMessage.set_string_array"><code class="name flex">
+<span>def <span class="ident">set_string_array</span></span>(<span>self, field_name, values)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a string array field in a message.</p>
+<p>:param field_name: The call sets this field
+:param values: The call sets this value.
+:return:</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="connection.EftlMessageSizeTooLarge"><code class="flex name class">
+<span>class <span class="ident">EftlMessageSizeTooLarge</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Raise when EftlMesssage size is larger than the maximum allowed size.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="connection.Eftl" href="#connection.Eftl">Eftl</a></code></h4>
+<ul class="two-column">
+<li><code><a title="connection.Eftl.CONNECTED" href="#connection.Eftl.CONNECTED">CONNECTED</a></code></li>
+<li><code><a title="connection.Eftl.CONNECTING" href="#connection.Eftl.CONNECTING">CONNECTING</a></code></li>
+<li><code><a title="connection.Eftl.DISCONNECTED" href="#connection.Eftl.DISCONNECTED">DISCONNECTED</a></code></li>
+<li><code><a title="connection.Eftl.DISCONNECTING" href="#connection.Eftl.DISCONNECTING">DISCONNECTING</a></code></li>
+<li><code><a title="connection.Eftl.RECONNECTING" href="#connection.Eftl.RECONNECTING">RECONNECTING</a></code></li>
+<li><code><a title="connection.Eftl.connect" href="#connection.Eftl.connect">connect</a></code></li>
+<li><code><a title="connection.Eftl.get_version" href="#connection.Eftl.get_version">get_version</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="connection.EftlAlreadyConnected" href="#connection.EftlAlreadyConnected">EftlAlreadyConnected</a></code></h4>
+</li>
+<li>
+<h4><code><a title="connection.EftlClientError" href="#connection.EftlClientError">EftlClientError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="connection.EftlConnection" href="#connection.EftlConnection">EftlConnection</a></code></h4>
+<ul class="">
+<li><code><a title="connection.EftlConnection.acknowledge" href="#connection.EftlConnection.acknowledge">acknowledge</a></code></li>
+<li><code><a title="connection.EftlConnection.acknowledge_all" href="#connection.EftlConnection.acknowledge_all">acknowledge_all</a></code></li>
+<li><code><a title="connection.EftlConnection.close_all_subscriptions" href="#connection.EftlConnection.close_all_subscriptions">close_all_subscriptions</a></code></li>
+<li><code><a title="connection.EftlConnection.close_subscription" href="#connection.EftlConnection.close_subscription">close_subscription</a></code></li>
+<li><code><a title="connection.EftlConnection.create_kv_map" href="#connection.EftlConnection.create_kv_map">create_kv_map</a></code></li>
+<li><code><a title="connection.EftlConnection.create_message" href="#connection.EftlConnection.create_message">create_message</a></code></li>
+<li><code><a title="connection.EftlConnection.disconnect" href="#connection.EftlConnection.disconnect">disconnect</a></code></li>
+<li><code><a title="connection.EftlConnection.get_clientId" href="#connection.EftlConnection.get_clientId">get_clientId</a></code></li>
+<li><code><a title="connection.EftlConnection.is_connected" href="#connection.EftlConnection.is_connected">is_connected</a></code></li>
+<li><code><a title="connection.EftlConnection.publish" href="#connection.EftlConnection.publish">publish</a></code></li>
+<li><code><a title="connection.EftlConnection.reconnect" href="#connection.EftlConnection.reconnect">reconnect</a></code></li>
+<li><code><a title="connection.EftlConnection.remove_kv_map" href="#connection.EftlConnection.remove_kv_map">remove_kv_map</a></code></li>
+<li><code><a title="connection.EftlConnection.send_reply" href="#connection.EftlConnection.send_reply">send_reply</a></code></li>
+<li><code><a title="connection.EftlConnection.send_request" href="#connection.EftlConnection.send_request">send_request</a></code></li>
+<li><code><a title="connection.EftlConnection.subscribe" href="#connection.EftlConnection.subscribe">subscribe</a></code></li>
+<li><code><a title="connection.EftlConnection.unsubscribe" href="#connection.EftlConnection.unsubscribe">unsubscribe</a></code></li>
+<li><code><a title="connection.EftlConnection.unsubscribe_all" href="#connection.EftlConnection.unsubscribe_all">unsubscribe_all</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="connection.EftlKVMap" href="#connection.EftlKVMap">EftlKVMap</a></code></h4>
+<ul class="">
+<li><code><a title="connection.EftlKVMap.get" href="#connection.EftlKVMap.get">get</a></code></li>
+<li><code><a title="connection.EftlKVMap.remove" href="#connection.EftlKVMap.remove">remove</a></code></li>
+<li><code><a title="connection.EftlKVMap.set" href="#connection.EftlKVMap.set">set</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="connection.EftlMessage" href="#connection.EftlMessage">EftlMessage</a></code></h4>
+<ul class="">
+<li><code><a title="connection.EftlMessage.clear_all_fields" href="#connection.EftlMessage.clear_all_fields">clear_all_fields</a></code></li>
+<li><code><a title="connection.EftlMessage.clear_field" href="#connection.EftlMessage.clear_field">clear_field</a></code></li>
+<li><code><a title="connection.EftlMessage.get_datetime" href="#connection.EftlMessage.get_datetime">get_datetime</a></code></li>
+<li><code><a title="connection.EftlMessage.get_datetime_array" href="#connection.EftlMessage.get_datetime_array">get_datetime_array</a></code></li>
+<li><code><a title="connection.EftlMessage.get_delivery_count" href="#connection.EftlMessage.get_delivery_count">get_delivery_count</a></code></li>
+<li><code><a title="connection.EftlMessage.get_double" href="#connection.EftlMessage.get_double">get_double</a></code></li>
+<li><code><a title="connection.EftlMessage.get_double_array" href="#connection.EftlMessage.get_double_array">get_double_array</a></code></li>
+<li><code><a title="connection.EftlMessage.get_field_names" href="#connection.EftlMessage.get_field_names">get_field_names</a></code></li>
+<li><code><a title="connection.EftlMessage.get_field_type" href="#connection.EftlMessage.get_field_type">get_field_type</a></code></li>
+<li><code><a title="connection.EftlMessage.get_long" href="#connection.EftlMessage.get_long">get_long</a></code></li>
+<li><code><a title="connection.EftlMessage.get_long_array" href="#connection.EftlMessage.get_long_array">get_long_array</a></code></li>
+<li><code><a title="connection.EftlMessage.get_message" href="#connection.EftlMessage.get_message">get_message</a></code></li>
+<li><code><a title="connection.EftlMessage.get_message_array" href="#connection.EftlMessage.get_message_array">get_message_array</a></code></li>
+<li><code><a title="connection.EftlMessage.get_opaque" href="#connection.EftlMessage.get_opaque">get_opaque</a></code></li>
+<li><code><a title="connection.EftlMessage.get_store_message_id" href="#connection.EftlMessage.get_store_message_id">get_store_message_id</a></code></li>
+<li><code><a title="connection.EftlMessage.get_string" href="#connection.EftlMessage.get_string">get_string</a></code></li>
+<li><code><a title="connection.EftlMessage.get_string_array" href="#connection.EftlMessage.get_string_array">get_string_array</a></code></li>
+<li><code><a title="connection.EftlMessage.is_field_set" href="#connection.EftlMessage.is_field_set">is_field_set</a></code></li>
+<li><code><a title="connection.EftlMessage.set_datetime" href="#connection.EftlMessage.set_datetime">set_datetime</a></code></li>
+<li><code><a title="connection.EftlMessage.set_datetime_array" href="#connection.EftlMessage.set_datetime_array">set_datetime_array</a></code></li>
+<li><code><a title="connection.EftlMessage.set_double" href="#connection.EftlMessage.set_double">set_double</a></code></li>
+<li><code><a title="connection.EftlMessage.set_double_array" href="#connection.EftlMessage.set_double_array">set_double_array</a></code></li>
+<li><code><a title="connection.EftlMessage.set_long" href="#connection.EftlMessage.set_long">set_long</a></code></li>
+<li><code><a title="connection.EftlMessage.set_long_array" href="#connection.EftlMessage.set_long_array">set_long_array</a></code></li>
+<li><code><a title="connection.EftlMessage.set_message" href="#connection.EftlMessage.set_message">set_message</a></code></li>
+<li><code><a title="connection.EftlMessage.set_message_array" href="#connection.EftlMessage.set_message_array">set_message_array</a></code></li>
+<li><code><a title="connection.EftlMessage.set_opaque" href="#connection.EftlMessage.set_opaque">set_opaque</a></code></li>
+<li><code><a title="connection.EftlMessage.set_string" href="#connection.EftlMessage.set_string">set_string</a></code></li>
+<li><code><a title="connection.EftlMessage.set_string_array" href="#connection.EftlMessage.set_string_array">set_string_array</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="connection.EftlMessageSizeTooLarge" href="#connection.EftlMessageSizeTooLarge">EftlMessageSizeTooLarge</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

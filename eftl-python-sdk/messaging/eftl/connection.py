@@ -83,6 +83,8 @@ ACK_FIELD                           = "ack"
 PROPERTY_USERNAME                   = "username"
 PROPERTY_PASSWORD                   = "password"
 PROPERTY_CLIENT_ID                  = "client_id"
+PROPERTY_TRUST_ALL                  = "trust_all"
+PROPERTY_TRUST_STORE                = "trust_store"
 PROPERTY_AUTO_RECONNECT_ATTEMPTS    = "auto_reconnect_attempts"
 PROPERTY_AUTO_RECONNECT_MAX_DELAY   = "auto_reconnect_max_delay"
 PROPERTY_HANDSHAKE_TIMEOUT          = "handshake_timeout"
@@ -241,6 +243,9 @@ class Eftl():
            auto_reconnect_max_delay : optional
                 Maximum reconnect delay in milliseconds. The default is
                 30 seconds.
+           max_pending_acks : optional
+                Maximum number of unacknowledged messages allowed for the
+                client.
            user : optional
                 Login credentials to use if not found in the url.
            password : optional
@@ -1329,39 +1334,38 @@ class EftlConnection():
                     self.urls.append(parsed)
         random.shuffle(self.urls)
 
-        await self._attempt_connection(**kwargs)
+        await self._attempt_connection()
         _call_dict_function(
             self.connect_options,
             "on_connect",
             connection=self
         )
 
-    async def _attempt_connection(self, **kwargs):
+    async def _attempt_connection(self):
 
-        loop = kwargs.get("event_loop", None)
+        loop = self.connect_options.get("event_loop", None)
         if loop is not None:
             self.user_event_loop = loop
 
-        timeout = kwargs.get(PROPERTY_HANDSHAKE_TIMEOUT)
+        timeout = self.connect_options.get(PROPERTY_HANDSHAKE_TIMEOUT)
         if timeout is not None:
             self.timeout = timeout
 
-        polling_intrval = kwargs.get(PROPERTY_POLLING_INTERVAL)
+        polling_intrval = self.connect_options.get(PROPERTY_POLLING_INTERVAL)
         if polling_intrval is not None:
             self.polling_interval = polling_intrval
 
-        trust_all = kwargs.get("trust_all")
+        trust_all = self.connect_options.get(PROPERTY_TRUST_ALL)
         if trust_all is not None:
             self.trust_all = trust_all
 
-
-        trust_store = kwargs.get("trust_store", None)
+        trust_store = self.connect_options.get(PROPERTY_TRUST_STORE, None)
         if trust_store is not None:
             self.trust_store = trust_store
 
         self.url_list = self.urls
 
-        auto_reconnect_attempts = kwargs.get(PROPERTY_AUTO_RECONNECT_ATTEMPTS)
+        auto_reconnect_attempts = self.connect_options.get(PROPERTY_AUTO_RECONNECT_ATTEMPTS)
         if auto_reconnect_attempts is not None:
             if not isinstance(auto_reconnect_attempts, numbers.Number):
                 raise ValueError("Auto reconnect attempts value was non-numeric")
@@ -1371,7 +1375,7 @@ class EftlConnection():
                 else:
                     self.auto_reconnect_attempts = auto_reconnect_attempts
 
-        auto_reconnect_max_delay = kwargs.get(PROPERTY_AUTO_RECONNECT_MAX_DELAY)
+        auto_reconnect_max_delay = self.connect_options.get(PROPERTY_AUTO_RECONNECT_MAX_DELAY)
         if auto_reconnect_max_delay is not None:
             if not isinstance(auto_reconnect_max_delay, numbers.Number):
                 raise ValueError("Auto reconnect Max delay value was non-numeric")
@@ -1379,7 +1383,7 @@ class EftlConnection():
                 self.auto_reconnect_max_delay = auto_reconnect_max_delay
 
 
-        login_timeout = kwargs.get(PROPERTY_LOGIN_TIMEOUT)
+        login_timeout = self.connect_options.get(PROPERTY_LOGIN_TIMEOUT)
         if login_timeout is not None:
             if not isinstance(login_timeout, numbers.Number):
                 raise ValueError("Login timeout value was non-numeric")
@@ -1392,8 +1396,32 @@ class EftlConnection():
             try:
                 url = self.urls[url_index]
 
+                username = url.username
+                if username is None:
+                    username = self.connect_options.get(PROPERTY_USERNAME, "")
+
+                password = url.password
+                if password is None:
+                    password = self.connect_options.get(PROPERTY_PASSWORD, "")
+
+                if username != "" or password != "":
+                    auth = "{:s}:{:s}".format(str(username), str(password))
+                    auth64 = base64.b64encode(auth.encode("utf-8")).decode("utf-8")
+                    headers = {"Authorization": "Basic {:s}".format(auth64)}
+                else:
+                    headers = None
+
+                client_id = urllib.parse.parse_qs(url.query).get("clientId", [None])[0]
+                if client_id is None:
+                    client_id = self.connect_options.get(PROPERTY_CLIENT_ID)
+
+                url_string = "{:s}://{:s}{:s}".format(url.scheme, url.netloc, url.path)
+
+                if client_id is not None:
+                    url_string = "{:s}?client_id={:s}".format(url_string, str(client_id))
+
                 # This client factory is used to create websocket instances
-                factory = self.client_factory(url.geturl())
+                factory = self.client_factory(url=url_string, protocols=["v1.eftl.tibco.com"], headers=headers)
                 factory.setProtocolOptions(openHandshakeTimeout=self.timeout)
 
                 """The websockets will be instances of a protocol, which contains definitions for
@@ -1837,7 +1865,7 @@ class EftlConnection():
                 client_id = None
 
                 if self.factory.conn.client_id is None:
-                    client_id = urllib.parse.parse_qs(url.query).get("client_id", [None])[0]
+                    client_id = urllib.parse.parse_qs(url.query).get("clientId", [None])[0]
                     if client_id is None:
                         client_id = conn_opts.get(PROPERTY_CLIENT_ID)
                         self.factory.conn.client_id = client_id

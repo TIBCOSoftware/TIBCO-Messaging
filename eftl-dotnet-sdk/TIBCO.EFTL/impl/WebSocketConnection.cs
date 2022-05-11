@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009-$Date: 2021-02-18 09:31:00 -0800 (Thu, 18 Feb 2021) $ TIBCO Software Inc.
- * All Rights Reserved.
+ * Copyright (c) 2009-$Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
+ * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketConnection.cs 131938 2021-02-18 17:31:00Z $
+ * $Id: WebSocketConnection.cs 138851 2022-01-14 22:03:58Z $
  */
 using System;
 using System.Collections;
@@ -87,34 +87,63 @@ namespace TIBCO.EFTL
 
                 setState(ConnectionState.CONNECTING);
 
-                if (String.Compare("wss", this.getURL().Scheme, true) == 0) 
-                {
-                    bool trustAll = false;
+                Uri uri = this.getURL();
 
+                if (String.Compare("wss", uri.Scheme, true) == 0) 
+                {
                     ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                     ServicePointManager.MaxServicePointIdleTime = 1000;
+                }
 
-                    if (props.ContainsKey(EFTL.PROPERTY_TRUST_ALL))
-                        trustAll = (props[EFTL.PROPERTY_TRUST_ALL] as bool?) ?? false;
+                String user =(String) props[EFTL.PROPERTY_USERNAME];
+                String password =(String) props[EFTL.PROPERTY_PASSWORD];
+                String identifier =(String) props[EFTL.PROPERTY_CLIENT_ID];
 
-                    if(trustAll) 
+                String userInfo = uri.UserInfo;
+
+                if (userInfo != null && userInfo.Length > 0) 
+                {
+                    String[] tokens = userInfo.Split(':');
+
+                    user = tokens[0];
+
+                    if (tokens.Length > 1)
+                        password = tokens[1];
+                }
+
+                String query = uri.Query;
+
+                if (query != null && query.Length > 0) 
+                {
+                    // remove leading '?'
+                    if (query[0] == '?')
+                        query = query.Substring(1);
+
+                    String[] tokens = query.Split('&');
+
+                    for (int i = 0; i < tokens.Length; i++) 
                     {
-                        // trust any server certificate by always returning true
-                        ServicePointManager.ServerCertificateValidationCallback =
-                           (sender, cert, chain, sslPolicyErrors) => true;
-                    } 
-                    else 
-                    {
-                        ServicePointManager.ServerCertificateValidationCallback =
-                            (sender, cert, chain, sslPolicyErrors) => 
-                            {
-                                return (sslPolicyErrors == SslPolicyErrors.None);
-                            };
+                        if (tokens[i].StartsWith("clientId=")) 
+                        {
+                            identifier = tokens[i].Substring("clientId=".Length);
+                        }
                     }
                 }
 
-                webSocket = new WebSocket(getURL(), this);
+                bool trustAll = false;
 
+                if (props.ContainsKey(EFTL.PROPERTY_TRUST_ALL))
+                    trustAll = (props[EFTL.PROPERTY_TRUST_ALL] as bool?) ?? false;
+
+                String urlString = String.Format("{0}://{1}{2}", uri.Scheme, uri.Authority, uri.AbsolutePath);
+
+                if (!String.IsNullOrEmpty(identifier))
+                    urlString = String.Format("{0}?client_id={1}", urlString, identifier);
+
+                webSocket = new WebSocket(new Uri(urlString), this);
+
+                webSocket.setUserInfo(user, password);
+                webSocket.setTrustAll(trustAll);
                 webSocket.setProtocol(ProtocolConstants.EFTL_WS_PROTOCOL);
                 webSocket.setTimeout(GetConnectTimeout());
                 webSocket.Open();

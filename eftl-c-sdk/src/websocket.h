@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-2021 TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: websocket.h 123342 2020-03-31 17:23:10Z $
+ * $Id: websocket.h 138851 2022-01-14 22:03:58Z $
  *
  */
 
@@ -69,7 +69,9 @@ typedef void (*websocket_close_cb)(
 
 typedef struct websocket_options_s
 {
-    int                         ver;
+    const char*                 username;
+    const char*                 password;
+    const char*                 clientId;
 
     const char*                 origin;
     const char*                 protocol;
@@ -89,7 +91,7 @@ typedef struct websocket_options_s
 } websocket_options_t;
 
 #define websocket_options_init(opts) \
-    ((opts) = (websocket_options_t){ 0, NULL, NULL, NULL, false, 10000, NULL, NULL, NULL, NULL, NULL, NULL })
+    ((opts) = (websocket_options_t){ NULL, NULL, NULL, NULL, NULL, NULL, false, 10000, NULL, NULL, NULL, NULL, NULL, NULL })
 
 websocket_t*
 websocket_create(

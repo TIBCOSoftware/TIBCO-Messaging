@@ -33,14 +33,63 @@
  Building 
  ---------------------------------------------
 
- To build the Go client for TIBCO eFTL: 
+ To build the Go client for TIBCO eFTL and examples:
+ 
+ 1. Navigate to the eFTL samples directory
+    (e.g. on linux, 'cd <eftl_install_dir>/samples/golang')
 
- 1. The Go client for TIBCO eFTL is dependent on a WebSocket package. 
-    Download and install the package dependency:
+ 2. Set GOBIN 
+    (e.g. on linux,  'export GOBIN=<eftl_install_dir>/samples/golang')
 
-      $ go get github.com/gorilla/websocket
 
- 2. Build the Go client for TIBCO eFTL and examples:
+ 3. Navigate to the eftl samples golang src directory and 
+    build the Go client for TIBCO eFTL and examples:
+    (e.g. on linux, 'cd <eftl_install_dir>/samples/golang/src/tibco.com/eftl')
 
-      $ go install tibco.com/eftl...
+      $ go install ./...
 
+ 4. Run the samples in the GOBIN directory simply by executing: 
+
+      $ subscriber
+      $ publisher
+
+
+ Examples
+---------------------------------------------
+
+ Once built the examples can be found in the /bin directory.
+
+ publisher
+
+        Basic publisher program that demonstrates the use of 
+        publishing eFTL messages.
+
+ subscriber
+
+        Basic subscriber program that demonstrates the use of 
+        subscribing to eFTL messages.
+
+ sharedSubscriber
+
+        Basic subscriber program that demonstrates the use of 
+        shared durable subscriptions.
+
+ lastValueSubscriber
+
+        Basic subscriber program that demonstrates the use of 
+        last-value durable subscriptions.
+
+ kvset
+
+        Basic key-value program that demonstrates the use of
+        setting a key-value pair in a map.
+
+ kvget
+
+        Basic key-value program that demonstrates the use of
+        getting a key-value pair from a map.
+
+ kvremove
+
+        Basic key-value program that demonstrates the use of
+        removing a key-value pair from a map.
