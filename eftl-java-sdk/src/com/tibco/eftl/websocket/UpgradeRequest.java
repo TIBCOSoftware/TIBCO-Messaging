@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2013-$Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
- * All rights reserved.
+ * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: UpgradeRequest.java 138851 2022-01-14 22:03:58Z nlindqui $
+ * $Id: UpgradeRequest.java 138851 2022-01-14 22:03:58Z $
  *
  */
 package com.tibco.eftl.websocket;

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2001-2021 TIBCO Software Inc.
-// All Rights Reserved. Confidential & Proprietary.
+// Licensed under a BSD-style license. Refer to [LICENSE]
 // For more information, please contact:
 // TIBCO Software Inc., Palo Alto, California, USA
 //

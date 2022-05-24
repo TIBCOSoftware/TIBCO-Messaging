@@ -1,5 +1,5 @@
 // TIBCO eFTL JavaScript Library @EFTL_VERSION_MAJOR@.@EFTL_VERSION_MINOR@.@EFTL_VERSION_UPDATE@ @EFTL_VERSION_RELEASE_TYPE@ V@EFTL_VERSION_BUILD@
-// Copyright (c)@EFTL_COPYRIGHT_YEARS@ TIBCO Software Inc. All Rights Reserved.
+// Copyright (c)@EFTL_COPYRIGHT_YEARS@ TIBCO Software Inc. Licensed under a BSD-style license. Refer to [LICENSE]
 // TIBCO Software Inc., Palo Alto, California, USA
 //
 // eFTL internal utility functions to provide cross-browser compatibility inspired

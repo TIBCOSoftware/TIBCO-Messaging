@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2013-$Date: 2020-05-05 14:34:09 -0700 (Tue, 05 May 2020) $ TIBCO Software Inc.
- * All rights reserved.
+ * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: UpgradeResponse.java 124749 2020-05-05 21:34:09Z bpeterse $
+ * $Id: UpgradeResponse.java 124749 2020-05-05 21:34:09Z $
  *
  */
 package com.tibco.eftl.websocket;

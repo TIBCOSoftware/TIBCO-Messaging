@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2001-$Date: 2016-03-14 14:37:06 -0700 (Mon, 14 Mar 2016) $ TIBCO Software Inc.
- * All rights reserved.
+ * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JsonValue.java 84701 2016-03-14 21:37:06Z bpeterse $
+ * $Id: JsonValue.java 84701 2016-03-14 21:37:06Z $
  */
 package com.tibco.eftl.json;
 

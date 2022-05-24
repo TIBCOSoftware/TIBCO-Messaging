@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2001-$Date: 2020-06-16 09:06:49 -0700 (Tue, 16 Jun 2020) $ TIBCO Software Inc.
- * All rights reserved.
+ * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: Subscription.java 126238 2020-06-16 16:06:49Z bpeterse $
+ * $Id: Subscription.java 126238 2020-06-16 16:06:49Z $
  *
  */
 package com.tibco.eftl.impl;
