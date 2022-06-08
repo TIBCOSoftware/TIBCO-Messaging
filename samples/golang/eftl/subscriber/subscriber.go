@@ -36,6 +36,10 @@ func main() {
 	}
         log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
 
+	// set the log level log file
+        eftl.SetLogLevel(eftl.LogLevelDebug)
+        eftl.SetLogFile("subscriber.log")
+
 	// channel for receiving connection errors
 	errChan := make(chan error, 1)
 

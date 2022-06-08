@@ -48,11 +48,11 @@
  6. In order to the run the samples build for .NET core execute:
 
       Linux and Mac:
-        dotnet netcoreapp2.1/Subscriber.dll
-        dotnet netcoreapp2.1/Publisher.dll
+        dotnet netcoreapp6.0/Subscriber.dll
+        dotnet netcoreapp6.0/Publisher.dll
       Windows:
-        dotnet netcoreapp2.1\Subscriber.dll
-        dotnet netcoreapp2.1\Publisher.dll
+        dotnet netcoreapp6.0\Subscriber.dll
+        dotnet netcoreapp6.0\Publisher.dll
       
  NOTE: Connecting to a secure tibeftlServer (via the wss:// protocol) requires 
  that the .NET client install the server trust certificate in the Microsoft 
@@ -63,7 +63,7 @@
      Linux/Mac/Windows: 
      -----------------
       
-     dotnet build --configuration Release -f netcoreapp2.1 Publisher.csproj (to build Publisher app for .NET core)
+     dotnet build --configuration Release -f netcoreapp6.0 Publisher.csproj (to build Publisher app for .NET core)
      
      Windows only:
      ------------

@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2010-$Date: 2018-05-15 14:49:05 -0500 (Tue, 15 May 2018) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
+ * @COPYRIGHT_BANNER@
  */
 
  This directory contains Java client samples for TIBCO eFTL.
@@ -46,35 +43,45 @@
 
  com.tibco.eftl.samples.Publisher
 
-        Basic publisher program that demonstrates the use of 
-        publishing eFTL messages.
+    Basic publisher program that demonstrates the use of 
+    publishing eFTL messages.
 
  com.tibco.eftl.samples.Subscriber
 
-	Basic subscriber program that demonstrates the use of 
-        subscribing to eFTL messages.
+    Basic subscriber program that demonstrates the use of 
+    subscribing to eFTL messages.
 
  com.tibco.eftl.samples.SharedDurable
 
-	Basic subscriber program that demonstrates the use of 
-        shared durable subscriptions.
+    Basic subscriber program that demonstrates the use of 
+    shared durable subscriptions.
 
  com.tibco.eftl.samples.LastValueDurable
 
-	Basic subscriber program that demonstrates the use of 
-        last-value durable subscriptions.
+    Basic subscriber program that demonstrates the use of 
+    last-value durable subscriptions.
+
+ com.tibco.eftl.samples.Request
+
+    Basic request program that demonstrates the use of
+    sending a request and receiving a reply.
+
+ com.tibco.eftl.samples.Reply
+
+    Basic reply program that demonstrates the use of
+    sending a reply in response to a request.
 
  com.tibco.eftl.samples.KVSet
 
-        Basic key-value program that demonstrates the use of
-        setting a key-value pair in a map.
+    Basic key-value program that demonstrates the use of
+    setting a key-value pair in a map.
 
  com.tibco.eftl.samples.KVGet
 
-        Basic key-value program that demonstrates the use of
-        getting a key-value pair from a map.
+    Basic key-value program that demonstrates the use of
+    getting a key-value pair from a map.
 
  com.tibco.eftl.samples.KVRemove
 
-        Basic key-value program that demonstrates the use of
-        removing a key-value pair from a map.
+    Basic key-value program that demonstrates the use of
+    removing a key-value pair from a map.

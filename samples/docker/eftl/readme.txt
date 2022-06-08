@@ -1,37 +1,25 @@
 /*
- * Copyright (c) 2009-$Date: 2017-10-09 15:26:34 -0500 (Mon, 09 Oct 2017) $ TIBCO Software Inc.
- * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
+ * @COPYRIGHT_BANNER@ 
  */
 
-Make sure the FTL_EXTRACT, EFTL_EXTRACT enviroment variables are set to the 
-location where FTL and EFTL were extracted and EFTL_INSTALL points to the 
-location where EFTL is installed and FTL_INSTALL points to where FTL is installed.
+Linux
+=============
+Run the build_images.sh script by specifying the FTL and eFTL package zip files along
+with the base os image. 
 
-% mkdir /tmp/build
-% cd /tmp/build
-% mkdir ftl
-% mkdir eftl
-% cp ${FTL_EXTRACT}/deb/*.deb ftl/
-% cp ${EFTL_EXTRACT}/deb/*.deb eftl/
-% cp -r ${EFTL_INSTALL}/samples eftl/
+e.g.
+./build_images.sh --ftl /tmp/TIB_ftl_@CPACK_PACKAGE_VERSION@_linux_x86_64.zip --eftl /tmp/TIB_eftl_@CPACK_PACKAGE_VERSION@_linux_x86_64.zip --base redhat/ubi8
 
-# build the tibeftlserver docker image
-% docker build -f eftl/samples/docker/Dockerfile.tibeftlserver -t ftl-tibeftlserver .
 
-# load the tibrealmserver.json from the {EFTL_INSTALL}/samples via the tibrealmadmin command from FTL
+Run eFTL sample clients
+==================
 
-% ${FTL_INSTALL}/bin/tibrealmadmin -ur ${EFTL_INSTALL}/samples/tibrealmserver.json -rs <realm_server_url>
+Start the FTLserver that starts the eFTL service 
+================================================================
 
-# Running tibeftlserver within a docker container.
+% docker run -d -p 8585:8585 eftl-tibftlserver:@CPACK_PACKAGE_VERSION@
 
-# NOTE: Make sure the tibrealmserver and tibagent from ftl installation are running.
-# For instructions on how to start tibrealmserver and tibagent please see the
-# ${FTL_INSTALL}/samples/docker/README.txt. Also it's expected that there are no
-# prior configurations loaded up in the tibrealmserver before loading the
-# eftl tibrealserver sample json.
+The FTLServer URL is http://<host_name>:8585
 
-% docker run --rm -p 9191:9191 ftl-tibeftlserver -rs discover:// -l ws://*:9191
-
-# Now you are ready to connect clients to the tibeftlserver
+Running samples (see eFTL samples directory for instructions)
+================================================================

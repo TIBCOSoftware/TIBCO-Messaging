@@ -1,0 +1,19 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <PropertyGroup>
+    <DLLDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)\..\..\sdks\dotnet\bin\'))</DLLDir>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netcoreapp6.0;net472</TargetFrameworks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <PlatformTarget>x64</PlatformTarget>
+    <OutputPath>.</OutputPath>
+    <Configuration>Release</Configuration>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Reference Include="TIBCO.EFTL">
+      <HintPath>$(DLLDir)TIBCO.EFTL.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

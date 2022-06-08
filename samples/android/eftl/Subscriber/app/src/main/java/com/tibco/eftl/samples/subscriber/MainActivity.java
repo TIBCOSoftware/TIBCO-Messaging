@@ -1,17 +1,21 @@
 package com.tibco.eftl.samples.subscriber;
 
-import android.content.Intent;
-import android.os.AsyncTask;
+import android.media.MediaPlayer;
 import android.os.Build;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.iid.InstanceID;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 import com.tibco.eftl.Connection;
 import com.tibco.eftl.ConnectionListener;
 import com.tibco.eftl.EFTL;
@@ -23,10 +27,9 @@ import java.util.Properties;
 public class MainActivity extends AppCompatActivity implements ConnectionListener, SubscriptionListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private static final String EFTL_SERVER_URL = "ws://10.0.2.2:9191/channel";
-    private static final String EFTL_USERNAME = "user";
-    private static final String EFTL_PASSWORD = "password";
-    private static final String EFTL_DURABLE_NAME = null;
+    private static final String EFTL_SERVER_URL = "ws://10.0.2.2:8585/channel";
+    private static final String EFTL_USERNAME = "";
+    private static final String EFTL_PASSWORD = "";
 
     private Connection connection;
     private boolean isSubscribed;
@@ -37,33 +40,27 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Obtain the GCM push notification registration token
-        // by calling InstanceID.getToken(). You must supply the
-        // project number generated when the application is created
-        // on the Google Developer's Console website.
-        //
-        // Supply the returned token as a notification token property
-        // to the EFTL.connect() call in order to receive push
-        // notifications.
-/*
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-                try {
-                    InstanceID instanceID = InstanceID.getInstance(MainActivity.this);
-                    notificationToken = instanceID.getToken("your project number",
-                            GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-                    Log.d(TAG, "Got registration token: " + notificationToken);
-                } catch (Exception e) {
-                    Log.d(TAG, "Error getting registration token", e);
-                }
+        // Retrieves a notification token when the application is
+        // registered with a Firebase project. Supply the token
+        // as a property to the EFTL.connect() call in order to
+        // receive push notifications.
+        FirebaseInstanceId.getInstance().getInstanceId()
+                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                        if (!task.isSuccessful()) {
+                            Log.w(TAG, "getInstanceId failed", task.getException());
+                            return;
+                        }
 
-                return null;
-            }
-        }.execute();
-*/
+                        // Get new Instance ID token
+                        notificationToken = task.getResult().getToken();
 
-        final Button button = (Button) findViewById(R.id.button);
+                        Log.d(TAG, "Received notification token: " + notificationToken);
+                    }
+                });
+
+        final Button button = findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -109,14 +106,24 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     }
 
     private void connect() {
+        String id = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+
         Properties props = new Properties();
-        props.setProperty(EFTL.PROPERTY_CLIENT_ID, Build.MODEL);
+        props.setProperty(EFTL.PROPERTY_CLIENT_ID, "subscriber:" + id);
         props.setProperty(EFTL.PROPERTY_USERNAME, EFTL_USERNAME);
         props.setProperty(EFTL.PROPERTY_PASSWORD, EFTL_PASSWORD);
 
+        // When a notification token is included the eFTL server will
+        // send push notifications to the disconnected application as
+        // messages are available to any of the eFTL subscriptions.
         if (notificationToken != null) {
             props.setProperty(EFTL.PROPERTY_NOTIFICATION_TOKEN, notificationToken);
         }
+
+        // In a development environment where self-signed server certificates are being used
+        // you may need to supply your own trusted server certificates by calling
+        // EFTL.setSSLTrustStore(), or skip server certificate authentication all together.
+        EFTL.setSSLTrustAll(false);
 
         // Asynchronously connect to the eFTL server.
         EFTL.connect(EFTL_SERVER_URL, props, this);
@@ -139,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
     private void subscribe() {
 
         // Create a subscription matcher for messages containing a
-        // destination field that matches the destination "sample".
+        // field named "type" with a value of "hello".
         //
         // Specify a durable name to create a durable subscription.
         //
@@ -155,12 +162,11 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         // must only contain the destination field "_dest" set to
         // the EMS topic on which to subscribe.
         //
-        String matcher = String.format("{\"%s\":\"%s\"}",
-                Message.FIELD_NAME_DESTINATION, "sample");
+        String matcher = "{\"type\":\"hello\"}";
 
         // Asynchronously subscribe to messages using a content matcher.
         if (connection != null) {
-            connection.subscribe(matcher, EFTL_DURABLE_NAME, this);
+            connection.subscribe(matcher, null, this);
             isSubscribed = true;
             ((Button) findViewById(R.id.button)).setText("Unsubscribe");
         }

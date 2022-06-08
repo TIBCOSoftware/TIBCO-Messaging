@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="commonSamplePropertyGroup.targets" />
+  <ItemGroup>
+    <Compile Include="SharedDurable.cs" />
+  </ItemGroup>
+
+</Project>

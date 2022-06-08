@@ -1,0 +1,53 @@
+#
+# Copyright (c) 2016-2022 TIBCO Software Inc.
+# All Rights Reserved. Confidential & Proprietary.
+# For more information, please contact:
+# TIBCO Software Inc., Palo Alto, California, USA
+#
+#  ##################################################################################
+#  eFTL base image with the required components
+#
+#  NOTE: Running the build_images script could result in the base images being
+#  pulled from some docker registry. If a base image is not supplied to the build_images
+#  script, then this script will use redhat/ubi8 image as the default.
+#  ##################################################################################
+
+ARG BASE_IMAGE=redhat/ubi8
+FROM $BASE_IMAGE AS eftlbase
+ARG FTL_PKG_VERSION
+ARG EFTL_PKG_VERSION
+ARG FTL_PKG_VERSION_SHORT
+ARG EFTL_PKG_VERSION_SHORT
+
+# copy tar packages
+COPY --from=ftleftlpkg /tmp/ftl/TIB_ftl_*/tar/\*.tar.gz /tmp/ftl/
+COPY --from=ftleftlpkg /tmp/eftl/TIB_eftl_*/tar/\*.tar.gz /tmp/eftl/
+
+# install ftl/eftl using the tar components
+RUN tar xzvf /tmp/ftl/TIB_ftl_${FTL_PKG_VERSION}_linux_x86_64-thirdparty.tar.gz && tar xzvf /tmp/ftl/TIB_ftl_${FTL_PKG_VERSION}_linux_x86_64-runtime.tar.gz  && tar xzvf /tmp/ftl/TIB_ftl_${FTL_PKG_VERSION}_linux_x86_64-servers.tar.gz
+RUN if [ -f /tmp/ftl/TIB_ftl_${FTL_PKG_VERSION}_linux_x86_64-enterprise.tar.gz ]; then tar xzvf /tmp/ftl/TIB_ftl_${FTL_PKG_VERSION}_linux_x86_64-enterprise.tar.gz;  fi
+RUN tar xzvf /tmp/eftl/TIB_eftl_${EFTL_PKG_VERSION}_linux_x86_64-runtime.tar.gz  && tar xzvf /tmp/eftl/TIB_eftl_${EFTL_PKG_VERSION}_linux_x86_64-servers.tar.gz
+RUN cp opt/tibco/eftl/${EFTL_PKG_VERSION_SHORT}/bin/modules/tibeftlserver opt/tibco/ftl/${FTL_PKG_VERSION_SHORT}/bin/modules
+RUN if [ ! -e /opt/tibco/ftl/current-version ]; then ln -s /opt/tibco/ftl/* /opt/tibco/ftl/current-version; fi
+
+#  ##################################################################################
+#  Start building the actual image eftl-tibftlserver
+#  ##################################################################################
+
+# eftl-tibftlserver image
+ARG BASE_IMAGE=redhat/ubi8
+FROM ${BASE_IMAGE} AS eftl-tibftlserver
+ARG FTL_PKG_VERSION
+
+RUN mkdir /opt/tibco
+# copy FTL install from the ftlbase layer
+COPY --from=eftlbase /opt/tibco /opt/tibco/
+
+EXPOSE 8585
+VOLUME /data
+WORKDIR /data
+
+ENTRYPOINT ["/opt/tibco/ftl/current-version/bin/tibftlserver"]
+
+LABEL "com.tibco.ftl.image.eftl-tibftlserver" ""
+LABEL "com.tibco.ftl.image.version" "${FTL_PKG_VERSION}"
