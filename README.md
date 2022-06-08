@@ -16,14 +16,12 @@ So for example if you are looking for the c binding samples for ftl you would fi
 All the sample code and build instructions is maintained under this hierarchy.
 
 # TIBCO-Messaging Repository SDK List 
-   * eftl-android-sdk (TCM Android SDK)
    * eftl-java-sdk (TCM Java SDK)
    * eftl-javascript-sdk (TCM JavaScript SDK)
    * eftl-nodejs-sdk (TCM nodejs SDK)
    * eftl-c-sdk (TCM c SDK)
    * eftl-cs-sdk (TCM cs SDK)
    * eftl-golang-sdk (TCM golang SDK)
-   * eftl-objc-sdk (TCM objc SDK)
 
 # TIBCO-Messaging/Samples Repository List (Examples)
    * samples
