@@ -1,55 +1,57 @@
 # TIBCO-Messaging
-The TIBCO Messaging Repo is where Messaging related source code is held for TIBCO's support of  Messaging software.
+The Repository for TIBCO&reg; Messaging is where Messaging related source code is held for TIBCO's support of  Messaging software.
 
-The TIBCO Messaging Repo is structured to be easily searchable for components and technologies.
-Each repository held in the TIBCO Messaging Repo is structured such that the component is listed first and the
-technology is listed second.  For example if you are looking for the eftl javascript sdk, you would find that
+The Repo for TIBCO Messaging is structured to be easily searchable for components and technologies.
+Each repository in the Repo for TIBCO Messaging is structured such that the component is listed first and the
+technology is listed second.  For example if you are looking for the TIBCO eFTL&trade; JavaScript SDK, you would find that
 listed as eftl-javascript-sdk.
 
-* NOTE all eftl-*-sdk repositories provide both eFTL and TIBCO Cloud Messaging (TCM) development kits for
-connecting applications to eFTL or TIBCO Cloud Messaging
+* NOTE all eftl-*-sdk repositories provide both TIBCO eFTL and TIBCO Cloud&trade; Messaging development kits for
+connecting applications to TIBCO eFTL or TIBCO Cloud Messaging
 
-In addition you can find the TIBCO Messaging component samples under the samples repository.
+In addition you can find the TIBCO&reg; Messaging component samples under the samples repository.
 The TIBCO-Messaging/samples repository is broken down into language binding/component setup.
-So for example if you are looking for the c binding samples for ftl you would find them as samples/c/ftl/...
+So for example if you are looking for the C binding samples for TIBCO FTL you would find them as samples/c/ftl/...
 
 All the sample code and build instructions is maintained under this hierarchy.
 
-# TIBCO-Messaging Repository SDK List 
-   * eftl-java-sdk (TCM Java SDK)
-   * eftl-javascript-sdk (TCM JavaScript SDK)
-   * eftl-nodejs-sdk (TCM nodejs SDK)
-   * eftl-c-sdk (TCM c SDK)
-   * eftl-cs-sdk (TCM cs SDK)
-   * eftl-golang-sdk (TCM golang SDK)
+# Repository for TIBCO-Messaging SDK List 
+   * eftl-android-sdk (TIBCO Cloud Messaging Android SDK)
+   * eftl-java-sdk (TIBCO Cloud Messaging Java SDK)
+   * eftl-javascript-sdk (TIBCO Cloud Messaging JavaScript SDK)
+   * eftl-nodejs-sdk (TIBCO Cloud Messaging Nodejs SDK)
+   * eftl-c-sdk (TIBCO Cloud Messaging C SDK)
+   * eftl-cs-sdk (TIBCO Cloud Messaging CS SDK)
+   * eftl-golang-sdk (TIBCO Cloud Messaging Golang SDK)
+   * eftl-objc-sdk (TIBCO Cloud Messaging OBJ-C SDK)
 
 # TIBCO-Messaging/Samples Repository List (Examples)
-   * samples
-      * c
-         * ftl
-         * eftl
-         * ems
-         * tcm
-         * kafka
-         * mosquitto
-      * c++
-         * ftl
-         * eftl
-         * ems
-         * tcm
-         * kafka
-         * mosquitto
-      * java
-         * ftl
-         * eftl
-         * ems
-         * tcm
-         * kafka
-         * mosquitto
-      * golang
-         * ftl
-         * eftl
-         * ems
-         * tcm
-         * kafka
-         * mosquitto
+   * Samples
+      * C
+         * TIBCO FTL
+         * TIBCO eFTL
+         * TIBCO Enterprise Messaging Service
+         * TIBCO Cloud Messaging
+         * TIBCO Castle
+         * Eclipse Mosquitto
+      * C++
+         * TIBCO FTL
+         * TIBCO eFTL
+         * TIBCO Enterprise Messaging Service
+         * TIBCO Cloud Messaging
+         * TIBCO Castle
+         * Eclipse Mosquitto
+      * Java
+         * TIBCO FTL
+         * TIBCO eFTL
+         * TIBCO Enterprise Messaging Service
+         * TIBCO Cloud Messaging
+         * TIBCO Castle
+         * Eclipse Mosquitto
+      * Golang
+         * TIBCO FTL
+         * TIBCO eFTL
+         * TIBCO Enterprise Messaging Service
+         * TIBCO Cloud Messaging
+         * TIBCO Castle
+         * Eclipse Mosquitto
