@@ -24,7 +24,7 @@ As required by the [Eclipse Foundation Technology Compatibility Kit License](htt
 
 
 * Public URL of TCK Results Summary:  
-  <https://github.com/TIBCOSoftware/TIBCO-Messaging/ems/doc/TIB_ems_10.2.0_jmtck_3.0.md>
+  <https://github.com/TIBCOSoftware/TIBCO-Messaging/blob/master/ems/doc/TIB_ems_10.2.0_jmtck_3.0.md>
 
 
 * Any Additional Specification Certification Requirements:  
