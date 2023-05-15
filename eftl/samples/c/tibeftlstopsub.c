@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2010-2020 Cloud Software Group, Inc.
+ * Copyright (c) 2010-2023 Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  */
 
 /*
- * This is a sample of a basic C eFTL subscriber
- * using a last-value durable subscription.
+ * This is a sample of a basic C eFTL subscriber.
  */
 
 #include <stdio.h>
@@ -19,6 +18,8 @@
 #include "tib/eftl.h"
 
 #define DEFAULT_URL "ws://localhost:8585/channel"
+
+bool hasStopped = false;
 
 void
 delay(int secs)
@@ -40,6 +41,7 @@ onMessage(
     tibeftlMessage*     msg,
     void*               arg)
 {
+    int*                done = (int*)arg;
     tibeftlErr          err;
     char                buffer[1024];
     int                 i;
@@ -58,7 +60,32 @@ onMessage(
         }
     }
 
+    if (!hasStopped)
+    {
+        printf("stopping subscription\n");
+        tibeftl_StopSubscription(err, conn, sub);
+        if (tibeftlErr_IsSet(err)) {
+            printf("tibeftl_StopSubscription failed: %d - %s\n",
+                    tibeftlErr_GetCode(err), tibeftlErr_GetDescription(err));
+            return;
+        }
+        delay(2);
+        printf("starting subscription\n");
+        tibeftl_StartSubscription(err, conn, sub);
+        if (tibeftlErr_IsSet(err)) {
+            printf("tibeftl_StopSubscription failed: %d - %s\n",
+                    tibeftlErr_GetCode(err), tibeftlErr_GetDescription(err));
+            return;
+        }
+        hasStopped = true;
+    }
+    else
+    {
+        *done = 1;
+    }
+
     tibeftlErr_Destroy(err);
+
 }
 
 void
@@ -76,13 +103,14 @@ onError(
 int
 main(int argc, char** argv)
 {
-    tibeftlErr                  err;
-    tibeftlConnection           conn;
-    tibeftlSubscription         sub;
-    tibeftlOptions              opts = tibeftlOptionsDefault;
-    tibeftlSubscriptionOptions  subOpts = tibeftlSubscriptionOptionsDefault;
-    const char*                 url = DEFAULT_URL;
-    const char*                 matcher = NULL;
+    tibeftlErr                 err;
+    tibeftlOptions             opts = tibeftlOptionsDefault;
+    tibeftlConnection          conn;
+    tibeftlSubscription        sub;
+    tibeftlSubscriptionOptions subopts = tibeftlSubscriptionOptionsDefault;
+    const char*                url = DEFAULT_URL;
+    const char*                matcher = NULL;
+    int                        done = 0;
 
     printf("#\n# %s\n#\n# %s\n#\n", argv[0], tibeftl_Version());
 
@@ -94,37 +122,37 @@ main(int argc, char** argv)
     // configure options
     opts.username = NULL;
     opts.password = NULL;
+    opts.clientId = "sample-c-client";
 
     // connect to the server
     conn = tibeftl_Connect(err, url, &opts, onError, NULL);
-
-    // configure subscription options
-    //
-    // last-value durable subscriptions require the key,
-    // on which the last-value durable messages will be
-    // indexed, to be present in the matcher
-    subOpts.durableType = TIBEFTL_DURABLE_TYPE_LAST_VALUE;
-    subOpts.durableKey = "type";
 
     // create a subscription matcher to match message fields
     // with type string or long, or to test for the presences 
     // or absence of a named message field 
     //
     // this matcher matches all messages containing a field
-    // named 'type' with a value of 'hello' 
+    // named 'type' with a value of 'hello'
     matcher = "{\"type\":\"hello\"}";
 
+    // configure subscription options
+    subopts.acknowledgeMode = TIBEFTL_ACKNOWLEDGE_MODE_AUTO;
+
     // create a subscription using the matcher
-    sub = tibeftl_SubscribeWithOptions(err, conn, matcher, "sample-lastvalue-durable", &subOpts, onMessage, NULL);
+    //
+    // always set the client identifier when creating a durable subscription
+    // as durable subscriptions are mapped to the client identifier
+    //
+    sub = tibeftl_SubscribeWithOptions(err, conn, matcher, "sample-durable", &subopts, onMessage, &done);
 
     printf("waiting for messages\n");
 
-    // wait for messages
-    if (!tibeftlErr_IsSet(err)) {
-        delay(30);
-    }
+    // wait for a message
+    do {
+        delay(1);
+    } while (!done && !tibeftlErr_IsSet(err));
 
-    // cleanup
+    // unsubscribe, this will permanently remove a durable subscription
     tibeftl_Unsubscribe(err, conn, sub);
 
     // disconnect from server

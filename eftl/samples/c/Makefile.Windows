@@ -1,8 +1,6 @@
 ######################################################################
-# Copyright (c) 2010-2019 TIBCO Software Inc.
+# Copyright (c) 2010-2020 Cloud Software Group, Inc.
 # All Rights Reserved. Confidential & Proprietary
-# For more information, please contact:
-# TIBCO Software Inc., Palo Alto, California, USA
 #
 # TIBCO eFTL
 # Sample Windows Makefile
@@ -18,7 +16,7 @@ CFLAGS=/MD /O2 /DNDEBUG /nologo /GF /W3 /EHsc -D_WINDOWS /c
 
 LIBS= $(TIBEFTL_DIR)\lib\tibeftl.lib ws2_32.lib
 
-PROGS = tibeftlpub.exe tibeftlsub.exe tibeftlrequest.exe tibeftlreply.exe tibeftlshared.exe tibeftllastvalue.exe tibeftlkvset.exe tibeftlkvget.exe tibeftlkvremove.exe
+PROGS = tibeftlpub.exe tibeftlsub.exe tibeftlstopsub.exe tibeftlrequest.exe tibeftlreply.exe tibeftlshared.exe tibeftllastvalue.exe tibeftlkvset.exe tibeftlkvget.exe tibeftlkvremove.exe
 all: $(PROGS)
 
 clean: 	
@@ -33,6 +31,9 @@ tibeftlpub.exe: tibeftlpub.obj
 
 tibeftlsub.exe: tibeftlsub.obj 
 	$(LINK) $(LDFLAGS) tibeftlsub.obj $(LIBS) /out:$@
+
+tibeftlstopsub.exe: tibeftlstopsub.obj 
+	$(LINK) $(LDFLAGS) tibeftlstopsub.obj $(LIBS) /out:$@
 
 tibeftlrequest.exe: tibeftlrequest.obj 
 	$(LINK) $(LDFLAGS) tibeftlrequest.obj $(LIBS) /out:$@

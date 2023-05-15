@@ -1,8 +1,6 @@
 /*
- * Copyright (c) 2010-$Date: 2016-05-03 12:45:27 -0700 (Tue, 03 May 2016) $ TIBCO Software Inc.
+ * Copyright (c) 2010-2023 $ Cloud Software Group Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  */
 
  This directory contains C client source and C client samples
@@ -45,36 +43,59 @@
 
  tibeftlpub
 
-        Basic publisher program that demonstrates the use of 
-        publishing eFTL messages.
+    Basic publisher program that demonstrates the use of 
+    publishing eFTL messages.
 
  tibeftlsub
 
-	Basic subscriber program that demonstrates the use of 
-        subscribing to eFTL messages.
+    Basic subscriber program that demonstrates the use of 
+    subscribing to eFTL messages.
+
+ tibeftlstopsub
+
+    Basic subscriber program that demonstrates the use of
+    stopping and starting a subscription.
+
+ tibeftlrequest
+
+    Basic request program that demonstrates the use of
+    sending a request and waiting for a reply. 
+
+    This program can receive replies from other eFTL
+    clients, from FTL clients, and from EMS clients
+    using the JMS ReplyTo and CorrelationID headers.
+
+ tibeftlreply
+
+    Basic reply program that demonstrates the use of
+    sending a reply in response to a request.
+
+    This program can send replies to other eFTL
+    clients, to FTL clients, and to EMS clients
+    using the JMS ReplyTo and CorrelationID headers.
 
  tibeftlshared
 
-        Basic subscriber program that demonstrates the use of
-        shared durable subscriptions.
+    Basic subscriber program that demonstrates the use of
+    shared durable subscriptions.
 
  tibeftllastvalue
 
-        Basic subscriber program that demonstrates the use of
-        last-value durable subscriptions.
+    Basic subscriber program that demonstrates the use of
+    last-value durable subscriptions.
 
  tibeftlkvset
 
-        Basic key-value program that demonstrates the use of
-        setting a key-value pair in a map.
+    Basic key-value program that demonstrates the use of
+    setting a key-value pair in a map.
 
  tibeftlkvget
 
-        Basic key-value program that demonstrates the use of
-        getting a key-value pair from a map.
+    Basic key-value program that demonstrates the use of
+    getting a key-value pair from a map.
 
  tibeftlkvremove
 
-        Basic key-value program that demonstrates the use of
-        removing a key-value pair from a map.
+    Basic key-value program that demonstrates the use of
+    removing a key-value pair from a map.
 

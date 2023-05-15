@@ -1,8 +1,6 @@
 ######################################################################
-# Copyright (c) 2010-2019 TIBCO Software Inc.
+# Copyright (c) 2010-2020 Cloud Software Group, Inc.
 # All Rights Reserved. Confidential & Proprietary
-# For more information, please contact:
-# TIBCO Software Inc., Palo Alto, California, USA
 #
 # TIBCO eFTL
 # Sample Linux Makefile
@@ -18,7 +16,7 @@ CFLAGS=$(COMP_FLAGS) $(INCFILES)
 
 LIBS= -ltibeftl -lrt
 
-PROGS = tibeftlpub tibeftlsub tibeftlrequest tibeftlreply tibeftlshared tibeftllastvalue tibeftlkvset tibeftlkvget tibeftlkvremove
+PROGS = tibeftlpub tibeftlsub tibeftlstopsub tibeftlrequest tibeftlreply tibeftlshared tibeftllastvalue tibeftlkvset tibeftlkvget tibeftlkvremove
 all: $(PROGS)
 
 clean: 	
@@ -30,6 +28,9 @@ tibeftlpub: tibeftlpub.o
 
 tibeftlsub: tibeftlsub.o 
 	$(CC) $(LDFLAGS) tibeftlsub.o $(LIBS) -o $@
+
+tibeftlstopsub: tibeftlstopsub.o
+	$(CC) $(LDFLAGS) tibeftlstopsub.o $(LIBS) -o $@
 
 tibeftlrequest: tibeftlrequest.o 
 	$(CC) $(LDFLAGS) tibeftlrequest.o $(LIBS) -o $@
