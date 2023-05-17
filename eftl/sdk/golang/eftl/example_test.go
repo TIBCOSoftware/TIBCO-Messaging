@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"time"
 
-	"tibco.com/eftl"
+	"github.com/TIBCOSoftware/TIBCO-Messaging/eftl/sdk/golang/eftl"
 )
 
 // Connect to the server.
@@ -230,12 +230,12 @@ func ExampleConnection_SendRequest() {
 	defer conn.Disconnect()
 
 	// publish a request message and wait for a reply.
-	reply, err = conn.SendRequest(eftl.Message{
+	reply, err := conn.SendRequest(eftl.Message{
 		"type": "request",
 		"text": "this is a request message",
 	}, 10*time.Second)
 	if err == eftl.ErrTimeout {
-		fmt.Println("request failed:", timeout)
+		fmt.Println("request timeout")
 	} else if err != nil {
 		fmt.Println("request failed:", err)
 	} else {
