@@ -1,10 +1,8 @@
 /*
- * Copyright (c) $Date: 2020-05-26 13:01:55 -0700 (Tue, 26 May 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2020 Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: thread.h 125253 2020-05-26 20:01:55Z $
+ * $Id$
  *
  */
 

@@ -1,10 +1,8 @@
 /*
- * Copyright (c) $Date: 2017-05-25 10:22:38 -0700 (Thu, 25 May 2017) $ TIBCO Software Inc.
+ * Copyright (c) 2017 Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: buffer.h 93627 2017-05-25 17:22:38Z $
+ * $Id$
  *
  */
 

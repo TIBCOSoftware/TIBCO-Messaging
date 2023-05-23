@@ -1,8 +1,9 @@
+include(${CMAKE_SOURCE_DIR}/version.cmake)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.config
                ${CMAKE_CURRENT_BINARY_DIR}/fixed/src/version.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/eftl.h.config
                ${CMAKE_CURRENT_BINARY_DIR}/fixed/src/eftl.h)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/tibeftl.dll.rc.config 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/tibeftl.dll.rc.config
                ${CMAKE_CURRENT_BINARY_DIR}/fixed/src/tibeftl.dll.rc)
 
 file(COPY ${CMAKE_CURRENT_BINARY_DIR}/fixed/src/eftl.h DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/src/tib)
@@ -18,12 +19,12 @@ add_definitions(-DCJSON_HIDE_SYMBOLS -UCJSON_API_VISIBILITY)
 
 add_library(tibeftl SHARED ${tibeftl_c_files})
 
-set_target_properties(tibeftl PROPERTIES 
-            VERSION   1.${EFTL_VERSION_MAJOR}.${EFTL_VERSION_MINOR}.${EFTL_VERSION_UPDATE} 
+set_target_properties(tibeftl PROPERTIES
+            VERSION   1.${EFTL_VERSION_MAJOR}.${EFTL_VERSION_MINOR}.${EFTL_VERSION_UPDATE}
             SOVERSION 1)
 
 if (NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" AND NOT CMAKE_SYSTEM STREQUAL "Darwin")
-    target_link_libraries(tibeftl 
+    target_link_libraries(tibeftl
         PRIVATE pthread
         PRIVATE m
         PRIVATE ${WINSOCK_LIBRARIES}
@@ -31,7 +32,7 @@ if (NOT CMAKE_SYSTEM_NAME STREQUAL "Windows" AND NOT CMAKE_SYSTEM STREQUAL "Darw
 endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    target_link_libraries(tibeftl 
+    target_link_libraries(tibeftl
         PRIVATE ${WINSOCK_LIBRARIES}
         PRIVATE ${OPENSSL_LIBRARIES})
 endif ()
@@ -43,7 +44,7 @@ install(TARGETS tibeftl COMPONENT runtime EXPORT tibco-dev
     LIBRARY DESTINATION ${TIB_LIB64}
     ARCHIVE DESTINATION ${TIB_LIB64} COMPONENT development)
 
-# Install source into sdk/c directory.
+# Install source into samples directory.
 file(GLOB_RECURSE eftl_c_client_sources fixed/src/*.c)
 fix_directory(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/fixed ${eftl_c_client_sources})
 get_fix_target_name(fixed_dir_target ${CMAKE_CURRENT_BINARY_DIR}/fixed)
@@ -51,13 +52,13 @@ get_fix_target_name(fixed_dir_target ${CMAKE_CURRENT_BINARY_DIR}/fixed)
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     install(DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}/fixed/src
-        DESTINATION sdk/c
+        DESTINATION samples/c
         COMPONENT development
         PATTERN "*config*" EXCLUDE)
 else()
     install(DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}/fixed/src
-        DESTINATION sdk/c
+        DESTINATION samples/c
         COMPONENT development
         PATTERN "*config*" EXCLUDE)
 endif()
@@ -75,7 +76,7 @@ set(TIB_OPTIMIZE_FOR_C YES)
 set(TIB_DOXYGEN_SHOW_USED_FILES YES)
 set(TIB_DOXYGEN_SHOW_FILES YES)
 
-configure_file(${common_SOURCE_DIR}/btools/doxygen/eftl_doxygen.config ${CMAKE_CURRENT_BINARY_DIR}/eftl_doxygen.config)
+configure_file(${build_common_SOURCE_DIR}/btools/doxygen/eftl_doxygen.config ${CMAKE_CURRENT_BINARY_DIR}/eftl_doxygen.config)
 add_custom_command(OUTPUT eftl_doc
                     COMMAND ${DOXYGEN} ${CMAKE_CURRENT_BINARY_DIR}/eftl_doxygen.config)
 install(DIRECTORY ${TIB_DOXYGEN_OUTPUT_DIRECTORY} DESTINATION doc/eftl COMPONENT documentation)

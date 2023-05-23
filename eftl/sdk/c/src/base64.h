@@ -1,10 +1,8 @@
 /* 
- * Copyright (c) 2009-$Date: 2017-06-09 14:20:05 -0700 (Fri, 09 Jun 2017) $ TIBCO Software Inc. 
+ * Copyright (c) 2009-2017 Cloud Software Group, Inc. 
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  * 
- * $Id: base64.h 93970 2017-06-09 21:20:05Z $
+ * $Id$
  * 
  */
 

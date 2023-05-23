@@ -1,10 +1,8 @@
 /*
- * Copyright (c) 2001-$Date: 2022-02-03 14:50:04 -0800 (Thu, 03 Feb 2022) $ TIBCO Software Inc.
+ * Copyright (c) 2001-2023 Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.c 139360 2022-02-03 22:50:04Z $
+ * $Id$
  *
  */
 
@@ -57,6 +55,9 @@
 #define OP_MAP_GET              (22)
 #define OP_MAP_REMOVE           (24)
 #define OP_MAP_RESPONSE         (26)
+#define OP_STOP                 (28)
+#define OP_START                (30)
+#define OP_STARTED              (31)
 
 typedef struct tibeftlCompletionStruct
 {
@@ -131,9 +132,18 @@ struct tibeftlConnectionStruct
     tibeftlCompletionRec        reconnectCompletion;
     tibeftlStateCallback        stateChangeCallback;
     void*                       stateChangeCallbackArg;
+    bool                        stopSupported;
     thread_t                    dispatchThread;
     tibeftlMessageList          msgList;
 };
+
+typedef enum
+{
+    STOPPED  = 0,
+    STARTING = 1,
+    STARTED  = 2
+
+} _eftlSubscriberState;
 
 struct tibeftlSubscriptionStruct
 {
@@ -148,6 +158,7 @@ struct tibeftlSubscriptionStruct
     void*                       msgCbArg;
     tibeftlCompletionRec        completion;
     bool                        pending;
+    _eftlSubscriberState        state;
 };
 
 struct tibeftlErrStruct
@@ -215,6 +226,7 @@ tibeftlSubscription_create(
     sub->msgCbArg = msgCbArg;
 
     sub->pending = true;
+    sub->state   = STARTED;
 
     return sub;
 }
@@ -335,6 +347,10 @@ tibeftlCompletion_notify(
     return true;
 }
 
+static void tibeftlConnection_retain(tibeftlConnection conn);
+
+static void tibeftlConnection_release(tibeftlConnection conn);
+
 static void*
 tibeftlConnection_errorCb(
     void*                       arg)
@@ -348,6 +364,7 @@ tibeftlConnection_errorCb(
 
     tibeftlErr_Destroy(context->err);
 
+    tibeftlConnection_release(context->conn);
     free(context);
 
     return NULL;
@@ -370,6 +387,7 @@ tibeftlConnection_invokeErrorCb(
     if (context)
     {
         context->conn = conn;
+        tibeftlConnection_retain(conn);
         context->err = err;
     }
 
@@ -598,6 +616,8 @@ tibeftlSubscription_subscribe(
     _cJSON_AddNumberToObject(json, "op", OP_SUBSCRIBE);
     _cJSON_AddStringToObject(json, "id", sub->subId);
     _cJSON_AddStringToObject(json, "ack", tibeftlAcknowledgeMode_toString(sub->ackMode));
+
+    _cJSON_AddBoolToObject(json, "stopped", (sub->state == STOPPED));
     if (sub->matcher)
         _cJSON_AddStringToObject(json, "matcher", sub->matcher);
     if (sub->durable)
@@ -689,6 +709,52 @@ tibeftlSubscription_unsubscribe(
 }
 
 static void
+tibeftlSubscription_StopSubscription(
+    const char*                 key,
+    void*                       value,
+    void*                       context)
+{
+    tibeftlConnection           conn = (tibeftlConnection)context;
+    tibeftlSubscription         sub  = (tibeftlSubscription)value; 
+    _cJSON*                     json;
+    char*                       text;
+
+    json = _cJSON_CreateObject();
+    _cJSON_AddNumberToObject(json, "op", OP_STOP);
+    _cJSON_AddStringToObject(json, "id", key);
+    _cJSON_AddNumberToObject(json, "seq", sub->lastSeqNum);
+
+    text = _cJSON_PrintUnformatted(json);
+
+    websocket_send_text(conn->websocket, text);
+
+    _cJSON_Delete(json);
+    _cJSON_free(text);
+}
+
+static void
+tibeftlSubscription_StartSubscription(
+    const char*                 key,
+    void*                       value,
+    void*                       context)
+{
+    tibeftlConnection           conn = (tibeftlConnection)context;
+    _cJSON*                     json;
+    char*                       text;
+
+    json = _cJSON_CreateObject();
+    _cJSON_AddNumberToObject(json, "op", OP_START);
+    _cJSON_AddStringToObject(json, "id", key);
+
+    text = _cJSON_PrintUnformatted(json);
+
+    websocket_send_text(conn->websocket, text);
+
+    _cJSON_Delete(json);
+    _cJSON_free(text);
+}
+
+static void
 tibeftlConnection_setState(
     tibeftlConnection           conn,
     tibeftlConnectionState      state)
@@ -752,6 +818,9 @@ tibeftlConnection_handleWelcome(
 
     if ((item = _cJSON_GetObjectItem(json, "max_size")) && _cJSON_IsNumber(item))
         conn->maxMsgSize = item->valueint;
+
+    if ((item = _cJSON_GetObjectItem(json, "stop_supported")) && _cJSON_IsString(item))
+        conn->stopSupported = (strcasecmp(item->valuestring, "true") == 0 ? 1 : 0);
 
     if ((item = _cJSON_GetObjectItem(json, "_resume")) && _cJSON_IsString(item))
         resume = (strcasecmp(item->valuestring, "true") == 0 ? 1 : 0);
@@ -864,6 +933,7 @@ tibeftlConnection_handleSubscribed(
 {
     _cJSON*                     item;
     const char*                 subId = NULL;
+    tibeftlSubscription         sub;
 
     if (!conn)
         return;
@@ -873,6 +943,12 @@ tibeftlConnection_handleSubscribed(
 
     mutex_lock(&conn->mutex);
 
+    sub = hashmap_get(conn->subscriptions, subId);
+    if (sub)
+    {
+        if (sub->state == STARTING)
+            sub->state = STARTED;
+    }
     tibeftlConnection_notifySubscribed(conn, subId, 0, "");
 
     mutex_unlock(&conn->mutex);
@@ -906,6 +982,31 @@ tibeftlConnection_handleUnsubscribed(
 
     mutex_unlock(&conn->mutex);
 }
+
+static void
+tibeftlConnection_handleStarted(
+    tibeftlConnection           conn,
+    _cJSON*                     json)
+{
+    _cJSON*                     item;
+    char*                       subId;
+    tibeftlSubscription         sub;
+
+    if ((item = _cJSON_GetObjectItem(json, "to")) && _cJSON_IsString(item))
+        subId = item->valuestring;
+
+    mutex_lock(&conn->mutex);
+
+    sub = hashmap_get(conn->subscriptions, subId);
+    if (sub)
+    {
+        if (sub->state == STARTING)
+            sub->state = STARTED;
+    }
+
+    mutex_unlock(&conn->mutex);
+}
+
 
 static void
 tibeftlConnection_handleAck(
@@ -1137,6 +1238,9 @@ tibeftlConnection_onWebSocketText(
             break;
         case OP_MAP_RESPONSE:
             tibeftlConnection_handleMapResponse(conn, json);
+            break;
+        case OP_STARTED:
+            tibeftlConnection_handleStarted(conn, json);
             break;
         }
     }
@@ -1419,7 +1523,7 @@ tibeftlConnection_dispatchThread(
                 msgCbArg = sub->msgCbArg;
 
                 // track the last received sequence number
-                if (sub->ackMode == TIBEFTL_ACKNOWLEDGE_MODE_AUTO && seqNum != 0)
+                if (seqNum != 0)
                     sub->lastSeqNum = seqNum;
             }
         }
@@ -1657,7 +1761,7 @@ tibeftl_Disconnect(
         return;
 
     mutex_lock(&conn->mutex);
-
+    
     switch (conn->state)
     {
     case STATE_CONNECTED:
@@ -2186,6 +2290,82 @@ tibeftl_CloseAllSubscriptions(
     else
     {
         tibeftlErr_Set(err, TIBEFTL_ERR_NOT_CONNECTED, "not connected");
+    }
+
+    mutex_unlock(&conn->mutex);
+}
+
+void
+tibeftl_StopSubscription(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlSubscription         sub)
+{
+    if (!conn)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "connection is NULL");
+        return;
+    }
+
+    if (!sub)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "subscription is NULL");
+        return;
+    }
+
+    if (!conn->stopSupported)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_SUPPORTED, "stop subscription is not supported with this server");
+        return;
+    }
+
+    mutex_lock(&conn->mutex);
+
+    if ((conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING) && sub->state != STOPPED)
+    {
+        sub->state = STOPPED;
+        tibeftlSubscription_StopSubscription((const char*)sub->subId, (void*)sub, (void*)conn);
+    }
+
+    mutex_unlock(&conn->mutex);
+}
+
+void
+tibeftl_StartSubscription(
+    tibeftlErr                  err,
+    tibeftlConnection           conn,
+    tibeftlSubscription         sub)
+{
+    if (!conn)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "connection is NULL");
+        return;
+    }
+
+    if (!sub)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_INVALID_ARG, "subscription is NULL");
+        return;
+    }
+
+    if (!conn->stopSupported)
+    {
+        tibeftlErr_Set(err, TIBEFTL_ERR_NOT_SUPPORTED, "start subscription is not supported with this server");
+        return;
+    }
+
+    mutex_lock(&conn->mutex);
+
+    if ((conn->state == STATE_CONNECTED || conn->state == STATE_RECONNECTING) && (sub->state == STOPPED))
+    {
+        tibeftlSubscription_StartSubscription((const char*)sub->subId, (void*)sub, (void*)conn);
+        sub->state = STARTING;
+    }
+    else
+    {
+        // if not connected, set to STARTED here instead of in
+        // handleStarted, so sub starts on reconnect
+        sub->state = STARTED;
     }
 
     mutex_unlock(&conn->mutex);

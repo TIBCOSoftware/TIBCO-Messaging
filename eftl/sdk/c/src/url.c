@@ -1,10 +1,8 @@
 /*
- * Copyright (c) $Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
+ * Copyright (c) 2022 Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: url.c 138851 2022-01-14 22:03:58Z $
+ * $Id$
  *
  */
 
