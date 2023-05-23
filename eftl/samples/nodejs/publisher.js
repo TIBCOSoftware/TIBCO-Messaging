@@ -1,8 +1,6 @@
 /*
- * Copyright (c) 2013-$Date: 2020-07-09 13:18:24 -0700 (Thu, 09 Jul 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2013-2020 Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  */
 
 'use strict'

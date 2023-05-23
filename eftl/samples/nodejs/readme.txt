@@ -36,6 +36,11 @@
         Basic subscriber program that demonstrates the use of
         subscribing to eFTL messages.
 
+ stop_subscriber.js
+
+        Basic subscriber program that demonstrates the use of
+        stopping and starting a subscription.
+
  shared_durable.js
 
         Basic subscriber program that demonstrates the use of

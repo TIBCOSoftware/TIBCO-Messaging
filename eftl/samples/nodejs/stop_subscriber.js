@@ -12,6 +12,9 @@ const url = (process.argv[2] || "ws://localhost:8585/channel");
 
 console.log(eFTL.getVersion());
 
+var received = 0;
+var subId;
+
 // Set the server certificate chain for secure connections.
 // Self-signed server certificates are not supported.
 //
@@ -77,6 +80,7 @@ function subscribe(connection) {
         ack: 'client',
         onSubscribe: id => {
             console.log('Subscribed');
+            subId = id;
 
             // Unsubscribe and disconnect after 30 seconds.
             setTimeout(function() {
@@ -90,6 +94,20 @@ function subscribe(connection) {
         },
         onMessage: message => {
             console.log('Received message: ' + message.toString());
+            connection.acknowledge(message);
+            received++;
+            if (received === 5) {
+                try {
+                    console.log("Stopping subscription");
+                    connection.stopSubscription(subId);
+                    setTimeout(function() {
+                        console.log("Starting subscription");
+                        connection.startSubscription(subId);
+                    }, 3000);
+                } catch (err) {
+                    console.log(err);
+                }
+            }
         }
     });
 }
