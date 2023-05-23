@@ -1,8 +1,6 @@
 //
-// Copyright (c) 2001-$Date: 2021-02-01 15:20:05 -0800 (Mon, 01 Feb 2021) $ TIBCO Software Inc.
+// Copyright (c) 2001-2021 Cloud Software Group, Inc.
 // All Rights Reserved. Confidential & Proprietary.
-// For more information, please contact:
-// TIBCO Software Inc., Palo Alto, California, USA
 //
 
 // This is an example of a basic eFTL client which removes a key-value pair from a map.

@@ -1,14 +1,14 @@
 //
-// Copyright (c) 2001-2021 Cloud Software Group, Inc.
+// Copyright (c) 2001-$Date$ Cloud Software Group, Inc.
 // All Rights Reserved. Confidential & Proprietary.
 //
 
-// This is an example of a basic eFTL client which uses a last-value durable
-// subscription to receives published messages.
+// This is an example of a basic eFTL client subscriber.
 
 package main
 
 import (
+    "time"
 	"log"
 	"os"
 
@@ -20,10 +20,12 @@ var (
 )
 
 const (
-	username = ""
-	password = ""
-	durable  = "sample-lastvalue-durable"
-	count    = 10
+	username  = ""
+	password  = ""
+	clientID  = "sample-go-client"
+	durable   = "sample-durable"
+	clientAck = false
+	count     = 10
 )
 
 func main() {
@@ -33,11 +35,16 @@ func main() {
 	}
         log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
 
+	// set the log level log file
+        eftl.SetLogLevel(eftl.LogLevelDebug)
+        eftl.SetLogFile("subscriber.log")
+
 	// channel for receiving connection errors
 	errChan := make(chan error, 1)
 
 	// set connection options
 	opts := eftl.DefaultOptions()
+	opts.ClientID = clientID
 	opts.Username = username
 	opts.Password = password
 
@@ -61,19 +68,25 @@ func main() {
 	matcher := "{\"type\":\"hello\"}"
 
 	// create the subscription options
-	subOpts := eftl.SubscriptionOptions{
-		DurableType: "last-value",
-		DurableKey:  "type",
+	subopts := eftl.SubscriptionOptions{}
+
+	if clientAck {
+		subopts.AcknowledgeMode = eftl.AcknowledgeModeClient
 	}
 
 	// create the subscription
-	err = conn.SubscribeWithOptionsAsync(matcher, durable, subOpts, msgChan, subChan)
+	//
+	// always set the client identifier when creating a durable subscription
+	// as durable subscriptions are mapped to the client identifier
+	//
+	err = conn.SubscribeWithOptionsAsync(matcher, durable, subopts, msgChan, subChan)
 	if err != nil {
 		log.Printf("subscribe failed: %s", err)
 		return
 	}
 
 	var total int
+    var mySub *eftl.Subscription
 
 	for {
 		select {
@@ -82,10 +95,33 @@ func main() {
 				log.Printf("subscribe operation failed: %s", sub.Error)
 				return
 			}
-			log.Printf("subscribed with matcher %s", sub.Matcher)
+			log.Printf("subscribed with matcher: %s", sub.Matcher)
+			// unsubscribe, this will permanently remove a durable subscription
+			mySub = sub
+			defer conn.Unsubscribe(sub)
 		case msg := <-msgChan:
 			total++
 			log.Printf("received message: %s", msg)
+
+			if clientAck {
+				conn.Acknowledge(msg)
+			}
+
+			if total == 5 {
+				log.Printf("Stopping subscription")
+				err = conn.StopSubscription(mySub)
+				if err != nil {
+					log.Printf("stop failed %s", err)
+				} else {
+					time.Sleep(3 * time.Second)
+					log.Printf("Starting subscription")
+					err = conn.StartSubscription(mySub)
+					if err != nil {
+						log.Printf("start failed %s", err)
+					}
+				}
+			}
+
 			if total >= count {
 				return
 			}
