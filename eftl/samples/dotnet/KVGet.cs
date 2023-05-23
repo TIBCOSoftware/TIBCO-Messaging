@@ -1,8 +1,6 @@
 /*
- * Copyright (c) 2013-$Date: 2015-07-31 16:05:02 -0700 (Fri, 31 Jul 2015) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2015-07-31 16:05:02 -0700 (Fri, 31 Jul 2015) $ Cloud Software Group, Inc.
  * All Rights Reserved.
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  */
 
 using System;

@@ -83,6 +83,11 @@ Samples description.
       Basic subscriber program that demonstrates the use of
       subscribing to eFTL messages.
 
+ StopSubscriber
+
+      Basic subscriber program that demonstrates the use of
+      stopping and starting a subscription.
+
  SharedDurable
 
       Basic subscriber program that demonstrates the use of

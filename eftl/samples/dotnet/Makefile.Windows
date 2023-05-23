@@ -1,8 +1,6 @@
 ######################################################################
-# Copyright (c) 2009-$Date: 2022-03-22 13:30:27 -0700 (Tue, 22 Mar 2022) $ TIBCO Software Inc.
+# Copyright (c) 2009-2022 Cloud Software Group, Inc.
 # ALL RIGHTS RESERVED
-# For more information, please contact:
-# TIBCO Software Inc., Palo Alto, California, USA
 #
 # TIBCO EFTL
 # Sample Windows Makefile for C#
@@ -13,6 +11,7 @@ all:    build
 build:
 	dotnet build --configuration Release Publisher.csproj 
 	dotnet build --configuration Release Subscriber.csproj 
+	dotnet build --configuration Release StopSubscriber.csproj
 	dotnet build --configuration Release SharedDurable.csproj 
 	dotnet build --configuration Release LastValueDurable.csproj 
 	dotnet build --configuration Release Request.csproj 

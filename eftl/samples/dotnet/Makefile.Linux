@@ -1,8 +1,6 @@
 ######################################################################
-# Copyright (c) 2009-$Date: 2019-06-03 08:32:33 -0700 (Mon, 03 Jun 2019) $ TIBCO Software Inc.
+# Copyright (c) 2009-$Date: 2019-06-03 08:32:33 -0700 (Mon, 03 Jun 2019) $ Cloud Software Group, Inc.
 # ALL RIGHTS RESERVED
-# For more information, please contact:
-# TIBCO Software Inc., Palo Alto, California, USA
 #
 # TIBCO EFTL
 # Sample Makefile for C#
@@ -13,6 +11,7 @@ all:    build
 build:
 	dotnet build --configuration Release -f netcoreapp6.0 Publisher.csproj 
 	dotnet build --configuration Release -f netcoreapp6.0 Subscriber.csproj 
+	dotnet build --configuration Release -f netcoreapp6.0 StopSubscriber.csproj
 	dotnet build --configuration Release -f netcoreapp6.0 SharedDurable.csproj 
 	dotnet build --configuration Release -f netcoreapp6.0 LastValueDurable.csproj 
 	dotnet build --configuration Release -f netcoreapp6.0 Request.csproj 

@@ -9,7 +9,7 @@ using System.Collections;
 
 using TIBCO.EFTL;
 
-public class Subscriber 
+public class StopSubscriber 
 {
     static IConnection connection = null;
 
@@ -19,6 +19,7 @@ public class Subscriber
     static String clientId = "sample-dotnet-client";
     static String durable = "sample-durable";
     static String matcher = null;
+    static String subId = null;
     static int count = 10;
     static int received = 0;
     static bool clientAcknowledge = false;
@@ -29,7 +30,7 @@ public class Subscriber
     private static void Usage() 
     {
         Console.WriteLine();
-        Console.WriteLine("usage: Subscriber [options] url");
+        Console.WriteLine("usage: StopSubscriber [options] url");
         Console.WriteLine();
         Console.WriteLine("options:");
         Console.WriteLine("  -u, --username <username>]");
@@ -48,23 +49,23 @@ public class Subscriber
         {
             Console.WriteLine("Connected to eFTL server at: " + url);
 
-            Subscriber.connection = connection;
+            StopSubscriber.connection = connection;
 
-            Subscriber.latch.Signal();
+            StopSubscriber.latch.Signal();
         }
 
         public void OnDisconnect(IConnection connection, int code, String reason)
         {
             Console.WriteLine("Disconnected from eFTL server: " + reason);
 
-            Subscriber.latch.Signal();
+            StopSubscriber.latch.Signal();
         }
 
         public void OnError(IConnection connection, int code, String reason)
         {
             Console.WriteLine("Connection error: " + reason);
 
-            Subscriber.latch.Signal();
+            StopSubscriber.latch.Signal();
         }
 
         public void OnReconnect(IConnection connection)
@@ -89,19 +90,47 @@ public class Subscriber
 
                 if (clientAcknowledge)
                     connection.Acknowledge(msg);
+
+                if (received == 5)
+                {
+                    Console.WriteLine("Stopping subscription");
+                    try
+                    {
+                        connection.StopSubscription(subId);
+                    }
+                    catch (Exception e) 
+                    {
+                        Console.WriteLine(e.ToString());
+                        return;
+                    }
+                    
+                    Thread.Sleep(3000);
+                    Console.WriteLine("Starting subscription");
+
+                    try
+                    {
+                        connection.StartSubscription(subId);
+                    }
+                    catch (Exception e) 
+                    {
+                        Console.WriteLine(e.ToString());
+                        return;
+                    }
+                }
             }
 
             if (received >= count)
-                Subscriber.latch.Signal();
+                StopSubscriber.latch.Signal();
         }
 
         public void OnSubscribe(String subscriptionId)
         {
+            subId = subscriptionId;
             Console.WriteLine("Subscribed to {0}", (matcher != null ? matcher : "null matcher"));
         }
     }
 
-    public Subscriber(String url, String clientId, String username, String password) 
+    public StopSubscriber(String url, String clientId, String username, String password) 
     {
         if (clientId != null) 
             options.Add(EFTL.PROPERTY_CLIENT_ID, clientId);
@@ -122,13 +151,13 @@ public class Subscriber
 
     public bool IsConnected()
     {
-       return Subscriber.connection.IsConnected();
+       return StopSubscriber.connection.IsConnected();
     }
 
     public void Close() 
     {
         // Asynchronously disconnect from the eFTL server.
-        Subscriber.connection.Disconnect();
+        StopSubscriber.connection.Disconnect();
     }
 
     public void Subscribe(String durable, int count)
@@ -223,10 +252,10 @@ public class Subscriber
             }
         }
 
-        Console.Write("#\n# Subscriber\n#\n# {0}\n#\n", EFTL.GetVersion());
+        Console.Write("#\n# StopSubscriber\n#\n# {0}\n#\n", EFTL.GetVersion());
 
         try {
-            Subscriber client = new Subscriber(url, clientId, username, password);
+            StopSubscriber client = new StopSubscriber(url, clientId, username, password);
             
             try {
 
