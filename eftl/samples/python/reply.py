@@ -1,8 +1,6 @@
 '''
- Copyright (c) 2013-2020 TIBCO Software Inc.
+ Copyright (c) 2013-2022 Cloud Software Group, Inc.
  All Rights Reserved.
- For more information, please contact:
-  TIBCO Software Inc., Palo Alto, California, USA
 '''
 
 import asyncio
@@ -36,10 +34,12 @@ def parseArgs(argv):
     while i < count:
         if (argv[i].lower() == '-user'):
             global user
-            user = argv[i+1]
+            i += 1
+            user = argv[i]
         elif (argv[i].lower() == "-password"):
             global password
-            password = argv[i+1]
+            i += 1
+            password = argv[i]
         elif (argv[i].lower() == "-help") or (argv[i].lower() == "-h"):
             usage()
         else:

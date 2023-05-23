@@ -1,8 +1,6 @@
 /*
- * Copyright 2013-2021 TIBCO Software Inc.
+ * Copyright 2013-2021 Cloud Software Group Inc.
  * All Rights Reserved. Confidential and Proprietary.
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  */
 
  This directory contains python client samples for TIBCO eFTL.
@@ -51,6 +49,11 @@ Samples description.
 
       Basic subscriber program that demonstrates the use of
       subscribing to eFTL messages.
+
+ StopSubscriber
+
+      Basic subscriber program that demonstrates the use of
+      stopping and starting a subscription.
 
  SharedDurable
 

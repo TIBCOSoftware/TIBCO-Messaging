@@ -1,5 +1,5 @@
 '''
- Copyright (c) 2013-2022 Cloud Software Group, Inc.
+ Copyright (c) 2013-$Date$ Cloud Software Group, Inc.
  All Rights Reserved.
 '''
 
@@ -14,12 +14,12 @@ password   = "password"
 url        = "ws://localhost:8585/channel"
 connection = None
 loop       = None
-recvCount  = 1
 eFTL       = Eftl()
 error      = False
-clientId   = None
+clientId   = "sample-python-client"
 received   = 0
-durName    = "sample-lastvalue-durable"
+durName    = "sample-durable"
+clientAck  = False
 ackMode    = "auto"
 timer      = None
 subscriberId = None
@@ -29,13 +29,13 @@ def usage():
     sys.exit(0)
 
 usage_lines = """
-        Usage: python3 last_value_durable.py [options] url
+        Usage: python3 stopSubscriber.py [options] url
         Options:
         \t-user        <str>    Username for authentication
         \t-password    <str>    Password for authentication
         \t-clientId    <str>    unique client id
         \t-name        <str>    durable name
-        \t-count       <int>    Number of message to receive
+        \t-clientAcknowledge    Flag to indicate that client ack
       """
 
 def parseArgs(argv):
@@ -51,10 +51,6 @@ def parseArgs(argv):
             global password
             i += 1
             password = argv[i]
-        elif (argv[i].lower() == "-count"):
-            global recvCount
-            i += 1
-            recvCount = int(argv[i])
         elif (argv[i].lower() == "-clientid"):
             global clientId
             i += 1
@@ -63,6 +59,9 @@ def parseArgs(argv):
             global durName
             i += 1
             durName = argv[i]
+        elif (argv[i].lower() == "-clientacknowledge"):
+            global clientAck
+            clientAck = True
         elif (argv[i].lower() == "-help") or (argv[i].lower() == "-h"):
             usage()
         else:
@@ -71,7 +70,8 @@ def parseArgs(argv):
 
         i += 1
 
-    print("last_value_durable.py: " + eFTL.get_version())
+    print("subscriber.py: " + eFTL.get_version())
+
 
 # internal disconnect function
 async def _disconnect():
@@ -79,6 +79,7 @@ async def _disconnect():
 
     if connection.is_connected():
         await connection.disconnect()
+
 
 async def _unsubscribe(id):
     global connection
@@ -106,6 +107,7 @@ async def on_subscribe(id):
 
     timer = threading.Timer(30.0, on_recv_timeout)
     timer.start()
+    print("Waiting for messages..")
 
 async def on_subscribe_error(code, reason):
     print("Failed to subscribe, code: %s, reason: %s" %(code, reason))
@@ -115,26 +117,47 @@ async def on_subscribe_error(code, reason):
 
 async def on_message(message):
     global received
-    global recvCount
+    global clientAck
+
     print("Received message: [%s] %s" %(received, message))
     received += 1
 
-    if received == recvCount:
-        print("Received last value update message, waiting for 30 seconds before exiting..")
-      
+    # if client ack mode, then acknowledge the message
+    if clientAck and message is not None:
+        await connection.acknowledge(message)
+
+    if received == 5:
+        print("Stopping subscription")
+        try:
+            await connection.stop_subscription(subscriberId)
+        except Exception as e:
+            print(e)
+            return
+        await asyncio.sleep(3)
+        print("Starting subscription")
+        try:
+            await connection.start_subscription(subscriberId)
+        except Exception as e:
+            print(e)
+            return
+
+    
+    
 
 # on_connect callback called on a successful connect
 async def on_connect(connection):
+    global clientAck
+    global ackMode
     print("Connected to eFTL server: %s" % url)
 
-    # change the matcher to "{}" if you wish to receive all messages
-    matcher = "{\"type\":\"hello\"}"
+    if clientAck:
+        ackMode = "client"
 
+    # subscribe to the matcher, once connected
+    matcher = "{\"type\":\"hello\"}"
     await connection.subscribe(matcher=matcher,
                               ack=ackMode,
                               durable=durName,
-                              type="last-value",
-                              key="type",
                               on_subscribe=on_subscribe,
                               on_error=on_subscribe_error,
                               on_message=on_message)
@@ -143,38 +166,43 @@ async def on_connect(connection):
 async def on_reconnect(connection):
     print("Reconnect attempt: ")
 
-# on_error callback
+# on_error callback called if an error on the connection 
 async def on_error(connection, code, reason):
     global error
     print("Connection error [%s], reason %s" %(code, reason))
     error = True
 
-# on_disconnect callback
+# on_disconnect callback called upon a disconnect from eFTL
 async def on_disconnect(connection, loop, code, reason):
     print("Disconnected [%s]: %s" %(code, reason))
+
     loop.stop()
 
 async def run():
     global connection
     global sendCount
-
+    global clientId
+                              
     try:
         # connect to the eftl 
         connection = await eFTL.connect(url,
                                     user=user,
                                     password=password,
+                                    client_id=clientId,
                                     trust_all=True,
                                     event_loop=loop,
                                     on_connect=on_connect,
                                     on_reconnect=on_reconnect,
                                     on_disconnect=on_disconnect,
                                     on_error=on_error)
+
     finally:
-        print("Initiated connect..")
+        print("Initiated connect()..")
 
 def cleanup():
     global loop
     global connection
+    global subscriberId
 
     if connection.is_connected():
         loop.run_until_complete(_disconnect())
