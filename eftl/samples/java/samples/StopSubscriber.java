@@ -18,7 +18,7 @@ import com.tibco.eftl.*;
  * This is a sample of a basic eFTL subscriber program.
  */
 
-public class Subscriber extends Thread {
+public class StopSubscriber extends Thread {
     
     String url = "ws://localhost:8585/channel";
     String username = null;
@@ -27,11 +27,13 @@ public class Subscriber extends Thread {
     String durableName = "sample-durable";
     String trustStoreFilename = null;
     String trustStorePassword = "";
+    String subId = null;
+    int received = 0;
     boolean trustAll = false;
 
     boolean clientAcknowledge = false;
 
-    public Subscriber(String[] args) {
+    public StopSubscriber(String[] args) {
         
          System.out.printf("#\n# %s\n#\n# %s\n#\n",
                  this.getClass().getName(),
@@ -254,11 +256,37 @@ public class Subscriber extends Thread {
                     if (clientAcknowledge) {
                         connection.acknowledge(message);
                     }
+
+                    received++;
+                    if (received == 5) {
+                        System.out.printf("Stopping subscription\n");
+                        try{
+                            connection.stopSubscription(subId);
+                        } catch(Exception e) {
+                            System.out.println(e);
+                            return;
+                        }
+                        
+                        try {
+                            sleep(3000);
+                        } catch(Exception e) {
+                            System.out.println(e);
+                        }
+
+                        System.out.printf("Starting subscription\n");
+                        try {
+                            connection.startSubscription(subId);
+                            return;
+                        } catch(Exception e) {
+                            System.out.println(e);
+                        }
+                    }
                 }
             }
 
             @Override
             public void onSubscribe(String subscriptionId) {
+                subId = subscriptionId;
                 
                 // The eFTL server has created the subscription.
                 System.out.printf("Subscribed\n");
@@ -290,7 +318,7 @@ public class Subscriber extends Thread {
     public static void main(String[] args) {
         
         try {
-            new Subscriber(args).start();
+            new StopSubscriber(args).start();
         } catch (Throwable t) {
             t.printStackTrace(System.out);
         }

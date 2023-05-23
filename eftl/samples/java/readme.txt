@@ -51,6 +51,11 @@
     Basic subscriber program that demonstrates the use of 
     subscribing to eFTL messages.
 
+ com.tibco.eftl.samples.StopSubscriber
+
+    Basic subscriber program that demonstrates the use of
+    stopping and starting a subscription.
+
  com.tibco.eftl.samples.SharedDurable
 
     Basic subscriber program that demonstrates the use of 
