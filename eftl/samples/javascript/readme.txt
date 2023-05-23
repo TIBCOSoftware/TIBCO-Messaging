@@ -1,8 +1,6 @@
 /*
- * Copyright 2013-2021 TIBCO Software Inc.
+ * Copyright 2013-2021 Cloud Software Group Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  */
 
  This directory contains web client samples for TIBCO eFTL.
@@ -37,6 +35,11 @@
 
         Basic web subscriber that demonstrates the use of
         subscribing to eFTL messages.
+
+ stop_subscriber.html
+
+        Basic web subscriber that demonstrates the use of
+        stopping and starting a subscription.
 
  shared_durable.html
 

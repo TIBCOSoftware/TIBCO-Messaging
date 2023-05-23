@@ -3,17 +3,17 @@
 <html lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Last-Value Durable</title>
+    <title>Subscriber Stop</title>
     <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
 </head>
 
 <body onload="printVersion();">
 <div class="container">
-    <h1>eFTL Last-Value Durable Sample</h1>
+    <h1>eFTL Subscriber Stop Sample</h1>
 
     <label>eFTL Server URL</label>
     <form class='form-inline'>
-        <input type="text" name="url" class='span6' value="ws://localhost:8585/channel"/> <button type='button' class="btn" id="connectButton">Connect</button>
+        <input type="text" name="url" class='span6' value="ws://localhost:8585/channel"/> <button type='button' class="btn" id="connectButton">Connect</button> <button type='button' class="btn" id="stopButton">Stop</button> <button type='button' class="btn" id="startButton">Start</button>
     </form>
 
     <a class='close log' id="clearLogButton">x</a>
@@ -33,6 +33,7 @@
     var connection = null;
     var lastURL = null;
     var counter = 0;
+    var mySubId = null;
 
     function printVersion() {
         addInfo(eFTL.getVersion());
@@ -44,8 +45,9 @@
         // Asynchronously connect to the eFTL server.
 
         eFTL.connect(url, {
-            username: "user",
-            password: "password",
+            username: 'user',
+            password: 'password',
+            clientId: 'sample-web-client',
             onConnect: function (eFTLConnection) {
 
                 // Successfully connected to the eFTL server.
@@ -54,34 +56,35 @@
                 addSuccess("Connected to eFTL server");
                 setTimeout(updateButtons);
 
-                // Asynchronously subscribe to messages containing
-                // a field named "type" with a value of "hello".
+                // Subscribe to eFTL messages using a durable subscription.
                 //
-                // To create a last-value durable subscription, one 
-                // where only the most recent message is persisted,
-                // specify a durable name, a last-value durable type,
-                // and a durable key which defines on which field in
-                // the matcher the messages will be sorted.
+                // This subscription defines a matcher that will match published
+                // messages containing a field named "type" with a value of "hello".
                 //
-                // When connected to an FTL channel the content matcher 
-                // can be used to match any field in a published message.
-                // Only matching messages will be received by the 
-                // subscription. The content matcher can match on string
-                // and integer fields, or test for the presence or absence
-                // of a field by setting it's value to the boolean true or
-                // false.
+                // The durable name is used to create a durable subscription. When
+                // setting a durable name also set the clientId in the connect
+                // method as durable subscriptions are mapped to specific clientIds.
                 //
-                // When connected to an EMS channel the content matcher
-                // must only contain the destination field "_dest" set to
-                // the EMS topic on which to subscribe.
+                // The subscription's message acknowledgment mode can be set to
+                // 'auto', 'client', or 'none'. When set to 'client' the consumed
+                // messages must be explicitly acknowledged. The default message
+                // acknowledgment mode is 'auto'.
+                //
+                // The onSubscribe function is invoked following a successful
+                // subscription.
+                //
+                // The onError function is invoked following a failed subscription.
+                //
+                // the onMessage function is invoked whenever a published message
+                // is received by the subscription.
 
                 connection.subscribe({
                     matcher: '{"type":"hello"}',
-                    durable: 'sample-lastvalue-durable',
-                    type: 'last-value',
-                    key: 'type',
+                    durable: 'sample-durable',
+                    ack: 'auto',
                     onSubscribe: function (id) {
                         addSuccess("Subscribed");
+                        mySubId = id;
                     },
                     onError: function (id, code, reason) {
                         addError(reason);
@@ -207,10 +210,20 @@
         return false;
     });
 
+    $('#stopButton').click(function() {
+        console.log("Initiated Stop");
+        connection.stopSubscription(mySubId);
+        addSuccess("Stopped sub " + mySubId);
+    })
+
+    $('#startButton').click(function() {
+        console.log("Initiated Start");
+        connection.startSubscription(mySubId);
+        addSuccess("Started sub " + mySubId);
+    })
+
     $(document).ready(updateButtons);
 
 </script>
 </body>
-<hr class="double">
-<footer>&copy; 2015-2020 Cloud Software Group, Inc</footer>
 </html>
