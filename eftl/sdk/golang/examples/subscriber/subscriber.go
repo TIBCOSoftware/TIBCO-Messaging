@@ -1,8 +1,6 @@
 //
-// Copyright (c) 2001-$Date: 2017-03-03 16:29:04 -0800 (Fri, 03 Mar 2017) $ TIBCO Software Inc.
-// Licensed under a BSD-style license. Refer to [LICENSE]
-// For more information, please contact:
-// TIBCO Software Inc., Palo Alto, California, USA
+// Copyright (c) 2001-2021 Cloud Software Group, Inc.
+// All Rights Reserved. Confidential & Proprietary.
 //
 
 // This is an example of a basic eFTL client subscriber.

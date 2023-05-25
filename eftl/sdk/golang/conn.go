@@ -1,8 +1,6 @@
 //
-// Copyright (c) 2001-$Date: 2022-02-01 16:49:49 -0800 (Tue, 01 Feb 2022) $ TIBCO Software Inc.
+// Copyright (c) 2001-2023 Cloud Software Group, Inc.
 // Licensed under a BSD-style license. Refer to [LICENSE]
-// For more information, please contact:
-// TIBCO Software Inc., Palo Alto, California, USA
 //
 
 package eftl
@@ -65,6 +63,8 @@ const (
 	ErrCodeMapRequestFailed       = 30
 	ErrCodeRequestDisallowed      = 40
 	ErrCodeRequestFailed          = 41
+	ErrCodeStopFailed             = 50
+	ErrCodeStartFailed            = 51
 )
 
 // State of the connection.
@@ -78,33 +78,43 @@ const (
 	RECONNECTING
 )
 
+type SubState int
+
+const (
+	STOPPED = SubState(iota)
+	STARTING
+	STARTED
+)
+
 // These constants specify input values for the SetLogLevel function.
 type LogLevel zerolog.Level
 
 const (
-	LogLevelOff     LogLevel = LogLevel(zerolog.Disabled)
-	LogLevelSevere  LogLevel = LogLevel(zerolog.FatalLevel)
-	LogLevelWarn    LogLevel = LogLevel(zerolog.WarnLevel)
-	LogLevelError   LogLevel = LogLevel(zerolog.ErrorLevel)
-	LogLevelInfo    LogLevel = LogLevel(zerolog.InfoLevel)
-	LogLevelDebug   LogLevel = LogLevel(zerolog.DebugLevel)
+	LogLevelOff    LogLevel = LogLevel(zerolog.Disabled)
+	LogLevelSevere LogLevel = LogLevel(zerolog.FatalLevel)
+	LogLevelWarn   LogLevel = LogLevel(zerolog.WarnLevel)
+	LogLevelError  LogLevel = LogLevel(zerolog.ErrorLevel)
+	LogLevelInfo   LogLevel = LogLevel(zerolog.InfoLevel)
+	LogLevelDebug  LogLevel = LogLevel(zerolog.DebugLevel)
 )
-
 
 var logger zerolog.Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
 
-
+// Set the logfile for capturing the log messages for this connection
 func SetLogFile(filename string) {
-    f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-    if err != nil {
-        // Can we log an error before we have our logger? :)
-        log.Error().Err(err).Msg("there was an error creating/opening the log file")
-    }
-    logger = zerolog.New(f).With().Timestamp().Logger()
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		// Can we log an error before we have our logger? :)
+		log.Error().Err(err).Msg("there was an error creating/opening the log file")
+	}
+	logger = zerolog.New(f).With().Timestamp().Logger()
 }
 
+// Set the loglevel for this connection, levels can be one
+// of LogLevelOff, LogLevelSevere, LogLevelWarn, LogLevelError,
+// LogLevelInfo, LogLevelDebug
 func SetLogLevel(level LogLevel) {
-    zerolog.SetGlobalLevel(zerolog.Level(level))
+	zerolog.SetGlobalLevel(zerolog.Level(level))
 }
 
 func (e State) String() string {
@@ -148,7 +158,7 @@ type Options struct {
 	// specify non-default behavior for secure connections.
 	TLSConfig *tls.Config
 
-	// Sets the trust store used for secure connections. The trust store is a 
+	// Sets the trust store used for secure connections. The trust store is a
 	// file containing one or more PEM encoded certificates used to authenticate
 	// the server's certificate on secure connections. If the trust store is not
 	// specified, the system default CA certificates will be used. This option
@@ -156,7 +166,7 @@ type Options struct {
 	// is set to true.
 	TrustStore string
 
-	// Sets whether or not to skip server certifiate authentication. Specify 
+	// Sets whether or not to skip server certifiate authentication. Specify
 	// true to accept any server certificate. This option should only be used
 	// during development and testing. This option is ignored if the deprecated
 	// TLSConfig field is non-nil.
@@ -221,8 +231,11 @@ type Connection struct {
 	subSeqNum         int64
 	reconnectAttempts int64
 	reconnectTimer    *time.Timer
+	stopSupported     bool
 }
 
+// AcknowledgeMode, can be one of the following
+// "auto", "client", "none"
 type AcknowledgeMode string
 
 const (
@@ -268,6 +281,7 @@ type Subscription struct {
 	subscriptionID   string
 	subscriptionChan chan *Subscription
 	pending          bool
+	state            SubState
 }
 
 func (sub *Subscription) autoAck() bool {
@@ -277,8 +291,9 @@ func (sub *Subscription) autoAck() bool {
 
 func (sub *Subscription) toProtocol() Message {
 	msg := Message{
-		"op": opSubscribe,
-		"id": sub.subscriptionID,
+		"op":      opSubscribe,
+		"id":      sub.subscriptionID,
+		"stopped": sub.state == STOPPED,
 	}
 	if sub.Matcher != "" {
 		msg["matcher"] = sub.Matcher
@@ -337,6 +352,9 @@ const (
 	opMapGet       = 22
 	opMapRemove    = 24
 	opMapResponse  = 26
+	opStop         = 28
+	opStart        = 30
+	opStarted      = 31
 )
 
 // Default constants.
@@ -430,8 +448,6 @@ func (conn *Connection) Reconnect() error {
 	conn.setState(DISCONNECTED)
 	return err
 }
-
-
 
 // Disconnect closes the connection to the server.
 func (conn *Connection) Disconnect() {
@@ -701,6 +717,48 @@ func (conn *Connection) CloseAllSubscriptions() error {
 	return nil
 }
 
+// Stop message delivery to a subscription.
+func (conn *Connection) StopSubscription(sub *Subscription) error {
+	conn.mu.Lock()
+	defer conn.mu.Unlock()
+	if conn.protocol < 1 || !conn.stopSupported {
+		return ErrNotSupported
+	}
+	if sub.state != STOPPED {
+		logger.Debug().Msgf("Stopping subscription: [durable: %s, matcher %s, subscriptionId: %s]", sub.Durable, sub.Matcher, sub.subscriptionID)
+		sub.state = STOPPED
+		if conn.isConnected() {
+			conn.sendMessage(Message{
+				"op":  opStop,
+				"id":  sub.subscriptionID,
+				"seq": sub.lastSeqNum,
+			})
+		}
+	}
+
+	return nil
+}
+
+// Resume message delivery to a subscription.
+func (conn *Connection) StartSubscription(sub *Subscription) error {
+	conn.mu.Lock()
+	defer conn.mu.Unlock()
+	if conn.protocol < 1 || !conn.stopSupported {
+		return ErrNotSupported
+	}
+	if sub.state == STOPPED {
+		logger.Debug().Msgf("Starting subscription: [durable: %s, matcher %s, subscriptionId: %s]", sub.Durable, sub.Matcher, sub.subscriptionID)
+		sub.state = STARTING
+		if conn.isConnected() {
+			conn.sendMessage(Message{
+				"op": opStart,
+				"id": sub.subscriptionID,
+			})
+		}
+	}
+	return nil
+}
+
 // Unsubscribe unregisters the subscription. For durable subscriptions,
 // the persistence service will remove the durable subscription as well,
 // along with any persisted messsages.
@@ -815,6 +873,7 @@ func (conn *Connection) subscribe(matcher string, durable string, options Subscr
 		subscriptionID:   sid,
 		subscriptionChan: subscriptionChan,
 		pending:          true,
+		state:            STARTED,
 	}
 	conn.subs[sid] = sub
 	// send subscribe protocol
@@ -955,6 +1014,9 @@ func (conn *Connection) connect(uri *url.URL) error {
 	if val, ok := msg["timeout"].(int64); ok {
 		conn.timeout = time.Duration(val) * time.Second
 	}
+	if val, ok := msg["stop_supported"].(string); ok {
+		conn.stopSupported, _ = strconv.ParseBool(val)
+	}
 	// resume
 	resume := false
 	if val, ok := msg["_resume"].(string); ok {
@@ -1027,6 +1089,8 @@ func (conn *Connection) dispatch() {
 				conn.handleError(msg)
 			case opMapResponse:
 				conn.handleMapResponse(msg)
+			case opStarted:
+				conn.handleStarted(msg)
 			}
 		}
 	}
@@ -1047,8 +1111,8 @@ func (conn *Connection) handleReconnect(err error) {
 			conn.mu.Lock()
 			defer conn.mu.Unlock()
 			for _, url := range conn.urlList {
-				logger.Debug().Msgf("Reconnecting to url %s after connection error: %s, reconnect attempt %d", 
-							url.String(), err.Error(), conn.reconnectAttempts)
+				logger.Debug().Msgf("Reconnecting to url %s after connection error: %s, reconnect attempt %d",
+					url.String(), err.Error(), conn.reconnectAttempts)
 				if e := conn.connect(url); e == nil {
 					logger.Debug().Msgf("Successfully reconnected to url %s", url.String())
 					return
@@ -1097,7 +1161,7 @@ func (conn *Connection) handleMessage(msg Message) {
 	reqId, _ := msg["req"].(int64)
 	msgId, _ := msg["sid"].(int64)
 	deliveryCount, _ := msg["cnt"].(int64)
-	if sub, ok := conn.subs[sid]; ok {
+	if sub, ok := conn.subs[sid]; ok && sub.state == STARTED {
 		if seq == 0 || seq > sub.lastSeqNum {
 			if msgId != 0 {
 				body[storeMessageIdHeader] = msgId
@@ -1117,7 +1181,7 @@ func (conn *Connection) handleMessage(msg Message) {
 			if sub.MessageChan != nil {
 				sub.MessageChan <- body
 			}
-			if sub.autoAck() && seq != 0 {
+			if seq != 0 {
 				sub.lastSeqNum = seq
 			}
 		}
@@ -1140,6 +1204,9 @@ func (conn *Connection) handleSubscribed(msg Message) {
 		if sub, ok := conn.subs[sid]; ok {
 			if sub.subscriptionChan != nil && sub.pending {
 				sub.pending = false
+				if sub.state == STARTING {
+					sub.state = STARTED
+				}
 				select {
 				case sub.subscriptionChan <- sub:
 				default:
@@ -1251,6 +1318,16 @@ func (conn *Connection) handleMapResponse(msg Message) {
 			}
 			delete(conn.reqs, seq)
 		}
+	}
+}
+
+func (conn *Connection) handleStarted(msg Message) {
+	conn.mu.Lock()
+	defer conn.mu.Unlock()
+	toId := msg["to"].(string)
+	sub := conn.subs[toId]
+	if sub.state == STARTING {
+		sub.state = STARTED
 	}
 }
 
