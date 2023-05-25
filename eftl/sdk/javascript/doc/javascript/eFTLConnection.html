@@ -80,7 +80,7 @@ and <a href="global.html#onReconnect">onReconnect</a> callbacks.</p>
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1057
+        eftl.js, line 1080
     </li></ul></dd>
      -->
     
@@ -228,7 +228,7 @@ unacknowledged messages is reached.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1989
+        eftl.js, line 2126
     </li></ul></dd>
      -->
     
@@ -358,7 +358,7 @@ unacknowledged messages is reached.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 2006
+        eftl.js, line 2143
     </li></ul></dd>
      -->
     
@@ -439,7 +439,7 @@ messages will be made available for redelivery.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1930
+        eftl.js, line 2022
     </li></ul></dd>
      -->
     
@@ -569,7 +569,7 @@ messages will be made available for redelivery.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1906
+        eftl.js, line 1998
     </li></ul></dd>
      -->
     
@@ -693,7 +693,7 @@ messages will be made available for redelivery.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1138
+        eftl.js, line 1162
     </li></ul></dd>
      -->
     
@@ -784,7 +784,7 @@ messages will be made available for redelivery.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1128
+        eftl.js, line 1152
     </li></ul></dd>
      -->
     
@@ -878,7 +878,7 @@ When the connection has closed, the eFTL library calls your <a href="global.html
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 2184
+        eftl.js, line 2324
     </li></ul></dd>
      -->
     
@@ -954,7 +954,7 @@ When the connection has closed, the eFTL library calls your <a href="global.html
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 2017
+        eftl.js, line 2154
     </li></ul></dd>
      -->
     
@@ -1052,7 +1052,7 @@ When the connection has closed, the eFTL library calls your <a href="global.html
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1119
+        eftl.js, line 1143
     </li></ul></dd>
      -->
     
@@ -1316,7 +1316,7 @@ destination with no prefix is a topic.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 2059
+        eftl.js, line 2196
     </li></ul></dd>
      -->
     
@@ -1399,7 +1399,7 @@ invokes your <a href="global.html#onSubscribe">onSubscribe</a> callback for each
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 2169
+        eftl.js, line 2309
     </li></ul></dd>
      -->
     
@@ -1516,7 +1516,7 @@ invokes your <a href="global.html#onSubscribe">onSubscribe</a> callback for each
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1149
+        eftl.js, line 1173
     </li></ul></dd>
      -->
     
@@ -1781,7 +1781,7 @@ successfully, the eFTL library calls your <a href="global.html#onComplete">onCom
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 2099
+        eftl.js, line 2236
     </li></ul></dd>
      -->
     
@@ -2039,12 +2039,260 @@ the eFTL library calls your <a href="global.html#onReply">onReply</a> callback.<
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 2076
+        eftl.js, line 2213
     </li></ul></dd>
      -->
     
     
     
+    
+    
+    
+</dl>
+
+    
+    
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="startSubscription"><span class="type-signature"></span>startSubscription<span class="signature">(subscriptionId)</span><span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    <div class="description">
+        <p>Resume message delivery to a subscription.</p>
+    </div>
+    
+
+    
+    
+    
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>subscriptionId</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">Start this subscription.</td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!--     
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        eftl.js, line 2060
+    </li></ul></dd>
+     -->
+    
+    
+    
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="eFTLConnection.html#subscribe">eFTLConnection#subscribe</a></li>
+        </ul>
+    </dd>
+    
+    
+    
+</dl>
+
+    
+    
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="stopSubscription"><span class="type-signature"></span>stopSubscription<span class="signature">(subscriptionId)</span><span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    <div class="description">
+        <p>Stop message delivery to a subscription.</p>
+    </div>
+    
+
+    
+    
+    
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>subscriptionId</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">Stop this subscription.</td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+<!--     
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        eftl.js, line 2037
+    </li></ul></dd>
+     -->
+    
+    
+    
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="eFTLConnection.html#subscribe">eFTLConnection#subscribe</a></li>
+        </ul>
+    </dd>
     
     
     
@@ -2465,7 +2713,7 @@ with no prefix is a topic.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1888
+        eftl.js, line 1980
     </li></ul></dd>
      -->
     
@@ -2631,7 +2879,7 @@ persisted messages.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1950
+        eftl.js, line 2087
     </li></ul></dd>
      -->
     
@@ -2711,7 +2959,7 @@ persisted messages.
 <!--     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        eftl.js, line 1968
+        eftl.js, line 2105
     </li></ul></dd>
      -->
     
@@ -2765,7 +3013,7 @@ persisted messages.
 <br class="clear">
 
 <footer>
-    &copy;2014-2022 TIBCO Software Inc - All Rights Reserved.
+    &copy;2014-2023 Cloud Software Group, Inc.- All Rights Reserved.
 </footer>
 
 

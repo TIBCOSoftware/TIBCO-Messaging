@@ -1,10 +1,10 @@
 /*
- * Copyright (c) $Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
+ * Copyright (c) $Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: eftl.js 138851 2022-01-14 22:03:58Z $
+ * $Id$
  */
 // Node.js requires a WebSocket implementation (npm install ws)
 var WebSocket = WebSocket || require('ws');
@@ -395,6 +395,9 @@ var WebSocket = WebSocket || require('ws');
   var OP_MAP_GET = 22;
   var OP_MAP_REMOVE = 24;
   var OP_MAP_RESPONSE = 26;
+  var OP_STOP = 28;
+  var OP_START = 30;
+  var OP_STARTED = 31;
 
   var ERR_PUBLISH_DISALLOWED = 12;
   var ERR_PUBLISH_FAILED = 11;
@@ -403,6 +406,8 @@ var WebSocket = WebSocket || require('ws');
   var ERR_SUBSCRIPTION_INVALID = 22;
   var ERR_MAP_REQUEST_DISALLOWED = 14;
   var ERR_MAP_REQUEST_FAILED = 30;
+  var ERR_STOP_FAILED = 50;
+  var ERR_START_FAILED = 51;
 
   var ERR_TIMEOUT = 99;
 
@@ -451,6 +456,8 @@ var WebSocket = WebSocket || require('ws');
   var VALUE_FIELD = "value";
   var PROTOCOL_FIELD = "protocol";
   var MAX_PENDING_ACKS_FIELD = "max_pending_acks";
+  var STOPPED_FIELD = "stopped";
+  var STOP_SUPPORTED_FIELD = "stop_supported";
 
   var HEADER_PREFIX = "_eftl:"
   var REPLY_TO_HEADER = HEADER_PREFIX + "replyTo";
@@ -1047,6 +1054,22 @@ var WebSocket = WebSocket || require('ws');
    */
   var DISCONNECTED = 4;
 
+  /**
+   * @constant
+   * @memberOf eFTL
+   */
+  var STOPPED = 0;
+  /**
+   * @constant
+   * @memberOf eFTL
+   */
+  var STARTING = 1;
+  /**
+   * @constant
+   * @memberOf eFTL
+   */
+  var STARTED = 2;
+
   // allow the connection states to be exported through the eFTL object
   [['CONNECTING',CONNECTING],['CONNECTED',CONNECTED],['RECONNECTING',RECONNECTING],['DISCONNECTING',DISCONNECTING],['DISCONNECTED',DISCONNECTED]].forEach(function(property) {
     Object.defineProperty(eFTL.prototype, property[0], {
@@ -1085,6 +1108,7 @@ var WebSocket = WebSocket || require('ws');
     this.reconnectCounter = 0;
     this.autoReconnectAttempts = 256;
     this.autoReconnectMaxDelay = 30000;
+    this.stopSupported = false;
     this.reconnectTimer = null;
     this.connectTimer = null;
     this.isReconnecting = false;
@@ -1176,11 +1200,17 @@ var WebSocket = WebSocket || require('ws');
 
   eFTLConnection.prototype._subscribe = function(subId, options) {
     var subscription = {};
-    subscription.options = options;
-    subscription.id = subId;
+    if (subId in this.subscriptions) {
+      subscription = this.subscriptions[subId];
+    } else {
+      subscription.options = options;
+      subscription.id = subId;
+      subscription.lastSeqNum = 0;
+      subscription.autoAck = true;
+      subscription.state = STARTED;
+    }
     subscription.pending = true;
-    subscription.lastSeqNum = 0;
-    subscription.autoAck = true;
+    
 
     if (options["ack"] !== undefined) {
       subscription.autoAck = (options["ack"] === "auto");
@@ -1191,6 +1221,7 @@ var WebSocket = WebSocket || require('ws');
     subMessage[ID_FIELD] = subId;
     subMessage[MATCHER_FIELD] = options.matcher;
     subMessage[DURABLE_FIELD] = options.durable;
+    subMessage[STOPPED_FIELD] = subscription.state === STOPPED; // TODODYL
 
     //include options
     var opts = _safeExtend({}, options);
@@ -1302,6 +1333,8 @@ var WebSocket = WebSocket || require('ws');
     var sub = this.subscriptions[subId];
     if (sub != null && sub.pending) {
       sub.pending = false;
+      if (sub.state === STARTING)
+        sub.state = STARTED;
       var options = sub.options;
       this._caller(options.onSubscribe, options, [subId]);
     }
@@ -1338,7 +1371,7 @@ var WebSocket = WebSocket || require('ws');
     var data = message[BODY_FIELD];
     var sub = this.subscriptions[subId];
 
-    if (sub && sub.options != null) {
+    if (sub && sub.options != null && sub.state === STARTED) {
       if (!seqNum || seqNum > sub.lastSeqNum) {
         var wsMessage = new eFTLMessage(data);
         if (!sub.autoAck && seqNum) {
@@ -1352,7 +1385,7 @@ var WebSocket = WebSocket || require('ws');
         this._debug('<<', data);
         this._caller(sub.options.onMessage, sub.options, [wsMessage]);
         // track last sequence number
-        if (sub.autoAck && seqNum) {
+        if (seqNum) {
           sub.lastSeqNum = seqNum;
         }
       }
@@ -1474,7 +1507,18 @@ var WebSocket = WebSocket || require('ws');
       if ((evt.code != 1006 && evt.code != 1012) || !connection._scheduleReconnect()) {
         connection.isOpen = false;
         connection._clearPending(11, "Closed");
-        connection._caller(connection.connectOptions.onDisconnect, connection.connectOptions, [connection, evt.code, (evt.reason ? evt.reason : "Connection failed")]);
+
+        var reason = evt.reason;
+        if (!reason) {           
+            var url = parseURL(webSocket.url);
+            if (url.host) {
+                reason = "Connection to " + url.host + " failed";
+            } else {
+                reason = "Connection failed";
+            }
+        }
+        connection._caller(connection.connectOptions.onDisconnect, connection.connectOptions,
+                           [connection, evt.code, reason]);
       }
     };
 
@@ -1524,6 +1568,9 @@ var WebSocket = WebSocket || require('ws');
               case OP_MAP_RESPONSE:
                 connection._handleMapResponse(msg);
                 break;
+              case OP_STARTED:
+                connection._handleStarted(msg);
+                break;
               default:
                 console.log("Received unknown/unexpected op code - " + opCode, rawMessage.data);
                 break;
@@ -1548,6 +1595,7 @@ var WebSocket = WebSocket || require('ws');
     this.maxMessageSize = message[MAX_SIZE_FIELD];
     this.protocol = (message[PROTOCOL_FIELD] || 0);
     this.qos = ((message[QOS_FIELD] || "") + "").toLowerCase() === "true";
+    this.stopSupported = ((message[STOP_SUPPORTED_FIELD] || "") + "").toLowerCase() === "true";
 
     if (!resume) {
       this._clearPending(11, "Reconnect");
@@ -1663,6 +1711,14 @@ var WebSocket = WebSocket || require('ws');
       }
     }
   };
+
+  eFTLConnection.prototype._handleStarted = function(message) {
+    var subId = message[TO_FIELD];
+    sub = this.subscriptions[subId];
+    if (sub.state === STARTING){
+      sub.state = STARTED;
+    }
+  }
 
   eFTLConnection.prototype._sendPending = function() {
     var sequences = _keys(this.requests);
@@ -1971,6 +2027,51 @@ var WebSocket = WebSocket || require('ws');
       });
     }
   };
+
+  /**
+   * <p>Stop message delivery to a subscription.</p>
+   * @param {object} subscriptionId Stop this subscription.
+   * @memberOf eFTLConnection
+   * @see eFTLConnection#subscribe
+   */
+  eFTLConnection.prototype.stopSubscription = function(subscriptionId) {
+    if (!this.stopSupported) {
+      throw new Error("stop subscription is not supported with this server");
+    }
+    var sub = this.subscriptions[subscriptionId];
+    var stopMessage = {};
+
+    if (sub.state !== STOPPED) {
+      stopMessage[OP_FIELD] = OP_STOP;
+      stopMessage[ID_FIELD] = subscriptionId;
+      stopMessage[SEQ_NUM_FIELD] = sub.lastSeqNum;
+  
+      sub.state = STOPPED;
+      this._send(stopMessage, 0, false);
+    }
+  }
+
+  /**
+   * <p>Resume message delivery to a subscription.</p>
+   * @param {object} subscriptionId Start this subscription.
+   * @memberOf eFTLConnection
+   * @see eFTLConnection#subscribe
+   */
+  eFTLConnection.prototype.startSubscription = function(subscriptionId) {
+    if (!this.stopSupported) {
+      throw new Error("start subscription is not supported with this server");
+    }
+    var sub = this.subscriptions[subscriptionId];
+    var startMessage = {};
+
+    if (sub.state === STOPPED) {
+      startMessage[OP_FIELD] = OP_START;
+      startMessage[ID_FIELD] = subscriptionId;
+      
+      sub.state = STARTING;
+      this._send(startMessage, 0, false);
+    }
+  }
 
   /**
    * <p>Unsubscribe from messages on a subscription.</p>
