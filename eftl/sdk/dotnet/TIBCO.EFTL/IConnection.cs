@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-17 09:04:34 -0700 (Thu, 17 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: IConnection.cs 128659 2020-09-17 16:04:34Z $
+ * $Id$
  *
  */
 using System;
@@ -402,6 +402,22 @@ namespace TIBCO.EFTL
         /// <seealso cref="IConnection.Subscribe(string, string, Hashtable, ISubscriptionListener)"/>
         ///
         void CloseAllSubscriptions();
+
+        /// <summary>
+        /// Stop message delivery to a subscription.
+        /// </summary>
+        /// 
+        /// <param name="subscriptionId"> The subscription to stop.
+        /// </param>
+        void StopSubscription(String subscriptionId);
+
+        /// <summary>
+        /// Resume message delivery to a subscription.
+        /// </summary>
+        ///
+        /// <param name="subscriptionId"> The subscription to start.
+        /// </param>
+        void StartSubscription(String subscriptionId);
 
         /// <summary>
         /// Unsubscribe from messages on a subscription.

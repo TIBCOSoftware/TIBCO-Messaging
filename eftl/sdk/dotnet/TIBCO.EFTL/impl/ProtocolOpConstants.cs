@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-06-22 14:31:05 -0700 (Mon, 22 Jun 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: ProtocolOpConstants.cs 126482 2020-06-22 21:31:05Z $
+ * $Id$
  *
  */
 using System;
@@ -39,6 +39,9 @@ namespace TIBCO.EFTL
         internal const int OP_MAP_GET =       22;
         internal const int OP_MAP_REMOVE =    24;
         internal const int OP_MAP_RESPONSE =  26;
+        internal const int OP_STOP =          28;
+        internal const int OP_START =         30;
+        internal const int OP_STARTED =       31;
     }
 }
 

@@ -1,4 +1,4 @@
-# 
+#
 # Build the .NET documentation
 
 set(DOTNETDOC_OUTPUT_DIR ${CMAKE_BINARY_DIR}/doc/eftl/html/dotnet)
@@ -16,7 +16,7 @@ set(TIB_OPTIMIZE_FOR_C NO)
 set(TIB_DOXYGEN_LAYOUT_FILE "")
 set(TIB_DOXYGEN_SHOW_USED_FILES NO)
 set(TIB_DOXYGEN_SHOW_FILES NO)
-configure_file(${common_SOURCE_DIR}/btools/doxygen/doxygen.config ${CMAKE_CURRENT_BINARY_DIR}/doxygen.config)
+configure_file(${build_common_SOURCE_DIR}/btools/doxygen/doxygen.config ${CMAKE_CURRENT_BINARY_DIR}/doxygen.config)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../TIBCO.EFTL/mainpage.dox.config ${CMAKE_CURRENT_BINARY_DIR}/mainpage.dox)
 

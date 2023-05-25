@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-06-16 09:06:49 -0700 (Tue, 16 Jun 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: BasicSubscription.cs 126238 2020-06-16 16:06:49Z $
+ * $Id$
  *
  */
 
@@ -23,9 +23,12 @@ namespace TIBCO.EFTL
         protected String durable;
         protected bool pending;
         protected long lastSeqNum;
+        private State state;
  
         internal enum AckMode { Unknown, Auto, Client, None };
         
+        internal enum State { STOPPED, STARTING, STARTED };
+
         internal String Id
         {
             get { return id; }
@@ -57,6 +60,7 @@ namespace TIBCO.EFTL
             this.props           = props;
             this.ackMode         = getAckMode(props);
             this.pending         = true;
+            this.state           = State.STARTED;
         }
         
         internal String getSubscriptionId()
@@ -87,6 +91,16 @@ namespace TIBCO.EFTL
         internal Hashtable getProperties()
         {
             return props;
+        }
+
+        internal void SetState(State state)
+        {
+            this.state = state;
+        }
+        
+        internal State GetState()
+        {
+            return this.state;
         }
 
         internal static AckMode getAckMode(Hashtable props)

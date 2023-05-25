@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009-$Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
+ * Copyright (c) 2009-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketConnection.cs 138851 2022-01-14 22:03:58Z $
+ * $Id$
  */
 using System;
 using System.Collections;
@@ -41,6 +41,7 @@ namespace TIBCO.EFTL
         protected long      protocol;
         protected long      maxMessageSize;
         protected int       reconnectAttempts = 0;
+        protected bool      stopSupported;
         protected Thread    writer;
         protected System.Timers.Timer     timer;
 
@@ -464,6 +465,8 @@ namespace TIBCO.EFTL
 
             message[ProtocolConstants.OP_FIELD] = ProtocolOpConstants.OP_SUBSCRIBE;
             message[ProtocolConstants.ID_FIELD] = subscription.getSubscriptionId();
+
+            message[ProtocolConstants.STOPPED_FIELD] = ((subscription.GetState() == BasicSubscription.State.STOPPED) ? 1 : 0);
             if (subscription.getContentMatcher() != null)
                 message[ProtocolConstants.MATCHER_FIELD] = subscription.getContentMatcher();
             if (subscription.getDurable() != null)
@@ -506,6 +509,57 @@ namespace TIBCO.EFTL
             foreach (String subscriptionId in subscriptions.Keys) 
             {
                 CloseSubscription(subscriptionId);
+            }
+        }
+
+        public void StopSubscription(String subscriptionId)
+        {
+            if (!stopSupported)
+                throw new NotSupportedException("stop subscription is not supported with this server");
+
+            BasicSubscription subscription = subscriptions[subscriptionId];
+
+            if (subscription != null && subscription.GetState() != BasicSubscription.State.STOPPED)
+            {
+                subscription.SetState(BasicSubscription.State.STOPPED);
+                if (IsConnected())
+                {
+                    JsonObject message = new JsonObject();
+
+                    message[ProtocolConstants.OP_FIELD]      = ProtocolOpConstants.OP_STOP;
+                    message[ProtocolConstants.ID_FIELD]      = subscriptionId;
+                    message[ProtocolConstants.SEQ_NUM_FIELD] = subscription.LastSeqNum;
+
+                    Queue(message.ToString());
+                }
+            }
+        }
+
+        public void StartSubscription(String subscriptionId)
+        {
+            if (!stopSupported)
+                throw new NotSupportedException("start subscription is not supported with this server");
+
+            BasicSubscription subscription = subscriptions[subscriptionId];
+
+            if (subscription != null && subscription.GetState() == BasicSubscription.State.STOPPED)
+            {
+                if (IsConnected())
+                {
+                    JsonObject message = new JsonObject();
+
+                    message[ProtocolConstants.OP_FIELD] = ProtocolOpConstants.OP_START;
+                    message[ProtocolConstants.ID_FIELD] = subscriptionId;
+
+                    Queue(message.ToString());
+                    subscription.SetState(BasicSubscription.State.STARTING);
+                }
+                else
+                {
+                    // if not connected, set to STARTED here instead of in
+                    // handleStarted, so sub starts on reconnect
+                    subscription.SetState(BasicSubscription.State.STARTED);
+                }
             }
         }
 
@@ -766,6 +820,9 @@ namespace TIBCO.EFTL
                         case ProtocolOpConstants.OP_MAP_RESPONSE:
                             handleMapResponse(message);
                             break;
+                        case ProtocolOpConstants.OP_STARTED:
+                            handleStarted(message);
+                            break;
                     }
                 }
             }
@@ -819,6 +876,9 @@ Console.WriteLine(e);
             if (message.ContainsKey(ProtocolConstants.RESUME_FIELD))
                 resume = System.Boolean.Parse((String) message[ProtocolConstants.RESUME_FIELD]);
 
+            if (message.ContainsKey(ProtocolConstants.STOP_SUPPORTED_FIELD))
+                stopSupported = System.Boolean.Parse((String) message[ProtocolConstants.STOP_SUPPORTED_FIELD]);
+
             // connected
             Interlocked.Exchange(ref connected, 1);
 
@@ -871,6 +931,8 @@ Console.WriteLine(e);
             if (subscription != null && subscription.Pending)
             {
                 subscription.Pending = false;
+                if (subscription.GetState() == BasicSubscription.State.STARTING)
+                    subscription.SetState(BasicSubscription.State.STARTED);
                 subscription.getListener().OnSubscribe(subscriptionId);
             }
         }
@@ -926,13 +988,14 @@ Console.WriteLine(e);
                 if (envelope.TryGetValue(ProtocolConstants.REPLY_TO_FIELD, out fieldObj))
                     replyTo = Convert.ToString(fieldObj);
 
-                // The message will be processed if there is no sequence number or 
-                // if the sequence number is greater than the last received sequence number.
+                // The message will be processed if there is no sequence number or
+                // if the sequence number is greater than the last received sequence number,
+                // so long as the subscriber isn't stopped.
 
                 BasicSubscription subscription = null;
 
                 bool exists = subscriptions.TryGetValue(to, out subscription);
-                if (exists && subscription != null) 
+                if (exists && subscription != null && subscription.GetState() == BasicSubscription.State.STARTED)
                 {
                     if (seqNum == 0 || seqNum > subscription.LastSeqNum)
                     {
@@ -945,6 +1008,10 @@ Console.WriteLine(e);
                         ((JSONMessage) message).StoreMessageId = msgId;
                         ((JSONMessage) message).DeliveryCount = deliveryCount;
 
+                        // track the last received sequence number
+                        if (seqNum != 0)
+                            subscription.LastSeqNum = seqNum;
+
                         try 
                         {
                             subscription.getListener().OnMessages(new IMessage[] {message});
@@ -953,10 +1020,6 @@ Console.WriteLine(e);
                         {
                             // catch and discard exceptions thrown by the listener
                         }
-
-                        // track the last received sequence number 
-                        if (subscription.AutoAck && seqNum != 0)
-                            subscription.LastSeqNum = seqNum;
                     }
 
                     // auto-acknowledge the message
@@ -1089,6 +1152,14 @@ Console.WriteLine(e);
                 else
                     requestSuccess(seqNum, (value != null ? new JSONMessage(value) : null));
             }
+        }
+
+        private void handleStarted(JsonObject message)
+        {
+            String to = (String) message[ProtocolConstants.TO_FIELD];
+            BasicSubscription subscription = subscriptions[to];
+            if (subscription.GetState() == BasicSubscription.State.STARTING)
+                subscription.SetState(BasicSubscription.State.STARTED);
         }
 
         private void acknowledge(Int64 seqNum, String subId) 

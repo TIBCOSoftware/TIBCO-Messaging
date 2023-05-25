@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: ProtocolConstants.cs 128796 2020-09-24 19:20:18Z $
+ * $Id$
  *
  */
 using System;
@@ -57,5 +57,7 @@ namespace TIBCO.EFTL
         internal static readonly String VALUE_FIELD =            "value";
         internal static readonly String PROTOCOL_FIELD =         "protocol";
         internal static readonly String MAX_PENDING_ACKS_FIELD = "max_pending_acks";
+        internal static readonly String STOPPED_FIELD =          "stopped";
+        internal static readonly String STOP_SUPPORTED_FIELD =   "stop_supported";
     }
 }

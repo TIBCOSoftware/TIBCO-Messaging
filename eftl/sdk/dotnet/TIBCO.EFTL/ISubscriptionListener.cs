@@ -1,10 +1,10 @@
 /*                              
- * Copyright (c) 2001-$Date: 2016-04-12 11:27:33 -0700 (Tue, 12 Apr 2016) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: ISubscriptionListener.cs 85385 2016-04-12 18:27:33Z $
+ * $Id$
  *
  */
 using System;

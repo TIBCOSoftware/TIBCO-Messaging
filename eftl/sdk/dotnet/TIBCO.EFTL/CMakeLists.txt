@@ -18,7 +18,7 @@ set(EFTL_CLIENT_NETSTANDARD_DOC "${CMAKE_CURRENT_BINARY_DIR}/TIBCO.EFTL/netstand
 set(EFTL_CLIENT_DOC "${CMAKE_CURRENT_BINARY_DIR}/TIBCO.EFTL.xml")
 set(EFTL_CLIENT_DOC "${EFTL_CLIENT_DOC}" PARENT_SCOPE)
 set(EFTL_ASSEMBLY_VERSION "${EFTL_VERSION_MAJOR}.${EFTL_VERSION_MINOR}.${EFTL_VERSION_UPDATE}.${EFTL_VERSION_BUILD}")
-SET(EFTL_TRADE "TIB, TIBCO, TIBCO eFTL, and the TIBCO logo are either registered trademarks or trademarks of TIBCO Software Inc. in the United States and/or other countries.")
+SET(EFTL_TRADE "TIB, TIBCO, TIBCO eFTL, and the TIBCO logo are either registered trademarks or trademarks of Cloud Software Group, Inc. in the United States and/or other countries.")
 set(TITLE, "TIBCO EFTL .NET class library")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Version.cs.template ${CMAKE_CURRENT_BINARY_DIR}/TIBCO.EFTL/Version.cs)
@@ -53,8 +53,8 @@ add_custom_command(OUTPUT ${EFTL_CLIENT_LIB}
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 
-SET(POL_COMP "TIBCO Software, Inc.")
-SET(POL_COPY "Copyright (c) ${TIB_COPYRIGHT_YEARS} TIBCO Software Inc.  ALL RIGHTS RESERVED")
+SET(POL_COMP "Cloud Software Group, Inc.")
+SET(POL_COPY "Copyright (c) ${TIB_COPYRIGHT_YEARS} Cloud Software Group, Inc.  ALL RIGHTS RESERVED")
 SET(POL_PROD "TIBCO EFTL")
 SET(POL_TITLE "Publisher Policy for TIBCO EFTL client class library.")
 SET(POL_VERSION "${EFTL_VERSION_MAJOR}.${EFTL_VERSION_MINOR}.${EFTL_VERSION_UPDATE}.${EFTL_VERSION_BUILD}")

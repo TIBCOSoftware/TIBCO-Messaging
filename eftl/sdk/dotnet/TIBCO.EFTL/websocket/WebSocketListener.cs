@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-$Date: 2014-10-06 12:32:56 -0700 (Mon, 06 Oct 2014) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketListener.cs 75907 2014-10-06 19:32:56Z $
+ * $Id$
  *
  */
 using System;

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-12-09 15:23:51 -0800 (Wed, 09 Dec 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: IConnectionListener.cs 130510 2020-12-09 23:23:51Z $
+ * $Id$
  *
  */
 using System;
