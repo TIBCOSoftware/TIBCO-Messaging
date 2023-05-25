@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-17 09:04:34 -0700 (Thu, 17 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: Connection.java 128659 2020-09-17 16:04:34Z $
+ * $Id$
  *
  */
 package com.tibco.eftl;
@@ -303,6 +303,20 @@ public interface Connection
      * @see #subscribe
      */
     public void closeAllSubscriptions();
+
+    /**
+     * Stop message delivery to a subscription.
+     *
+     * @param subscriptionId Stop this subscription.
+     */
+    public void stopSubscription(String subscriptionId);
+
+    /**
+     * Resume message delivery to a subscription.
+     *
+     * @param subscriptionId Start this subscription.
+     */
+    public void startSubscription(String subscriptionId);
 
     /**
      * Unsubscribe from messages on a subscription.

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2022-02-04 12:44:54 -0800 (Fri, 04 Feb 2022) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: EFTL.java 139386 2022-02-04 20:44:54Z $
+ * $Id$
  *
  */
 package com.tibco.eftl;

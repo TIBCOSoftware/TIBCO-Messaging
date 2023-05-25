@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: ProtocolConstants.java 128796 2020-09-24 19:20:18Z $
+ * $Id$
  *
  */
 package com.tibco.eftl.impl;
@@ -39,6 +39,9 @@ public interface ProtocolConstants
     public static int OP_MAP_GET =       22;
     public static int OP_MAP_REMOVE =    24;
     public static int OP_MAP_RESPONSE =  26;
+    public static int OP_STOP =          28;
+    public static int OP_START =         30;
+    public static int OP_STARTED =       31;
 
     // Access Point protocol field name
     public static String OP_FIELD =             "op";
@@ -75,4 +78,6 @@ public interface ProtocolConstants
     public static String VALUE_FIELD =          "value";
     public static String PROTOCOL =             "protocol";
     public static String MAX_PENDING_ACKS =     "max_pending_acks";
+    public static String STOPPED_FIELD =        "stopped";
+    public static String STOP_SUPPORTED_FIELD = "stop_supported";
 }

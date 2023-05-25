@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-09-24 12:20:18 -0700 (Thu, 24 Sep 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JSONMessage.java 128796 2020-09-24 19:20:18Z $
+ * $Id$
  *
  */
 package com.tibco.eftl.impl;

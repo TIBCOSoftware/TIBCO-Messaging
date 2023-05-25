@@ -17,7 +17,7 @@ endif()
 #  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tibeftl.jar DESTINATION eftl/lib COMPONENT development)
 #endif()
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tibeftl.jar 
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tibeftl.jar
             DESTINATION sdks/java/lib COMPONENT runtime)
 
 # # javadoc stuff.
@@ -41,16 +41,16 @@ endif()
 file(MAKE_DIRECTORY ${JAVADOC_OUTPUT_DIR})
 set(TIB_CLIENT_API_NAME "eFTL&trade;")
 set(TIB_CLIENT_NAME_VERSION "${EFTL_VERSION_MAJOR}.${EFTL_VERSION_MINOR}.${EFTL_VERSION_UPDATE}")
-configure_file(${common_SOURCE_DIR}/btools/javadoc/overview.html.config ${CMAKE_BINARY_DIR}/eftl/overview.html)
+configure_file(${build_common_SOURCE_DIR}/btools/javadoc/overview.html.config ${CMAKE_BINARY_DIR}/eftl/overview.html)
 add_custom_command(OUTPUT hydra_doc
                     COMMAND ${Java_JAVADOC_EXECUTABLE} VERBATIM
-                    -d ${JAVADOC_OUTPUT_DIR} 
+                    -d ${JAVADOC_OUTPUT_DIR}
                     -sourcepath "${JAVADOC_SOURCE_PATH}"
                     -classpath "${JAVADOC_CLASS_PATH}"
                     -overview ${CMAKE_BINARY_DIR}/eftl/overview.html
                     -doctitle "TIBCO eFTL&trade; ${EFTL_VERSION_MAJOR}.${EFTL_VERSION_MINOR}.${EFTL_VERSION_UPDATE} ${TIB_VERSION_RELEASE_TYPE}"
                     -header "TIBCO eFTL&trade; ${EFTL_VERSION_MAJOR}.${EFTL_VERSION_MINOR}.${EFTL_VERSION_UPDATE} ${TIB_VERSION_RELEASE_TYPE}"
-                    -footer "<small>Copyright &copy; ${TIB_COPYRIGHT_YEARS} TIBCO Software Inc., All rights reserved.</small>"
+                    -footer "<small>Copyright &copy; ${TIB_COPYRIGHT_YEARS} Cloud Software Group, Inc., All rights reserved.</small>"
                     -public -quiet -notimestamp
                     ${JAVA_PACKAGE_NAMES})
 

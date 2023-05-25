@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-03-31 10:23:10 -0700 (Tue, 31 Mar 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: JsonArray.java 123342 2020-03-31 17:23:10Z $
+ * $Id$
  */
 package com.tibco.eftl.json;
 

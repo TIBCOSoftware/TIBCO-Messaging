@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2022-01-14 14:03:58 -0800 (Fri, 14 Jan 2022) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocketConnection.java 138851 2022-01-14 22:03:58Z $
+ * $Id$
  */
 package com.tibco.eftl.impl;
 
@@ -64,6 +64,7 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     protected boolean qos;
     protected Thread writer;
     protected Timer reconnectTimer;
+    protected boolean stopSupported;
     protected AtomicBoolean connected = new AtomicBoolean();
     protected AtomicBoolean connecting = new AtomicBoolean();
     protected AtomicBoolean reconnecting = new AtomicBoolean();
@@ -520,6 +521,8 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         
         message.put(ProtocolConstants.OP_FIELD, ProtocolConstants.OP_SUBSCRIBE);
         message.put(ProtocolConstants.ID_FIELD, subscription.getSubscriptionId());
+
+        message.put(ProtocolConstants.STOPPED_FIELD, subscription.getState() == Subscription.State.STOPPED);
         if (subscription.getMatcher() != null)
             message.put(ProtocolConstants.MATCHER_FIELD, subscription.getMatcher());
         if (subscription.getDurable() != null)
@@ -562,6 +565,59 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         for (Enumeration<String> e = subscriptions.keys(); e.hasMoreElements();)
         {
             closeSubscription(e.nextElement());
+        }
+    }
+    
+    @Override
+    public void stopSubscription(String subscriptionId)
+    {
+	if (!stopSupported)
+	    throw new UnsupportedOperationException("stop subscription is not supported with this server");
+
+        Subscription subscription = subscriptions.get(subscriptionId);
+
+        if (subscription != null && subscription.getState() != Subscription.State.STOPPED)
+        {
+            subscription.setState(Subscription.State.STOPPED);
+            if (isConnected())
+            {
+                JsonObject message = new JsonObject();
+
+                message.put(ProtocolConstants.OP_FIELD, ProtocolConstants.OP_STOP);
+                message.put(ProtocolConstants.ID_FIELD, subscriptionId);
+                message.put(ProtocolConstants.SEQ_NUM_FIELD, subscription.getLastSeqNum());
+
+                queue(message.toString());
+            }
+        }
+    }
+
+    @Override
+    public void startSubscription(String subscriptionId)
+    {
+	if (!stopSupported)
+	    throw new UnsupportedOperationException("start subscription is not supported with this server");
+
+        Subscription subscription = subscriptions.get(subscriptionId);
+
+        if (subscription != null && subscription.getState() == Subscription.State.STOPPED)
+        {
+            if (isConnected())
+            {
+                JsonObject message = new JsonObject();
+
+                message.put(ProtocolConstants.OP_FIELD, ProtocolConstants.OP_START);
+                message.put(ProtocolConstants.ID_FIELD, subscriptionId);
+            
+                queue(message.toString());
+                subscription.setState(Subscription.State.STARTING);
+            } 
+            else
+            {
+                // if not connected, set to STARTED here instead of in
+                // handleStarted, so sub starts on reconnect
+                subscription.setState(Subscription.State.STARTED);
+            }
         }
     }
     
@@ -759,7 +815,7 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
                 // clear the unacknowledged messages
                 clearRequests(CompletionListener.PUBLISH_FAILED, "Error");
                 
-                listener.onDisconnect(this, ConnectionListener.CONNECTION_ERROR, cause.getMessage());
+                listener.onDisconnect(this, ConnectionListener.CONNECTION_ERROR, cause.toString());
             }
             else
             {
@@ -774,7 +830,7 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
     public void onMessage(String text) 
     {
         Object value = JsonValue.parse(text);
-            
+
         if (value instanceof JsonObject)
         {
             JsonObject message = (JsonObject) value;
@@ -812,6 +868,9 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
                 case ProtocolConstants.OP_MAP_RESPONSE:
                     handleMapResponse(message);
                     break;
+                case ProtocolConstants.OP_STARTED:
+                    handleStarted(message);
+                    break;
                 }
             }
         }
@@ -844,6 +903,11 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
             protocol = ((Number) message.get(ProtocolConstants.PROTOCOL)).intValue();
         else
             protocol = 0;
+
+    if (message.containsKey(ProtocolConstants.STOP_SUPPORTED_FIELD))
+        stopSupported = Boolean.parseBoolean((String) message.get(ProtocolConstants.STOP_SUPPORTED_FIELD));
+    else
+        stopSupported = false;
 
         clientId = (String) message.get(ProtocolConstants.CLIENT_ID_FIELD);
         reconnectId = (String) message.get(ProtocolConstants.ID_TOKEN_FIELD);
@@ -906,6 +970,8 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
         if (subscription != null && subscription.isPending())
         {
             subscription.setPending(false);
+            if (subscription.getState() == Subscription.State.STARTING)
+                subscription.setState(Subscription.State.STARTED);
             subscription.getListener().onSubscribe(subscriptionId);
         }
     }
@@ -948,10 +1014,11 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
             JsonObject body = (JsonObject) envelope.get(ProtocolConstants.BODY_FIELD);
 
             // The message will be processed if there is no sequence number or 
-            // if the sequence number is greater than the last received sequence number.
+            // if the sequence number is greater than the last received sequence number,
+            // so long as the subscriber isn't stopped.
 
             Subscription subscription = subscriptions.get(to);
-            if (subscription != null)
+            if (subscription != null && subscription.getState() == Subscription.State.STARTED)
             {
                 if (seqNum == null || seqNum.longValue() > subscription.getLastSeqNum())
                 {
@@ -965,6 +1032,10 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
                         ((JSONMessage) message).setStoreMessageId(msgId.longValue());
                     if (deliveryCount != null)
                         ((JSONMessage) message).setDeliveryCount(deliveryCount.longValue());
+                    
+                    // track the last received sequence number
+                    if (seqNum != null)
+                        subscription.setLastSeqNum(seqNum.longValue());                    
 
                     try
                     {
@@ -974,10 +1045,6 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
                     {
                         // catch and discard exceptions thrown by the listener
                     }
-                    
-                    // track the last received sequence number
-                    if (subscription.isAutoAck() && seqNum != null)
-                        subscription.setLastSeqNum(seqNum.longValue());                    
                 }
 
                 // auto-acknowledge the message
@@ -1049,6 +1116,14 @@ public class WebSocketConnection implements Connection, WebSocketListener, Runna
             else
                 requestSuccess(seqNum, (value != null ? new JSONMessage(value) : null));
         }
+    }
+
+    private void handleStarted(JsonObject message)
+    {
+        String to = (String) message.get(ProtocolConstants.TO_FIELD);
+        Subscription subscription = subscriptions.get(to);
+        if (subscription.getState() == Subscription.State.STARTING)
+            subscription.setState(Subscription.State.STARTED);
     }
     
     private void acknowledge(long seqNum, String subId)

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-06-22 14:31:05 -0700 (Mon, 22 Jun 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: RequestListener.java 126482 2020-06-22 21:31:05Z $
+ * $Id$
  *
  */
 package com.tibco.eftl;

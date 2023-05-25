@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2001-$Date: 2020-06-16 09:06:49 -0700 (Tue, 16 Jun 2020) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: Subscription.java 126238 2020-06-16 16:06:49Z $
+ * $Id$
  *
  */
 package com.tibco.eftl.impl;
@@ -23,6 +23,7 @@ public class Subscription
     private String id;
     private boolean pending;
     private long lastSeqNum;
+    private State state;
  
     enum AcknowledgeMode 
     {
@@ -30,6 +31,13 @@ public class Subscription
         AUTO,
         CLIENT,
         NONE,
+    }
+
+    enum State
+    {
+        STOPPED,
+        STARTING,
+        STARTED,
     }
     
     Subscription(String id, String matcher, String durable, Properties props, SubscriptionListener listener)
@@ -41,6 +49,7 @@ public class Subscription
         this.listener = listener;
         this.ackMode = getAckMode(props);
         this.pending = true;
+        this.state = State.STARTED;
     }
     
     String getSubscriptionId()
@@ -101,6 +110,16 @@ public class Subscription
     void setLastSeqNum(long seqNum)
     {
         this.lastSeqNum = seqNum;
+    }
+
+    void setState(State state)
+    {
+        this.state = state;
+    }
+
+    State getState()
+    {
+        return state;
     }
     
     private static AcknowledgeMode getAckMode(Properties props)

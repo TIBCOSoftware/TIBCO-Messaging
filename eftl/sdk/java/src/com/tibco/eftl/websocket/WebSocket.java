@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2013-$Date: 2022-01-18 15:49:26 -0800 (Tue, 18 Jan 2022) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date$ TIBCO Software Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
  *
- * $Id: WebSocket.java 138887 2022-01-18 23:49:26Z $
+ * $Id$
  *
  */
 package com.tibco.eftl.websocket;
