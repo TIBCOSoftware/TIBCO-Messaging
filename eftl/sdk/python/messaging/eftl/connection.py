@@ -55,6 +55,9 @@ OP_MAP_SET          = 20
 OP_MAP_GET          = 22
 OP_MAP_REMOVE       = 24
 OP_MAP_RESPONSE     = 26
+OP_STOP             = 28
+OP_START            = 30
+OP_STARTED          = 31
 ERR_PUBLISH_FAILED  = 11
 
 WS_NORMAL_CLOSE     = 1000
@@ -71,8 +74,16 @@ REQUEST_FAILED = 41
 REQUEST_DISALLOWED = 40
 REQUEST_TIMEOUT = 99
 
+# stop/start related constants
+STOP_FAILED = 50
+START_FAILED = 51
+
 #PROPERTY_TIMEOUT                    = "timeout"
 #PROPERTY_NOTIFICATION_TOKEN         = "notification_token"
+
+SUB_STOPPED  = 0
+SUB_STARTING = 1
+SUB_STARTED  = 2
 
 ACKNOWLEDGE_MODE_CLIENT             = "client"
 ACKNOWLEDGE_MODE_NONE               = "none"
@@ -125,6 +136,8 @@ REPLY_TO_FIELD          = "reply_to"
 REQ_ID_FIELD            = "req"
 DEL_FIELD               = "del"
 MAX_PENDING_ACKS_FIELD  = "max_pending_acks"
+STOPPED_FIELD           = "stopped"
+STOP_SUPPORTED_FIELD    = "stop_supported"
 
 MAP_FIELD               = "map"
 KEY_FIELD               = "key"
@@ -153,6 +166,9 @@ class EftlMessageSizeTooLarge(Exception):
 
 class EftlAlreadyConnected(Exception):
     """Raise when connect method is called but connection is already connected."""
+
+class EftlUnsupportedError(Exception):
+    """Raise when unsupported behavior is attempted."""
 
 def _call_dict_function(dic, name, **kwargs):
     """Call dic[name](**kwargs), if it exists."""
@@ -220,8 +236,10 @@ class Eftl():
         A program that uses more than one server channel must connect
         separately to each channel.
 
-        :param:
-        url:
+        Parameters
+	----------
+        url : 
+	
             The call connects to the eFTL server at this URL. This can be
             a single URL, or a pipe ('|') separated list of URLs. URLs can
             be in either of these forms
@@ -234,42 +252,79 @@ class Eftl():
 
                 ws://username:password@host:port/channel?clientId=<identifier>
                 wss://username:password@host:port/channel?clientId=<identifier
+        kwargs :
 
-        :param:
-        kwargs
-            auto_reconnect_attempts : int, optional
-                Maximum number of reconnect attempts. The default is 
-                256 attempts.
-           auto_reconnect_max_delay : optional
-                Maximum reconnect delay in milliseconds. The default is
-                30 seconds.
-           max_pending_acks : optional
-                Maximum number of unacknowledged messages allowed for the
-                client.
-           user : optional
-                Login credentials to use if not found in the url.
-           password : optional
-                Login credentials to use if not found in the url.
-           client_id : optional
-                User-specified client identifier.
-           handshake_timeout : optional
-                Seconds to wait for websocket handshake to complete.
-           login_timeout : optional
-                Seconds to halt waiting for a login message reply. If a
-                reply is not received in time, raise an EftlClientError.
-           polling_interval : optional
-                Seconds to wait between each message reply check.
-           trust_all : true/false (optional)
-           trust_store :  certificate path (optional)
-           loop : event loop provided by user (optional)
-           Callbacks :
-                on_connect(connection):
-                on_disconnect(connection, loop, code, reason):
-                on_reconnect(connection):
-                on_error(connection, code, reason):
-                on_state_change(connection, state):
-        :return:
+            auto_reconnect_attempts (int): Maximum number of reconnect attempts. The default is 256 attempts
+            auto_reconnect_max_delay (int): Maximum reconnect delay in milliseconds. The default is 30 seconds.
+            max_pending_acks (int): optional
+                              Maximum number of unacknowledged messages allowed for the
+                              client.
+            user : optional
+                        Login credentials to use if not found in the url.
+            password : optional
+                        Login credentials to use if not found in the url.
+            client_id : optional
+                       User-specified client identifier.
+            handshake_timeout : optional
+                         Seconds to wait for websocket handshake to complete.
+            login_timeout : optional
+                         Seconds to halt waiting for a login message reply. If a
+                         reply is not received in time, raise an EftlClientError.
+            polling_interval : optional
+                        Seconds to wait between each message reply check.
+            trust_all : true/false (optional)
+            trust_store :  certificate path (optional)
+            loop : event loop provided by user (optional)
+
+            Callbacks :
+
+               'on_connect(connection):'
+			A new connection to the eFTL server is ready to use.
+
+               Parameters
+	       ----------
+               connection : The connection that is ready to use.
+
+               'on_disconnect(connection, loop, code, reason):' A connection to the eFTL server has closed.
+
+               Parameters
+	       ----------
+               connection : The connection that closed.
+               loop : the event loop used servicing connection events
+               code : A code categorizes the error. Your program can use this value in its response logic.
+               reason : This string provides more detail. Your program can use this value in error reporting and logging.
+
+               'on_reconnect(connection):' A connection to the eFTL server has re-opened and is ready to use.
+                                           The eFTL library invokes this method only after your 
+                                           program calls `messaging.eftl.connection.reconnect` and not `messaging.eftl.connection.connect`.
+
+               Parameters
+	       ----------
+               connection: The connection that reconnected.
+
+               'on_error(connection, code, reason):' An error prevented an operation.
+
+               Parameters
+	       ----------
+               connection : connection object. For publish errors, this argument is the message that was not published. 
+                                               For subscription errors, this argument is an object that represents 
+                                               a subscription identifier.
+               code: A code categorizes the error. Your program can use this value in its response logic.
+               reason: This string provides more detail. Your program can use this value in error reporting and logging.
+
+               'on_state_change(connection, state):' The connection state has changed
+	                                             The eFTL library invokes this method whenever the connection state changes.
+
+                Parameters
+	        ----------
+                connection: The connection whose state has changed.
+	        state: The connection has changed to this state
+
+	Returns
+        ----------
+
             The EftlConnection object that can used to publish and subscribe
+
         Raises
         ------
         ValueError
@@ -428,9 +483,13 @@ class EftlMessage():
         """
         Set a string field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name : The call sets this field
+            value : The call sets this value.
+        Return
+        ------
+
         """
         if isinstance(field_name, str):
             if isinstance(value, str):
@@ -444,9 +503,12 @@ class EftlMessage():
         """
         Set a string array field in a message.
 
-        :param field_name: The call sets this field
-        :param values: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            values: The call sets this value.
+        Return
+        -------
         """
         if isinstance(field_name, str):
             if isinstance(values, list):
@@ -465,9 +527,12 @@ class EftlMessage():
         """
         Set a long field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            value: The call sets this value.
+        Return
+        -------
         """
         if isinstance(field_name, str):
             if isinstance(value, int):
@@ -481,9 +546,12 @@ class EftlMessage():
         """
         Set a long array field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            value: The call sets this value.
+        Return
+        -------
         """
         if isinstance(field_name, str):
             if isinstance(values, list):
@@ -501,9 +569,12 @@ class EftlMessage():
         """
         Set a double field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            value: The call sets this value.
+        Return
+        ------
         """
         if isinstance(field_name, str):
             if isinstance(value, float):
@@ -529,9 +600,12 @@ class EftlMessage():
         """
         Set a double array field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            value: The call sets this value.
+        Return
+        ------
         """
         if isinstance(field_name, str):
             if isinstance(values, list):
@@ -554,9 +628,12 @@ class EftlMessage():
         """
         Set a datetime field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            value: The call sets this value.
+        Return
+        ------
         """
         if isinstance(field_name, str):
             if isinstance(value, datetime.datetime):
@@ -571,9 +648,12 @@ class EftlMessage():
         """
         Set a datetime array field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            value: The call sets this value.
+        Return
+        ------
         """
         if isinstance(field_name, str):
             if isinstance(values, list):
@@ -596,9 +676,12 @@ class EftlMessage():
         """
         Set a message field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            value: The call sets this value.
+        Return
+        ------
         """
         if isinstance(field_name, str):
             if isinstance(value, EftlMessage):
@@ -612,9 +695,12 @@ class EftlMessage():
         """
         Set a message array field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            value: The call sets this value.
+        Return
+        ------
         """
         if isinstance(field_name, str):
             if isinstance(values, list):
@@ -632,9 +718,12 @@ class EftlMessage():
         """
         Set an opaque field in a message.
 
-        :param field_name: The call sets this field
-        :param value: The call sets this value.
-        :return:
+        Parameters
+        ----------
+            field_name: The call sets this field
+            value: The call sets this value.
+        Return
+        ------
         """
         if isinstance(field_name, str):
             if value is not None:
@@ -831,9 +920,10 @@ class EftlMessage():
         """
         Message's unique store identifier assigned by the persistence service.
 
-        :return:
-              A monotonically increasing long value that represents
-              message's unique store identifier
+        Return
+        ------
+            A monotonically increasing long value that represents
+            message's unique store identifier
         """
         return self.__sid_
 
@@ -841,7 +931,8 @@ class EftlMessage():
         """
         Message's delivery count assigned by the persistence service.
 
-        :return:
+        Return
+        ------
               The message delivery count.
         """
         return self.__cnt_
@@ -850,10 +941,13 @@ class EftlMessage():
         """
         Get the value of a string field from a message.
 
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type string
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
+            and has type string
         """
         return self._get_field(field_name, "string_type")
 
@@ -861,10 +955,13 @@ class EftlMessage():
         """
         Get the value of a string array field from a message.
 
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type string array
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
+            and has type string array
         """
         return self._get_array(field_name, "string_type")
 
@@ -872,10 +969,13 @@ class EftlMessage():
         """
         Get the value of a long field from a message.
 
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type long
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
+            and has type long
         """
         return self._get_field(field_name, "long_type")
 
@@ -883,10 +983,13 @@ class EftlMessage():
         """
         Get the value of a long array field from a message.
         
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type long array
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
+            and has type long array
         """
         return self._get_array(field_name, "long_type")
 
@@ -894,10 +997,13 @@ class EftlMessage():
         """
         Get the value of a long field from a message.
 
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type double
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
+            and has type double
         """
         return self._get_field(field_name, "double_type")
 
@@ -905,21 +1011,27 @@ class EftlMessage():
         """
         Get the value of a long field from a message.
 
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type double array
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        --------
+            The value of the field if the field is present
+            and has type double array
         """
         return self._get_array(field_name, "double_type")
 
     def get_datetime(self, field_name):
         """
         Get the value of a long field from a message.
-
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type datetime
+ 
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
+            and has type datetime
         """
         return self._get_field(field_name, "datetime_type")
 
@@ -927,10 +1039,13 @@ class EftlMessage():
         """
         Get the value of a long field from a message.
 
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type datetime array
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
+            and has type datetime array
         """
         return self._get_array(field_name, "datetime_type")
 
@@ -938,10 +1053,13 @@ class EftlMessage():
         """
         Get the value of a long field from a message.
 
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type message
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
+            and has type message
         """
         return self._get_field(field_name, "message_type")
 
@@ -949,10 +1067,13 @@ class EftlMessage():
         """
         Get the value of a message array field from a message.
 
-        :param field_name: The name of the field
-
-        :return: The value of the field if the field is present
-                 and has type message array (list of messages)
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
+            and has type message array (list of messages)
         """
         return self._get_array(field_name, "message_type")
 
@@ -960,8 +1081,12 @@ class EftlMessage():
         """
         Get the value of opaque field from a message.
         
-        :param field_name: The name of the field
-        :return: The value of the field if the field is present
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            The value of the field if the field is present
         """
         return self._get_field(field_name, "opaque_type")
 
@@ -969,7 +1094,12 @@ class EftlMessage():
         """
         Return the list of field names.
         
-        :return: The field names of this message as a list object.
+        Parameters
+        ----------
+            The field names of this message as a list object.
+        Return
+        ------
+
         """
         return self.__msg_obj.keys()
 
@@ -977,8 +1107,12 @@ class EftlMessage():
         """
         Return True if the field is set, False otherwise.
 
-        :param field_name: The name of the field
-        :return: True if the field is set, False otherwise
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        ------
+            True if the field is set, False otherwise
 
         """
         field_present = self.__msg_obj.get(field_name)
@@ -990,9 +1124,13 @@ class EftlMessage():
     def get_field_type(self, field_name):
         """
         Return the type of value of this field.
-        
-        :param field_name: The name of the field
-        :return: type of value of this field.
+
+        Parameters
+        ----------
+            field_name: The name of the field
+        Return
+        -------
+            Type of value of this field.
         
             Possible return values : 
 	            'int' represents Integer
@@ -1011,7 +1149,9 @@ class EftlMessage():
         """
         Remove the given field from this message.
         
-        :param field_name: 
+        Parameters
+        ----------
+            field_name: field_name to clear
         """
         self._remove_field(field_name)
 
@@ -1026,6 +1166,22 @@ class EftlKVMap():
     Programs use key-value map objects to set, get, and remove key-value
     pairs in an FTL map.
 
+    Callbacks:
+        'on_success(key, message):' A key-value map operation has completed successfully.
+
+        Parameters
+        __________
+            key: The key being operated upon.
+            message: The value of the key.
+
+        'on_error(key, message, code, reason):' An error prevented a key-value map operation.
+
+        Parameters
+        __________
+            key: The key being operated upon.
+            message: The value of the key.
+            code: A code categorizes the error. Your program can use this value in its response logic.
+            reason: This string provides more detail. Your program can use this value in error reporting and logging.
     """
 
     def __init__(self, connection, name):
@@ -1036,12 +1192,29 @@ class EftlKVMap():
         """
         Get the value of a key from the map, or <c>null</c> if the key is not set.
         
-        :param key: Get the value for this key
-        :param kwargs:
-            Callbacks:
-                on_success:
-                on_error:
-        :return: The value as a EftlMessage
+	Parameters
+	__________
+            key: Get the value for this key
+            kwargs:
+                Callbacks:
+
+                'on_success(key, message):' A key-value map operation has completed successfully.
+                Parameters
+                __________
+                key: The key being operated upon.
+                message: The value of the key.
+
+                'on_error(key, message, code, reason):' An error prevented a key-value map operation.
+                Parameters
+                __________
+                key: The key being operated upon.
+                message: The value of the key.
+                code: A code categorizes the error. Your program can use this value in its response logic.
+                reason: This string provides more detail. Your program can use this value in error reporting and logging.
+       Return
+       ------
+           The value as a EftlMessage
+
         """
         if not self.connection._permanently_closed():
             if isinstance(key, str):
@@ -1059,12 +1232,30 @@ class EftlKVMap():
         asynchronously.  When the set completes successfully,
         the eFTL library calls your on_success callback.
 
-        :param key: Set the value for this key.
-        :param value: Set this value for the key.
-        :param kwargs:
-              on_success
-              on_error
-        :return:
+        Parameters
+        ----------
+            key: Set the value for this key.
+    	    value: Set this value for the key.
+    	    kwargs:
+                Callbacks:
+
+                'on_success(key, message):' A key-value map operation has completed successfully.
+                Parameters
+                __________
+                key: The key being operated upon.
+                message: The value of the key.
+  
+                'on_error(key, message, code, reason):' An error prevented a key-value map operation.
+                Parameters
+                __________
+                key: The key being operated upon.
+                message: The value of the key.
+                code: A code categorizes the error. Your program can use this value in its response logic.
+                reason: This string provides more detail. Your program can use this value in error reporting and logging.
+  	
+        Return
+        -----
+	
         """
         if not self.connection._permanently_closed():
             if isinstance(key, str):
@@ -1085,11 +1276,27 @@ class EftlKVMap():
         asynchronously.  When the remove completes successfully,
         the eFTL library calls your on_success callback.
 
-        :param key:  Revove the value for this key.
-        :param kwargs:
-               on_success
-               on_error
-        :return:
+        Parameters
+        ----------
+            key: Remove the value for this key
+            kwargs:
+                Callbacks:
+                'on_success(key, message):' A key-value map operation has completed successfully.
+                Parameters
+                __________
+                key: The key being operated upon.
+                message: The value of the key.
+               
+                'on_error(key, message, code, reason):' An error prevented a key-value map operation.
+                Parameters
+                __________
+                key: The key being operated upon.
+                message: The value of the key.
+                code: A code categorizes the error. Your program can use this value in its response logic.
+                reason: This string provides more detail. Your program can use this value in error reporting and logging.
+        Return
+        ------
+
         """
         if not self.connection._permanently_closed():
             if isinstance(key, str):
@@ -1207,7 +1414,9 @@ class EftlConnection():
         """
         Get the client identifier for this connection.
 
-        :return: The client's identifier.
+        Return
+        ------
+            The client's identifier.
 
         """
         return self.client_id
@@ -1303,7 +1512,8 @@ class EftlConnection():
         on the connection. The eFTL library invokes your
         on_subscribe callback for each successful resubscription.
 
-        :return:
+        Return
+        ------
         """
         if not self.is_connected():
             if self.previously_connected:
@@ -1449,7 +1659,9 @@ class EftlConnection():
         """
         Determine whether this connection to the eFTL server is open or closed.
 
-        :return: True if this connection is open, False otherwise
+        Return
+        ------
+            True if this connection is open, False otherwise
         """
         return self._ws is not None and self.status == Eftl.CONNECTED
 
@@ -1471,7 +1683,8 @@ class EftlConnection():
         When the connection has closed, the eFTL library calls your
         on_disconnect callback.
         
-        :return:
+        Return
+        ------
         """
         if not self._permanently_closed():
             self._ws._disconnect()
@@ -1480,27 +1693,57 @@ class EftlConnection():
 
     async def subscribe(self, **kwargs):
         """
-        Send a message to register a matcher-based subscription.
 
+        Subscribe to messages.
+        Register a subscription for one-to-many messages.
+        This call returns immediately; subscribing continues asynchronously. When the subscription is ready to
+        receive messages, the eFTL library calls your on_subscribe callback.
+        
+        A matcher can narrow subscription interest in the inbound message stream.
+        
+        An acknowledgment mode for the subscription can be set to automatically acknowledge consumed
+        messages, require explicit client acknowledgment of the consumed messages, or to disable
+        message acknowledgment altogether. The default is to automatically acknowledge consumed messages.
+
+        When explicit client acknowledgment is specified the eFTL server will stop delivering messages
+        to the client once the server's configured maximum number of unacknowledged messages is reached.
+        
+        When communicating with EMS, to subscribe to messages published on a specific EMS
+        destination use a subscription matcher that includes the message field name <code>_dest</code>.
+        To distinguish between topics and queues the destination name can be prefixed with
+        either "TOPIC:" or "QUEUE:", for example "TOPIC:MyDest" or "QUEUE:MyDest". A destination name
+        with no prefix is a topic.
+
+        example
+        To subscribe to messages published on a specific EMS destination,
+        create a subscription matcher for that destination;
+        for example:
+        var matcher = '{"_dest":"MyDest"}';
+       
         Parameters
         ----------
-        timeout : optional
-            Number of seconds to halt waiting on acknowledgement from
-            the server (default set in EftlConnection.connect()).
-        matcher : str, optional
-            JSON content matcher to subscribe to.
-        type : {"standard", "shared", "last-value"}, optional
-            Durable type.
-        key : optional
-            The last-value index key, if `type` is "last-value".
-        durable : str, optional
-            Name to give the durable.
-        ack_mode: client, None. Default is auto
+	kwargs:
 
+            timeout : optional
+                Number of seconds to halt waiting on acknowledgement from
+                the server messaging.eftl.connect().
+
+            matcher : str, optional
+                JSON content matcher to subscribe to.
+
+            type : {"standard", "shared", "last-value"}, optional
+                Durable type.
+
+            key : optional
+                The last-value index key, if `type` is "last-value".
+
+            durable : str, optional
+                Name to give the durable.
+
+            ack_mode: client, None. Default is auto
         Returns
         -------
-        sub_id
-            The subcription identifier of the new subscription.
+            sub_id: The subcription identifier of the new subscription.
         """
         if not self._permanently_closed():
             #check if matcher is valid JSON string
@@ -1535,8 +1778,12 @@ class EftlConnection():
         messages to the client once the server's configured maximum number of
         unacknowledged messages is reached.
 
-        :param message: The message being acknowledged
-        :return:
+	Parameters
+        ----------
+        message: The message being acknowledged
+	
+	Returns
+        --------
         """
         seq_num = message._get_sequence_number_()
         sub_id = message._get_subscriber_id_()
@@ -1561,8 +1808,12 @@ class EftlConnection():
         messages to the client once the server's configured maximum number of
         unacknowledged messages is reached.
 
-        :param message: The message being acknowledged1
-        :return:
+	Parameters
+	----------
+	message: The message being acknowledged1
+
+	Returns
+	--------
         """
         seq_num = message._get_sequence_number_()
         sub_id = message._get_subscriber_id_()
@@ -1583,14 +1834,20 @@ class EftlConnection():
         Publish a request message.
 
         This call returns immediately. When the reply is received
-        the eFTL library calls your {@link RequestListener#onReply}
-        callback.
+        the eFTL library calls your 'on_reply' callback.
 
-        :param message: The request message to publish.
-        :param timeout: timeout seconds to wait for reply
-        :param kwargs:
-              callbacks:
-        :return:
+	Parameters
+	----------
+            message: The request message to publish.
+            timeout: timeout seconds to wait for reply
+            kwargs:
+                Callbacks:
+                    'on_reply(message):' A request operation has received a reply.
+	       	    Parameters
+		    ----------
+        	        message: The reply message.
+	Returns
+        -------
         """
         if not self._permanently_closed():
             if isinstance(message, EftlMessage):
@@ -1608,14 +1865,20 @@ class EftlConnection():
         Send a reply message in response to a request message.
 
         This call returns immediately. When the send completes successfully
-        the eFTL library calls your {@link CompletionListener#onCompletion}
-        callback.
+        the eFTL library calls your on_complete callback.
 
-        :param requestMessage: The reply message to send
-        :param replyMessage: The request msg
-        :param kwargs:
-               callbacks
-        :return:
+        Parameters
+	----------
+            requestMessage: The reply message to send
+            replyMessage: The request msg
+            kwargs:
+                Callbacks
+                    'on_complete(message):'
+                    Parameters
+                    ----------
+                        message: The reply message that completed successfully
+	Return
+        -------
         """
         if not self._permanently_closed():
             if isinstance(requestMessage, EftlMessage) and isinstance(replyMessage, EftlMessage):
@@ -1643,9 +1906,11 @@ class EftlConnection():
         Programs receive subscription identifiers through their
         methods.
 
-        :param sub_id:  Subscription identifier of the subscription to delete.
-        timeout`
-        :return:
+        Parameters
+        ----------
+            sub_id:  Subscription identifier of the subscription to delete.
+        Return
+        -------
         """
         if not self._permanently_closed():
             self._ws._unsubscribe(sub_id)
@@ -1654,13 +1919,11 @@ class EftlConnection():
 
     async def unsubscribe_all(self):
         """
-        Unsubscribe from all subscriptions.
+        Unsubscribe from messages on all subscriptions.
+        For durable subscriptions, this call will cause the persistence
+        service to remove the durable subscription, along with any
+        persisted messages.
 
-        Parameters
-        ----------
-        timeout : optional
-            Number of seconds to halt waiting on acknowledgement from
-            the server (default set in EftlConnection.connect()).
         """
         if not self._permanently_closed():
             self._ws._unsubscribe_all()
@@ -1703,27 +1966,83 @@ class EftlConnection():
         else:
             raise ConnectionError("Connection is closed.")
 
+    async def stop_subscription(self, subscription_id):
+        """
+        Stop message delivery to the specified subscription.
+
+        Parameters
+        __________
+            subscription_id: Subscription identifier of the subscription to stop.
+        """
+        if not self.stop_supported:
+            raise EftlUnsupportedError("stop subscription is not supported with this server")
+
+        sub = self.subscriptions.get(subscription_id)
+        if sub["state"] != SUB_STOPPED:
+            sub["state"] = SUB_STOPPED
+            self._ws._stop_subscription(subscription_id=subscription_id)
+
+    async def start_subscription(self, subscription_id):
+        """
+        Resume message delivery to the specified subscription if stopped.
+
+        Parameters
+        __________
+            subscription_id: Subscription identifier of the subscription to start.
+        """
+        if not self.stop_supported:
+            raise EftlUnsupportedError("stop subscription is not supported with this server")
+
+        sub = self.subscriptions.get(subscription_id)
+        if sub["state"] == SUB_STOPPED:
+            sub["state"] = SUB_STARTING
+            self._ws._start_subscription(subscription_id=subscription_id)
+
     async def publish(self, message, **kwargs):
         """
         Publish a one-to-many message to all subscribing clients.
+        This call returns immediately; publishing continues asynchronously.
+        When the publish completes successfully, the eFTL library calls your
+        on_completel callback. 
 
-        This call returns immediately; publishing continues
-        asynchronously.  When the publish completes successfully,
-        the eFTL library calls your
+        When communicating with EMS, to publish a messages on a specific EMS
+        destination include the message field name <code>_dest</code>.
+        To distinguish between topics and queues the destination can be prefixed with
+        either "TOPIC:" or "QUEUE:", for example "TOPIC:MyDest" or "QUEUE:MyDest". A
+        destination with no prefix is a topic.
+   
+        example
+        To publish a message on a specific EMS destination
+        add a string field to the message; for example:</caption>
+        message.set("_dest", "MyDest");
 
-        :param message: Publish this message.
-        :param kwargs:
-               callbacks:
-               on_publish
-               on_error
-        :return:
+	Parameters
+	__________
+        message: Publish this message.
 
-        ValueError
-            If the message size exceeds the maximum.
-        TypeError
-            If the message is not of type EftlMessage
-        ConnectionError
-            If the connection is closed.
+        kwargs:
+
+            Callbacks:
+
+               'on_publish(message):' A publish operation has completed successfully
+	
+               Parameters
+    	       __________
+	       message: This message has been published.
+
+               'on_error(connection, code, reason):' An error prevented an operation.
+               Parameters
+	       ----------
+               connection : connection object. For publish errors, this argument is the message that was not published. 
+                                               For subscription errors, this argument is an object that represents 
+                                               a subscription identifier.
+               code: A code categorizes the error. Your program can use this value in its response logic.
+               reason: This string provides more detail. Your program can use this value in error reporting and logging.
+        Return
+        ------
+            ValueError: If the message size exceeds the maximum.
+            TypeError: If the message is not of type EftlMessage
+            ConnectionError: If the connection is closed.
 
         """
         if not self._permanently_closed():
@@ -1738,8 +2057,12 @@ class EftlConnection():
         """
         Return a new EftlKVMap associated with this connection.
         
-        :param name: name of the KVMap
-        :return:  The KVmap object
+        Parameters
+        ----------
+            name: name of the KVMap
+        Return
+        ------
+            The KVmap object
         """
         if not self._permanently_closed():
             if isinstance(name, str):
@@ -1753,8 +2076,13 @@ class EftlConnection():
         """
         Remove a EftlKVMap object.
         
-        :param name: the name of the map
-        :return:
+        Parameters
+        ----------
+        name: the name of the map
+
+        Return
+        ------
+
         """
         if not self._permanently_closed():
             if isinstance(name, str):
@@ -1768,7 +2096,9 @@ class EftlConnection():
         """
         Create an EftlMessage that can be used to publish or send request/replies.
 
-        :return: The EftlMessage object
+        Return
+        ------
+            The EftlMessage Object
 
         """
         return EftlMessage()
@@ -1919,6 +2249,8 @@ class EftlConnection():
                     self._handle_reply(msg)
                 elif op_code == OP_MAP_RESPONSE:
                     self._handle_map_response(msg)
+                elif op_code == OP_STARTED:
+                    self._handle_started(msg)
                 else:
                     logger.debug("Received unknown op code ({}):\n{}".format(op_code, msg))
 
@@ -1973,6 +2305,7 @@ class EftlConnection():
                 self.timeout = message.get(TIMEOUT_FIELD)
                 self.heartbeat = message.get(HEARTBEAT_FIELD)
                 self.max_message_size = message.get(MAX_SIZE_FIELD)
+                self.factory.conn.stop_supported = str(message.get(STOP_SUPPORTED_FIELD)).lower() == "true"
 
                 self.qos = str(message.get(QOS_FIELD, "")).lower() == "true"
 
@@ -2032,6 +2365,9 @@ class EftlConnection():
                         "id": sub_id,
                         "pending": True,
                         "last_received_sequence_number": -1,
+                        "state": SUB_STARTED,
+                        "dispatcher_active": False,
+                        "message_queue": [],
                         }
 
                     ack_mode_str = kwargs.get(ACK_FIELD)
@@ -2051,6 +2387,7 @@ class EftlConnection():
                 sub_message = {
                     OP_FIELD: OP_SUBSCRIBE,
                     ID_FIELD: sub_id,
+                    STOPPED_FIELD: self.factory.conn.subscriptions[sub_id]["state"] == SUB_STOPPED,
                 }
 
                 sub_matcher = kwargs.get(MATCHER_FIELD)
@@ -2082,6 +2419,8 @@ class EftlConnection():
                 sub = self.factory.conn.subscriptions.get(sub_id)
                 if sub and sub.get("pending") is not None:
                     sub["pending"] = False
+                    if self.factory.conn.subscriptions[sub_id]["state"] == SUB_STARTING:
+                        self.factory.conn.subscriptions[sub_id]["state"] = SUB_STARTED
                     _call_dict_function(sub.get("options"), "on_subscribe", id=sub_id, )
 
             def _remove_kv_map(self, name):
@@ -2297,9 +2636,28 @@ class EftlConnection():
                     else:
                         self._pending_error(sequence, err_code, reason)
 
-
             def _handle_message(self, message):
-                sub        = self.factory.conn.subscriptions.get(message.get(TO_FIELD))
+                sub = self.factory.conn.subscriptions.get(message.get(TO_FIELD))
+                if sub is None:
+                    return
+
+                sub["message_queue"].append(message)
+                # If one isn't already active, launch a dispatcher to handle existing
+                # backlog of messages for subscriber
+                if not sub["dispatcher_active"]:
+                    # This is decremented by dispatcher
+                    sub["dispatcher_active"] = True
+                    event_loop = asyncio.get_event_loop()
+                    event_loop.create_task(self._message_dispatcher(sub))
+
+            async def _message_dispatcher(self, sub):
+                while sub["message_queue"]:
+                    message = sub["message_queue"].pop(0)
+                    await self._dispatch_message(sub, message)
+
+                sub["dispatcher_active"] = False
+
+            async def _dispatch_message(self, sub, message):
                 seq_num    = message.get(SEQ_NUM_FIELD)
                 data       = message.get(BODY_FIELD)
                 sid        = message.get(STORE_MSG_ID_FIELD)
@@ -2307,8 +2665,9 @@ class EftlConnection():
                 reply_to   = message.get(REPLY_TO_FIELD)
                 request_id = message.get(REQ_ID_FIELD)
 
-                if sub is not None and seq_num is not None:
+                if sub is not None and seq_num is not None and sub["state"] == SUB_STARTED:
                     if seq_num > sub.get('last_received_sequence_number'):
+                        sub['last_received_sequence_number'] = seq_num
                         if sub.get("options") is not None:
 
                             if data is not None:
@@ -2332,13 +2691,19 @@ class EftlConnection():
                                 if request_id is not None:
                                     eftl_message._set_request_id_(request_id)
 
-                                _call_dict_function(sub.get("options"), "on_message", message=eftl_message)
+                                callback = sub.get("options").get("on_message")
+                                if callback is not None:
+                                    await callback(message=eftl_message)
 
-                        sub['last_received_sequence_number'] = seq_num
 
                     if sub.get(ACKNOWLEDGE_MODE) == ACKNOWLEDGE_MODE_AUTO:
                         sub_id = sub.get(ID_FIELD)
                         self._ack(seq_num, sub_id)
+
+            def _handle_started(self, message):
+                sub = self.factory.conn.subscriptions.get(message.get(TO_FIELD))
+                if sub is not None and sub["state"] == SUB_STARTING:
+                    sub["state"] = SUB_STARTED
 
 
             def _ack(self, seq_num, sub_id=None):
@@ -2354,6 +2719,24 @@ class EftlConnection():
                     envelope[ID_FIELD] = sub_id
                 self._send(envelope, 0, False)
 
+            def _stop_subscription(self, subscription_id):
+                sub = self.factory.conn.subscriptions.get(subscription_id)
+                seq_num = sub["last_received_sequence_number"]
+                envelope = {
+                    OP_FIELD: OP_STOP,
+                    SEQ_NUM_FIELD: seq_num,
+                    ID_FIELD: subscription_id,
+                }
+
+                self._send(envelope, 0, False)
+
+            def _start_subscription(self, subscription_id):
+                envelope = {
+                    OP_FIELD: OP_START,
+                    ID_FIELD: subscription_id,
+                }
+
+                self._send(envelope, 0, False)
 
             def _handle_error(self, message):
                 err_code = message.get(ERR_CODE_FIELD)
