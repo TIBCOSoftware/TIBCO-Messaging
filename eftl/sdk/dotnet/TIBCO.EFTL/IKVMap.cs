@@ -1,8 +1,6 @@
 /*
- * Copyright (c) 2001-$Date: 2018-02-05 16:15:48 -0800 (Mon, 05 Feb 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2018-02-05 16:15:48 -0800 (Mon, 05 Feb 2018) $ Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  *
  * $Id: IConnection.cs 99237 2018-02-06 00:15:48Z $
  *

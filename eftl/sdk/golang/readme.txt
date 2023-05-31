@@ -1,8 +1,6 @@
 /*
  * Copyright (c) 2013-$Date: 2018-11-10 19:06:28 -0600 (Sat, 10 Nov 2018) $ Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  */
 
  This directory contains the Go client for TIBCO eFTL and examples.

@@ -1,8 +1,6 @@
 /*
- * Copyright (c) 2009-$Date: 2012-03-13 09:35:50 -0700 (Tue, 13 Mar 2012) $ TIBCO Software Inc.
+ * Copyright (c) 2009-$Date: 2012-03-13 09:35:50 -0700 (Tue, 13 Mar 2012) $ Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  *
  * $Id: $
  */
@@ -16,9 +14,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("TIBCO.EFTL")]
 [assembly: AssemblyDescription("TIBCO.EFTL Messaging")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("TIBCO Software Inc.")]
+[assembly: AssemblyCompany("Cloud Software Group, Inc.")]
 [assembly: AssemblyProduct("TIBCO.EFTL")]
-[assembly: AssemblyCopyright("Copyright © TIBCO Software Inc. ${TIB_COPYRIGHT_YEARS}")]
+[assembly: AssemblyCopyright("Copyright © Cloud Software Group, Inc. ${TIB_COPYRIGHT_YEARS}")]
 [assembly: AssemblyTrademark("${EFTL_TRADE}")]
 [assembly: AssemblyCulture("")]
 

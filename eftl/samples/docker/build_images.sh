@@ -3,8 +3,6 @@
 #
 # Copyright (c) 2016-2022 TIBCO Software Inc.
 # All Rights Reserved. Confidential & Proprietary.
-# For more information, please contact:
-# TIBCO Software Inc., Palo Alto, California, USA
 #
 
 #

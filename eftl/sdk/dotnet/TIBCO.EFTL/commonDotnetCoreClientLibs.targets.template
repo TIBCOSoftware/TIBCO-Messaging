@@ -13,9 +13,9 @@
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
     <OutDir>netstandard2.0</OutDir>
-    <Company>TIBCO Software Inc.</Company>
+    <Company>Cloud Software Group, Inc.</Company>
     <AssemblyTitle>@TITLE@</AssemblyTitle>
-    <Copyright>Copyright @TIB_COPYRIGHT_YEARS@ TIBCO Software Inc. ALL RIGHTS RESERVED</Copyright>
+    <Copyright>Copyright @TIB_COPYRIGHT_YEARS@ Cloud Software Group, Inc. ALL RIGHTS RESERVED</Copyright>
     <DocumentationFile>TIBCO.EFTL.xml</DocumentationFile>
   </PropertyGroup>
 

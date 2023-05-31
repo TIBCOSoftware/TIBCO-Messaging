@@ -1,8 +1,6 @@
 /*
- * Copyright (c) 2001-$Date: 2017-01-31 13:28:19 -0800 (Tue, 31 Jan 2017) $ TIBCO Software Inc.
+ * Copyright (c) 2001-$Date: 2017-01-31 13:28:19 -0800 (Tue, 31 Jan 2017) $ Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  *
  * $Id: JSONMessage.cs 91161 2017-01-31 21:28:19Z $
  *

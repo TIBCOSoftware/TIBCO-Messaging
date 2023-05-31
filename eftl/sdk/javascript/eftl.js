@@ -1,8 +1,6 @@
 /*
- * Copyright (c) $Date$ TIBCO Software Inc.
+ * Copyright (c) $Date$ Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
  *
  * $Id$
  */
