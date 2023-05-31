@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-$Date: 2018-11-10 19:06:28 -0600 (Sat, 10 Nov 2018) $ TIBCO Software Inc.
+ * Copyright (c) 2013-$Date: 2018-11-10 19:06:28 -0600 (Sat, 10 Nov 2018) $ Cloud Software Group, Inc.
  * Licensed under a BSD-style license. Refer to [LICENSE]
  * For more information, please contact:
  * TIBCO Software Inc., Palo Alto, California, USA
@@ -23,6 +23,8 @@
  2. Run godoc as a web server, for example:
 
       $ godoc -http=:6060
+
+   NOTE: Before running godoc make sure be in <TIBCO eFTL Install Directory>/samples/golang/src/tibco.com/eftl directory
 
  3. Navigate your browser to the Go client for TIBCO eFTL
     package:
@@ -68,6 +70,11 @@
 
         Basic subscriber program that demonstrates the use of 
         subscribing to eFTL messages.
+
+ stopSubscriber
+
+        Basic subscriber program that demonstrates the use of
+        stopping and starting a subscription.
 
  sharedSubscriber
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2001-2021 Cloud Software Group, Inc.
+// Copyright (c) 2001-$Date$ Cloud Software Group, Inc.
 // Licensed under a BSD-style license. Refer to [LICENSE]
 //
 
@@ -10,6 +10,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"tibco.com/eftl"
 )
@@ -85,6 +86,7 @@ func main() {
 	}
 
 	var total int
+	var mySub *eftl.Subscription
 
 	for {
 		select {
@@ -95,6 +97,7 @@ func main() {
 			}
 			log.Printf("subscribed with matcher: %s", sub.Matcher)
 			// unsubscribe, this will permanently remove a durable subscription
+			mySub = sub
 			defer conn.Unsubscribe(sub)
 		case msg := <-msgChan:
 			total++
@@ -102,6 +105,21 @@ func main() {
 
 			if clientAck {
 				conn.Acknowledge(msg)
+			}
+
+			if total == 5 {
+				log.Printf("Stopping subscription")
+				err = conn.StopSubscription(mySub)
+				if err != nil {
+					log.Printf("stop failed %s", err)
+				} else {
+					time.Sleep(3 * time.Second)
+					log.Printf("Starting subscription")
+					err = conn.StartSubscription(mySub)
+					if err != nil {
+						log.Printf("start failed %s", err)
+					}
+				}
 			}
 
 			if total >= count {

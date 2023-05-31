@@ -1,8 +1,6 @@
 //
-// Copyright (c) 2001-2021 TIBCO Software Inc.
+// Copyright (c) 2001-2021 Cloud Software Group, Inc.
 // Licensed under a BSD-style license. Refer to [LICENSE]
-// For more information, please contact:
-// TIBCO Software Inc., Palo Alto, California, USA
 //
 
 // This is an example of a basic eFTL client which sets a key-value pair in a map.
@@ -33,7 +31,7 @@ func main() {
 	if len(os.Args) > 1 {
 		url = os.Args[1]
 	}
-        log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
+	log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
 
 	// set connection options
 	opts := eftl.DefaultOptions()
