@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2001-$Date$ Cloud Software Group, Inc.
-// All Rights Reserved. Confidential & Proprietary.
+// Licensed under a BSD-style license. Refer to [LICENSE]
 //
 
 // This is an example of a basic eFTL client subscriber.

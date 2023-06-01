@@ -1,6 +1,6 @@
 /*
  * Copyright 2013-2021 Cloud Software Group Inc.
- * All Rights Reserved. Confidential and Proprietary.
+ * Licensed under a BSD-style license. Refer to [LICENSE]
  */
 
  This directory contains python client samples for TIBCO eFTL.

@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2001-2021 Cloud Software Group, Inc.
-// All Rights Reserved. Confidential & Proprietary.
+// Licensed under a BSD-style license. Refer to [LICENSE]
 //
 
 // This is an example of a basic eFTL client which removes a key-value pair from a map.
