@@ -1,0 +1,740 @@
+{
+  "dashboard": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "limit": 100,
+          "name": "Annotations \u0026 Alerts",
+          "showIn": 0,
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": null,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 9,
+        "panels": [],
+        "targets": [
+          {
+            "datasource": {
+              "type": "datasource",
+              "uid": "grafana"
+            },
+            "refId": "A"
+          }
+        ],
+        "title": "Key Statistics",
+        "type": "row"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 0,
+          "y": 1
+        },
+        "id": 25,
+        "libraryPanel": {
+          "name": "Kafka Brokers",
+          "uid": "ec98c483-806d-413d-b8ba-b7443a56c145"
+        },
+        "title": "Kafka Brokers"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 4,
+          "y": 1
+        },
+        "id": 27,
+        "libraryPanel": {
+          "name": "Active Controllers",
+          "uid": "e0947a95-06d4-4afa-b59e-68c232399795"
+        },
+        "title": "Active Controllers"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 8,
+          "y": 1
+        },
+        "id": 29,
+        "libraryPanel": {
+          "name": "Partitions",
+          "uid": "af819648-1dea-40f1-bcb2-1c43367363f5"
+        },
+        "title": "Partitions"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 12,
+          "y": 1
+        },
+        "id": 31,
+        "libraryPanel": {
+          "name": "Under-Replicated Partitions",
+          "uid": "e12c7a60-52cc-40ea-97ab-01e32ae3a31f"
+        },
+        "title": "Under-Replicated Partitions"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 16,
+          "y": 1
+        },
+        "id": 33,
+        "libraryPanel": {
+          "name": "Offline Partitions",
+          "uid": "c255e500-2a89-493c-897d-7e184c81358b"
+        },
+        "title": "Offline Partitions"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 20,
+          "y": 1
+        },
+        "id": 35,
+        "libraryPanel": {
+          "name": "ZooKeeper Nodes",
+          "uid": "be87fded-4c9b-498f-89a7-601822c34b79"
+        },
+        "title": "ZooKeeper Nodes"
+      },
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 4
+        },
+        "id": 10,
+        "panels": [],
+        "repeat": "Instance",
+        "repeatDirection": "h",
+        "targets": [
+          {
+            "datasource": {
+              "type": "datasource",
+              "uid": "grafana"
+            },
+            "refId": "A"
+          }
+        ],
+        "title": "$Instance Latency - $fields",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "description": "Request queue time: \nThe amount of time the request spends in queue after it has been received but before processing starts.\n\nLocal time: \nThe amount of time the partition leader spends processing a request, including sending it to disk (but not necessarily flushing it).\n\nRemote time: \nThe amount of time spent waiting for the followers before request processing can complete.\n\nResponse queue time:\nThe amount of time the response to the request spends in the queue before it can be sent to the requestor.\n\nResponse send time:\nThe amount of time spent actually sending the response.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 6,
+          "x": 0,
+          "y": 5
+        },
+        "id": 5,
+        "links": [],
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "10.2.2",
+        "repeat": "brokername",
+        "repeatDirection": "h",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+            },
+            "editorMode": "code",
+            "expr": "{__name__=~\"kafka_network_RequestMetrics_$fields\", job=\"$Job\",instance=~\"$Instance\",request=\"Produce\",name=~\".*TimeMs\"}",
+            "instant": false,
+            "legendFormat": "{{instance}} {{name}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Produce",
+        "transparent": true,
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "description": "Request queue time: \nThe amount of time the request spends in queue after it has been received but before processing starts.\n\nLocal time: \nThe amount of time the partition leader spends processing a request, including sending it to disk (but not necessarily flushing it).\n\nRemote time: \nThe amount of time spent waiting for the followers before request processing can complete.\n\nResponse queue time:\nThe amount of time the response to the request spends in the queue before it can be sent to the requestor.\n\nResponse send time:\nThe amount of time spent actually sending the response.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 6,
+          "x": 6,
+          "y": 5
+        },
+        "id": 7,
+        "links": [],
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "10.2.2",
+        "repeat": "brokername",
+        "repeatDirection": "h",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+            },
+            "editorMode": "code",
+            "expr": "{__name__=~\"kafka_network_RequestMetrics_$fields\", job=\"$Job\",instance=~\"$Instance\",request=\"FetchFollower\",name=~\".*TimeMs\"}",
+            "instant": false,
+            "legendFormat": "{{instance}} {{name}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Fetch Follower ",
+        "transparent": true,
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "description": "Request queue time: \nThe amount of time the request spends in queue after it has been received but before processing starts.\n\nLocal time: \nThe amount of time the partition leader spends processing a request, including sending it to disk (but not necessarily flushing it).\n\nRemote time: \nThe amount of time spent waiting for the followers before request processing can complete.\n\nResponse queue time:\nThe amount of time the response to the request spends in the queue before it can be sent to the requestor.\n\nResponse send time:\nThe amount of time spent actually sending the response.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "ms"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 6,
+          "x": 12,
+          "y": 5
+        },
+        "id": 6,
+        "links": [],
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "10.2.2",
+        "repeat": "brokername",
+        "repeatDirection": "h",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+            },
+            "editorMode": "code",
+            "expr": "{__name__=~\"kafka_network_RequestMetrics_$fields\", job=\"$Job\",instance=~\"$Instance\",request=\"FetchConsumer\",name=~\".*TimeMs\"}",
+            "instant": false,
+            "legendFormat": "{{instance}} {{name}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Fetch Consumer",
+        "transparent": true,
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "description": "The average fraction of time the network processors are idle.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "percentunit"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 6,
+          "x": 18,
+          "y": 5
+        },
+        "id": 22,
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "10.2.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "kafka_network_Processor_Value{job=\"$Job\", instance=~\"$Instance\", name=\"IdlePercent\"}",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "{{instance}} Processor {{networkProcessor}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Network Processor Idle Percent",
+        "transparent": true,
+        "type": "timeseries"
+      }
+    ],
+    "refresh": "1m",
+    "schemaVersion": 38,
+    "tags": [
+      "AKD",
+      "Broker",
+      "Kafka",
+      "Prometheus"
+    ],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "selected": false,
+            "text": "kafka",
+            "value": "kafka"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+          },
+          "definition": "label_values(kafka_server_ControllerMutation_queue_size,job)",
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "name": "Job",
+          "options": [],
+          "query": {
+            "qryType": 1,
+            "query": "label_values(kafka_server_ControllerMutation_queue_size,job)",
+            "refId": "PrometheusVariableQueryEditor-VariableQuery"
+          },
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
+        },
+        {
+          "current": {
+            "selected": true,
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+          },
+          "definition": "label_values(kafka_server_ControllerMutation_queue_size{job=\"$Job\"},instance)",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Broker",
+          "multi": true,
+          "name": "Instance",
+          "options": [],
+          "query": {
+            "qryType": 1,
+            "query": "label_values(kafka_server_ControllerMutation_queue_size{job=\"$Job\"},instance)",
+            "refId": "PrometheusVariableQueryEditor-VariableQuery"
+          },
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
+        },
+        {
+          "current": {
+            "selected": false,
+            "text": "999thPercentile",
+            "value": "999thPercentile"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "label": "Percentile",
+          "multi": false,
+          "name": "fields",
+          "options": [
+            {
+              "selected": false,
+              "text": "95thPercentile",
+              "value": "95thPercentile"
+            },
+            {
+              "selected": false,
+              "text": "98thPercentile",
+              "value": "98thPercentile"
+            },
+            {
+              "selected": true,
+              "text": "999thPercentile",
+              "value": "999thPercentile"
+            },
+            {
+              "selected": false,
+              "text": "99thPercentile",
+              "value": "99thPercentile"
+            }
+          ],
+          "query": "95thPercentile, 98thPercentile, 99thPercentile, 999thPercentile",
+          "queryValue": "",
+          "skipUrlSync": false,
+          "type": "custom"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-30m",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "time_options": [
+        "5m",
+        "15m",
+        "1h",
+        "6h",
+        "12h",
+        "24h",
+        "2d",
+        "7d",
+        "30d"
+      ]
+    },
+    "timezone": "browser",
+    "title": "Broker Request / Response",
+    "uid": "ace10269-ee49-410c-9d7c-07801579b203",
+    "version": 14,
+    "weekStart": ""
+  },
+  "folderId": 0,
+  "meta": {
+    "folderId": 181,
+    "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
+    "isStarred": false,
+    "slug": "broker-request-response",
+    "url": "/d/ace10269-ee49-410c-9d7c-07801579b203/broker-request-response"
+  }
+}

@@ -1,0 +1,847 @@
+{
+  "dashboard": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "limit": 100,
+          "name": "Annotations \u0026 Alerts",
+          "showIn": 0,
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": null,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 10,
+        "panels": [],
+        "targets": [
+          {
+            "datasource": {
+              "type": "datasource",
+              "uid": "grafana"
+            },
+            "refId": "A"
+          }
+        ],
+        "title": "Key Statistics",
+        "type": "row"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 0,
+          "y": 1
+        },
+        "id": 61,
+        "libraryPanel": {
+          "name": "Kafka Brokers",
+          "uid": "ec98c483-806d-413d-b8ba-b7443a56c145"
+        },
+        "title": "Kafka Brokers"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 4,
+          "y": 1
+        },
+        "id": 63,
+        "libraryPanel": {
+          "name": "Active Controllers",
+          "uid": "e0947a95-06d4-4afa-b59e-68c232399795"
+        },
+        "title": "Active Controllers"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 8,
+          "y": 1
+        },
+        "id": 65,
+        "libraryPanel": {
+          "name": "Partitions",
+          "uid": "af819648-1dea-40f1-bcb2-1c43367363f5"
+        },
+        "title": "Partitions"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 12,
+          "y": 1
+        },
+        "id": 67,
+        "libraryPanel": {
+          "name": "Under-Replicated Partitions",
+          "uid": "e12c7a60-52cc-40ea-97ab-01e32ae3a31f"
+        },
+        "title": "Under-Replicated Partitions"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 16,
+          "y": 1
+        },
+        "id": 69,
+        "libraryPanel": {
+          "name": "Offline Partitions",
+          "uid": "c255e500-2a89-493c-897d-7e184c81358b"
+        },
+        "title": "Offline Partitions"
+      },
+      {
+        "gridPos": {
+          "h": 3,
+          "w": 4,
+          "x": 20,
+          "y": 1
+        },
+        "id": 71,
+        "libraryPanel": {
+          "name": "ZooKeeper Nodes",
+          "uid": "be87fded-4c9b-498f-89a7-601822c34b79"
+        },
+        "title": "ZooKeeper Nodes"
+      },
+      {
+        "collapsed": false,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 4
+        },
+        "id": 11,
+        "panels": [],
+        "repeat": "Instance",
+        "repeatDirection": "h",
+        "targets": [
+          {
+            "datasource": {
+              "type": "datasource",
+              "uid": "grafana"
+            },
+            "refId": "A"
+          }
+        ],
+        "title": "$Instance",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "description": "Total number of partitions for the topic for a given broker.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "Partitions",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "decimals": 0,
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 0,
+          "y": 5
+        },
+        "id": 6,
+        "interval": "2m",
+        "links": [],
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "10.2.2",
+        "repeatDirection": "h",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "count by(instance, topic) (kafka_log_Log_Value{job=\"$Job\", instance=\"$Instance\", topic=~\"$Topic\", name=\"Size\"})",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "{{topic}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Partitions",
+        "transparent": true,
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "description": "Total number of log file segments for the topic on a given broker.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "Segments",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "decimals": 0,
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 8,
+          "y": 5
+        },
+        "id": 7,
+        "interval": "1m",
+        "links": [],
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "10.2.2",
+        "repeatDirection": "h",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "sum by(instance, topic) (kafka_log_Log_Value{job=\"$Job\", instance=\"$Instance\", topic=~\"$Topic\", name=\"NumLogSegments\"})",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "{{topic}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Segments",
+        "transparent": true,
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "description": "Total number of messages in the topic for all partitions on a given broker.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 16,
+          "y": 5
+        },
+        "id": 59,
+        "interval": "1m",
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "10.2.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+            },
+            "editorMode": "code",
+            "expr": "sum by (instance, topic) (kafka_log_Log_Value{job=\"$Job\", instance=\"$Instance\", topic=~\"$Topic\", name=\"LogEndOffset\"} - ignoring(name) kafka_log_Log_Value{job=\"$Job\", instance=\"$Instance\", topic=~\"$Topic\", name=\"LogStartOffset\"})",
+            "instant": false,
+            "legendFormat": "{{topic}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Messages",
+        "transparent": true,
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "description": "Total message bytes in the topic for all partitions on a given broker.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "decbytes"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 0,
+          "y": 11
+        },
+        "id": 39,
+        "interval": "1m",
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "10.2.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+            },
+            "disableTextWrap": false,
+            "editorMode": "builder",
+            "expr": "sum by(instance, topic) (kafka_log_Log_Value{job=\"$Job\", instance=\"$Instance\", topic=~\"$Topic\", name=\"Size\"})",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "instant": false,
+            "legendFormat": "Topic {{topic}}",
+            "range": true,
+            "refId": "A",
+            "useBackend": false
+          }
+        ],
+        "title": "Message Bytes (1K=1000)",
+        "transparent": true,
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "description": "Approximate disk space used by the topic across all partitions on a given broker. This includes message bytes and overhead used by index files.\n\nThis number is an approximation, and is computed based on the number of messages in the topic and the expected index overhead for each message.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "normal"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "decbytes"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 8,
+          "y": 11
+        },
+        "id": 48,
+        "interval": "1m",
+        "options": {
+          "legend": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "10.2.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+            },
+            "editorMode": "code",
+            "expr": "sum by (instance, topic) (((kafka_log_Log_Value{job=\"$Job\", instance=\"$Instance\", topic=~\"$Topic\", name=\"LogEndOffset\"} - ignoring(name) kafka_log_Log_Value{job=\"$Job\", instance=\"$Instance\", topic=~\"$Topic\", name=\"LogStartOffset\"}) * 20) + ignoring(name) kafka_log_Log_Value{job=\"$Job\", instance=\"$Instance\", topic=~\"$Topic\", name=\"Size\"})",
+            "instant": false,
+            "legendFormat": "{{topic}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Approximate Total Bytes (1K=1000)",
+        "transparent": true,
+        "type": "timeseries"
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 38,
+    "tags": [
+      "AKD",
+      "Kafka",
+      "Broker",
+      "Logs",
+      "Topics",
+      "Prometheus"
+    ],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "selected": false,
+            "text": "Kafka-Standalone",
+            "value": "Kafka-Standalone"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+          },
+          "definition": "label_values(kafka_server_ControllerMutation_queue_size,job)",
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "name": "Job",
+          "options": [],
+          "query": {
+            "qryType": 1,
+            "query": "label_values(kafka_server_ControllerMutation_queue_size,job)",
+            "refId": "PrometheusVariableQueryEditor-VariableQuery"
+          },
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
+        },
+        {
+          "current": {
+            "selected": true,
+            "text": [
+              "localhost:12002"
+            ],
+            "value": [
+              "localhost:12002"
+            ]
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+          },
+          "definition": "label_values(kafka_server_ControllerMutation_queue_size{job=\"$Job\"},instance)",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Broker",
+          "multi": true,
+          "name": "Instance",
+          "options": [],
+          "query": {
+            "qryType": 1,
+            "query": "label_values(kafka_server_ControllerMutation_queue_size{job=\"$Job\"},instance)",
+            "refId": "PrometheusVariableQueryEditor-VariableQuery"
+          },
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
+        },
+        {
+          "current": {
+            "selected": true,
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+          },
+          "definition": "label_values(kafka_server_BrokerTopicMetrics_Count{job=\"$Job\", instance=~\"$Instance\", name=\"MessagesInPerSec\"},topic)",
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "name": "Topic",
+          "options": [],
+          "query": {
+            "qryType": 1,
+            "query": "label_values(kafka_server_BrokerTopicMetrics_Count{job=\"$Job\", instance=~\"$Instance\", name=\"MessagesInPerSec\"},topic)",
+            "refId": "PrometheusVariableQueryEditor-VariableQuery"
+          },
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-30m",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ],
+      "time_options": [
+        "5m",
+        "15m",
+        "1h",
+        "6h",
+        "12h",
+        "24h",
+        "2d",
+        "7d",
+        "30d"
+      ]
+    },
+    "timezone": "browser",
+    "title": "Logs by Broker",
+    "uid": "fd5e071d-53db-4a88-a370-c5b42541e8ee",
+    "version": 18,
+    "weekStart": ""
+  },
+  "folderId": 0,
+  "meta": {
+    "folderId": 181,
+    "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
+    "isStarred": false,
+    "slug": "logs-by-broker",
+    "url": "/d/fd5e071d-53db-4a88-a370-c5b42541e8ee/logs-by-broker"
+  }
+}

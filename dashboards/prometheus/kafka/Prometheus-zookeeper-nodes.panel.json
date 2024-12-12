@@ -1,0 +1,95 @@
+{
+  "description": "The number of detected ZooKeeper nodes in the cluster.",
+  "folderId": 181,
+  "id": 7,
+  "kind": 1,
+  "meta": {
+    "connectedDashboards": 11,
+    "created": "2024-02-12T09:54:18-06:00",
+    "createdBy": {
+      "folderId": "",
+      "id": 1,
+      "name": "admin"
+    },
+    "folderName": "TIBCO Messaging Monitoring - Kafka",
+    "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
+    "updated": "2024-02-12T10:03:02-06:00",
+    "updatedBy": {
+      "folderId": "",
+      "id": 1,
+      "name": "admin"
+    }
+  },
+  "model": {
+    "datasource": {
+      "type": "prometheus",
+      "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+    },
+    "description": "The number of detected ZooKeeper nodes in the cluster.",
+    "fieldConfig": {
+      "defaults": {
+        "mappings": [],
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            },
+            {
+              "color": "red",
+              "value": 80
+            }
+          ]
+        }
+      },
+      "overrides": []
+    },
+    "gridPos": {
+      "h": 4,
+      "w": 4,
+      "x": 20,
+      "y": 1
+    },
+    "id": 42,
+    "options": {
+      "colorMode": "value",
+      "graphMode": "area",
+      "justifyMode": "auto",
+      "orientation": "auto",
+      "reduceOptions": {
+        "calcs": [
+          "lastNotNull"
+        ],
+        "fields": "",
+        "values": false
+      },
+      "textMode": "auto",
+      "wideLayout": true
+    },
+    "pluginVersion": "10.2.2",
+    "targets": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "editorMode": "code",
+        "exemplar": false,
+        "expr": "count by (job) (count by (instance,job) ({__name__=~\"org_apache_ZooKeeperService_ReplicatedServer.*_Leader|org_apache_ZooKeeperService_StandaloneServer_.*_NodeCount\",job=\"$Job\"}))",
+        "instant": true,
+        "legendFormat": "__auto",
+        "range": false,
+        "refId": "A"
+      }
+    ],
+    "title": "ZooKeeper Nodes",
+    "transparent": true,
+    "type": "stat"
+  },
+  "name": "ZooKeeper Nodes",
+  "orgId": 1,
+  "type": "stat",
+  "uid": "be87fded-4c9b-498f-89a7-601822c34b79",
+  "version": 3
+}

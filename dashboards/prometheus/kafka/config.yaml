@@ -1,0 +1,21 @@
+folder: Prometheus-tibco-messaging-monitoring-kafka.folder.json
+panels:
+  - Prometheus-active-controllers.panel.json
+  - Prometheus-kafka-brokers.panel.json
+  - Prometheus-offline-partitions.panel.json
+  - Prometheus-partitions.panel.json
+  - Prometheus-underreplicated-partitions.panel.json
+  - Prometheus-zookeeper-nodes.panel.json
+dashboards:
+  - Prometheus-broker-health.dashboard.json
+  - Prometheus-broker-message-and-data-rates.dashboard.json
+  - Prometheus-broker-request-response.dashboard.json
+  - Prometheus-cluster-member-system-statistics.dashboard.json
+  - Prometheus-connectors.dashboard.json
+  - Prometheus-consumers.dashboard.json
+  - Prometheus-logs-by-broker.dashboard.json
+  - Prometheus-logs-by-topic.dashboard.json
+  - Prometheus-overview.dashboard.json
+  - Prometheus-producers.dashboard.json
+  - Prometheus-topics.dashboard.json
+  - Prometheus-zookeeper-overview.dashboard.json

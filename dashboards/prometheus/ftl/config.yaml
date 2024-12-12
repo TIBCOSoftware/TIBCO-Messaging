@@ -1,0 +1,17 @@
+folder: Prometheus-tibco-messaging-monitoring-ftl.folder.json
+panels: []
+dashboards:
+  - Prometheus-eftl-channels.dashboard.json
+  - Prometheus-ftl-applications-compact.dashboard.json
+  - Prometheus-ftl-applications-cpu-timememory-usage.dashboard.json
+  - Prometheus-ftl-applications-overview.dashboard.json
+  - Prometheus-ftl-applications-queuesloss.dashboard.json
+  - Prometheus-ftl-applications-rates.dashboard.json
+  - Prometheus-ftl-disk-persistence.dashboard.json
+  - Prometheus-ftl-persistence.dashboard.json
+  - Prometheus-ftl-process.dashboard.json
+  - Prometheus-ftl-services-compact.dashboard.json
+  - Prometheus-ftl-services-cpu-timememory-usage.dashboard.json
+  - Prometheus-ftl-services-overview.dashboard.json
+  - Prometheus-ftl-services-queuesloss.dashboard.json
+  - Prometheus-ftl-services-rates.dashboard.json

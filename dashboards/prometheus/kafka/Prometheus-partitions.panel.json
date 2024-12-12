@@ -1,0 +1,114 @@
+{
+  "description": "The partition count for a broker generally doesn’t change that much, as it is the total number of partitions assigned to that broker. This includes every replica the broker has, regardless of whether it is a leader or follower for that partition. Monitoring this is often more interesting in a cluster that has automatic topic creation enabled, as that can leave the creation of topics outside of the control of the person running the cluster.",
+  "folderId": 181,
+  "id": 10,
+  "kind": 1,
+  "meta": {
+    "connectedDashboards": 11,
+    "created": "2024-02-12T10:10:05-06:00",
+    "createdBy": {
+      "folderId": "",
+      "id": 1,
+      "name": "admin"
+    },
+    "folderName": "TIBCO Messaging Monitoring - Kafka",
+    "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
+    "updated": "2024-02-12T13:51:45-06:00",
+    "updatedBy": {
+      "folderId": "",
+      "id": 1,
+      "name": "admin"
+    }
+  },
+  "model": {
+    "datasource": {
+      "type": "prometheus",
+      "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+    },
+    "description": "The partition count for a broker generally doesn’t change that much, as it is the total number of partitions assigned to that broker. This includes every replica the broker has, regardless of whether it is a leader or follower for that partition. Monitoring this is often more interesting in a cluster that has automatic topic creation enabled, as that can leave the creation of topics outside of the control of the person running the cluster.",
+    "fieldConfig": {
+      "defaults": {
+        "mappings": [
+          {
+            "options": {
+              "match": "null",
+              "result": {
+                "color": "green",
+                "text": "0"
+              }
+            },
+            "type": "special"
+          }
+        ],
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            },
+            {
+              "color": "red",
+              "value": 80
+            }
+          ]
+        },
+        "unit": "none"
+      },
+      "overrides": []
+    },
+    "gridPos": {
+      "h": 3,
+      "w": 4,
+      "x": 8,
+      "y": 1
+    },
+    "hideTimeOverride": false,
+    "id": 4,
+    "links": [],
+    "maxDataPoints": 100,
+    "options": {
+      "colorMode": "value",
+      "graphMode": "none",
+      "justifyMode": "auto",
+      "orientation": "horizontal",
+      "reduceOptions": {
+        "calcs": [
+          "mean"
+        ],
+        "fields": "",
+        "values": false
+      },
+      "textMode": "auto",
+      "wideLayout": true
+    },
+    "pluginVersion": "10.2.2",
+    "targets": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "disableTextWrap": false,
+        "editorMode": "builder",
+        "exemplar": false,
+        "expr": "sum by(job) (kafka_server_ReplicaManager_Value{job=\"$Job\", name=\"PartitionCount\"})",
+        "fullMetaSearch": false,
+        "includeNullMetadata": true,
+        "instant": true,
+        "legendFormat": "__auto",
+        "range": false,
+        "refId": "A",
+        "useBackend": false
+      }
+    ],
+    "title": "Partitions",
+    "transparent": true,
+    "type": "stat"
+  },
+  "name": "Partitions",
+  "orgId": 1,
+  "type": "stat",
+  "uid": "af819648-1dea-40f1-bcb2-1c43367363f5",
+  "version": 3
+}

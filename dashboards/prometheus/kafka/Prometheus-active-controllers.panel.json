@@ -1,0 +1,108 @@
+{
+  "description": "Number of Kafka brokers with an active controller. This number should be 1.",
+  "folderId": 181,
+  "id": 9,
+  "kind": 1,
+  "meta": {
+    "connectedDashboards": 11,
+    "created": "2024-02-12T10:08:18-06:00",
+    "createdBy": {
+      "folderId": "",
+      "id": 1,
+      "name": "admin"
+    },
+    "folderName": "TIBCO Messaging Monitoring - Kafka",
+    "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
+    "updated": "2024-02-12T13:52:28-06:00",
+    "updatedBy": {
+      "folderId": "",
+      "id": 1,
+      "name": "admin"
+    }
+  },
+  "model": {
+    "datasource": {
+      "type": "prometheus",
+      "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+    },
+    "description": "Number of Kafka brokers with an active controller. This number should be 1.",
+    "fieldConfig": {
+      "defaults": {
+        "mappings": [],
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            {
+              "color": "green",
+              "value": null
+            },
+            {
+              "color": "red",
+              "value": 0
+            },
+            {
+              "color": "green",
+              "value": 1
+            },
+            {
+              "color": "red",
+              "value": 2
+            }
+          ]
+        }
+      },
+      "overrides": []
+    },
+    "gridPos": {
+      "h": 3,
+      "w": 4,
+      "x": 4,
+      "y": 1
+    },
+    "id": 17,
+    "options": {
+      "colorMode": "value",
+      "graphMode": "none",
+      "justifyMode": "auto",
+      "orientation": "auto",
+      "reduceOptions": {
+        "calcs": [
+          "lastNotNull"
+        ],
+        "fields": "",
+        "limit": 1,
+        "values": false
+      },
+      "textMode": "value",
+      "wideLayout": true
+    },
+    "pluginVersion": "10.2.2",
+    "targets": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "fb5e0357-258c-4831-b447-565be35828b5"
+        },
+        "disableTextWrap": false,
+        "editorMode": "builder",
+        "exemplar": false,
+        "expr": "sum by(job) (kafka_controller_KafkaController_Value{job=\"$Job\", name=\"ActiveControllerCount\"})",
+        "fullMetaSearch": false,
+        "includeNullMetadata": true,
+        "instant": true,
+        "legendFormat": "__auto",
+        "range": false,
+        "refId": "A",
+        "useBackend": false
+      }
+    ],
+    "title": "Active Controllers",
+    "transparent": true,
+    "type": "stat"
+  },
+  "name": "Active Controllers",
+  "orgId": 1,
+  "type": "stat",
+  "uid": "e0947a95-06d4-4afa-b59e-68c232399795",
+  "version": 2
+}
