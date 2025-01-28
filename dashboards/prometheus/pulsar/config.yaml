@@ -1,0 +1,10 @@
+folder: Prometheus-tibco-messaging-monitoring-pulsar.folder.json
+panels: []
+dashboards:
+  - Prometheus-bookkeeper.dashboard.json
+  - Prometheus-broker.dashboard.json
+  - Prometheus-connections.dashboard.json
+  - Prometheus-jvm.dashboard.json
+  - Prometheus-namespace.dashboard.json
+  - Prometheus-topic.dashboard.json
+  - Prometheus-zookeeper.dashboard.json

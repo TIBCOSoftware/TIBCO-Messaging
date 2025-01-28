@@ -1,0 +1,10 @@
+folder: Prometheus-tibco-messaging-monitoring-ems.folder.json
+panels: []
+dashboards:
+  - Prometheus-tibco-ems-queue-details.dashboard.json
+  - Prometheus-tibco-ems-queues.dashboard.json
+  - Prometheus-tibco-ems-server-details.dashboard.json
+  - Prometheus-tibco-ems-server-overview.dashboard.json
+  - Prometheus-tibco-ems-topic-details.dashboard.json
+  - Prometheus-tibco-ems-topics.dashboard.json
+  

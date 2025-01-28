@@ -1,0 +1,27 @@
+{
+  "access": "browser",
+  "basicAuth": false,
+  "id": 2,
+  "isDefault": false,
+  "jsonData": {
+    "httpMethod": "POST",
+    "keepCookies": [],
+    "oauthPassThru": false,
+    "prometheusType": "Prometheus",
+    "prometheusVersion": "2.47.0",
+    "queryTimeout": "80s",
+    "sigV4Auth": false,
+    "timeInterval": "30s",
+    "timeout": 60,
+    "tlsAuth": false,
+    "tlsAuthWithCACert": false
+  },
+  "name": "TIBCO Messaging Monitoring",
+  "orgId": 1,
+  "readOnly": false,
+  "type": "prometheus",
+  "typeLogoUrl": "/public/app/plugins/datasource/prometheus/img/prometheus_logo.svg",
+  "uid": "fb5e0357-258c-4831-b447-565be35828b5",
+  "url": "http://localhost:9090",
+  "version": 1
+}

@@ -1,0 +1,6 @@
+datasource-file: Prometheus-tibco-messaging-monitoring.datasource.json
+products:
+  - ems
+  - ftl
+  - kafka
+  - pulsar
