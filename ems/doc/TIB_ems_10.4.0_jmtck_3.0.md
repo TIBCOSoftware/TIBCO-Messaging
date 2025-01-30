@@ -9,7 +9,7 @@ As required by the [Eclipse Foundation Technology Compatibility Kit License](htt
 
 * Product Name, Version and download URL (if applicable):  
   **TIBCO Enterprise Message Service™ 10.4.0**  
-  <https://www.tibco.com/products/tibco-enterprise-message-service> ### NEED FIXING
+  <https://www.tibco.com/products/tibco-enterprise-message-service>
 
 
 * Specification Name, Version and download URL:  
