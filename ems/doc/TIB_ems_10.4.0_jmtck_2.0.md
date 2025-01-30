@@ -31,7 +31,7 @@ As required by the [Eclipse Foundation Technology Compatibility Kit License](htt
   **None**
 
 
-* Java runtime used to run the implementation:
+* Java runtime used to run the implementation:  
   **OpenJDK Runtime Environment (build 1.8.0_342-b07) OpenJDK 64-Bit Server VM (build 25.342-b07, mixed mode)**
 
 
