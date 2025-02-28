@@ -5,16 +5,15 @@
 // TIBCO Software Inc., Palo Alto, California, USA
 //
 
-// This is an example of a basic eFTL client which sets a key-value pair in a map.
+// This is an example of a basic eFTL client which gets a key-value pair from a map.
 
 package main
 
 import (
 	"log"
 	"os"
-	"time"
 
-	"tibco.com/eftl"
+	"github.com/TIBCOSoftware/TIBCO-Messaging/eftl/sdk/golang/eftl"
 )
 
 var (
@@ -33,7 +32,7 @@ func main() {
 	if len(os.Args) > 1 {
 		url = os.Args[1]
 	}
-        log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
+	log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
 
 	// set connection options
 	opts := eftl.DefaultOptions()
@@ -53,16 +52,12 @@ func main() {
 	// get a key-value map
 	kv := conn.KVMap(mapName)
 
-	// create a messsage
-	val := eftl.Message{
-		"text": "sample text",
-		"time": time.Now(),
-	}
-
-	// set the key-value pair in the map
-	if err = kv.Set(keyName, val); err != nil {
-		log.Printf("key-value set failed: %s\n", err)
+	// get a key-value pair from the map
+	if val, err := kv.Get(keyName); err != nil {
+		log.Printf("key-value get failed: %s\n", err)
+	} else if val == nil {
+		log.Printf("key-value: not found\n")
 	} else {
-		log.Printf("key-value set: %s\n", val)
+		log.Printf("key-value: %s\n", val)
 	}
 }

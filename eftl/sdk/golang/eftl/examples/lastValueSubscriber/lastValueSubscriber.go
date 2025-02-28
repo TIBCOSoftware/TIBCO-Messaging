@@ -5,8 +5,8 @@
 // TIBCO Software Inc., Palo Alto, California, USA
 //
 
-// This is an example of a basic eFTL client which subscribes to request messages
-// and sends a reply.
+// This is an example of a basic eFTL client which uses a last-value durable
+// subscription to receives published messages.
 
 package main
 
@@ -14,7 +14,7 @@ import (
 	"log"
 	"os"
 
-	"tibco.com/eftl"
+	"github.com/TIBCOSoftware/TIBCO-Messaging/eftl/sdk/golang/eftl"
 )
 
 var (
@@ -24,6 +24,8 @@ var (
 const (
 	username = ""
 	password = ""
+	durable  = "sample-lastvalue-durable"
+	count    = 10
 )
 
 func main() {
@@ -31,7 +33,7 @@ func main() {
 	if len(os.Args) > 1 {
 		url = os.Args[1]
 	}
-        log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
+	log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
 
 	// channel for receiving connection errors
 	errChan := make(chan error, 1)
@@ -54,46 +56,43 @@ func main() {
 	// channel for receiving subscription response
 	subChan := make(chan *eftl.Subscription, 1)
 
-	// channel for receiving request messages
+	// channel for receiving published messages
 	msgChan := make(chan eftl.Message, 1000)
 
 	// create the message content matcher
-	matcher := `{"type":"request"}`
+	matcher := "{\"type\":\"hello\"}"
 
 	// create the subscription options
-	subopts := eftl.SubscriptionOptions{}
+	subOpts := eftl.SubscriptionOptions{
+		DurableType: "last-value",
+		DurableKey:  "type",
+	}
 
 	// create the subscription
-	err = conn.SubscribeWithOptionsAsync(matcher, "", subopts, msgChan, subChan)
+	err = conn.SubscribeWithOptionsAsync(matcher, durable, subOpts, msgChan, subChan)
 	if err != nil {
 		log.Printf("subscribe failed: %s", err)
 		return
 	}
 
+	var total int
+
 	for {
 		select {
 		case sub := <-subChan:
-
 			if sub.Error != nil {
-				log.Printf("subscribe failed: %s", sub.Error)
+				log.Printf("subscribe operation failed: %s", sub.Error)
 				return
 			}
-
 			log.Printf("subscribed with matcher %s", sub.Matcher)
-
 		case msg := <-msgChan:
-
-			log.Printf("request message: %s", msg)
-
-			// send a reply message
-			conn.SendReply(eftl.Message{"text": "this is a sample reply message"}, msg)
-
-			return
-
+			total++
+			log.Printf("received message: %s", msg)
+			if total >= count {
+				return
+			}
 		case err := <-errChan:
-
 			log.Printf("connection error: %s", err)
-
 			return
 		}
 	}
