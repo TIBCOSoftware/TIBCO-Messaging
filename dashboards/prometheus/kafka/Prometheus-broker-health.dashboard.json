@@ -23,14 +23,9 @@
     "graphTooltip": 0,
     "id": null,
     "links": [],
-    "liveNow": false,
     "panels": [
       {
         "collapsed": false,
-        "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
-        },
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -39,15 +34,6 @@
         },
         "id": 12,
         "panels": [],
-        "targets": [
-          {
-            "datasource": {
-              "type": "datasource",
-              "uid": "grafana"
-            },
-            "refId": "A"
-          }
-        ],
         "title": "Key Statistics",
         "type": "row"
       },
@@ -153,6 +139,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -205,7 +192,6 @@
         },
         "id": 23,
         "interval": "2m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -216,12 +202,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -262,6 +248,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -314,7 +301,6 @@
         },
         "id": 24,
         "interval": "2m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -325,12 +311,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -371,6 +357,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -423,7 +410,6 @@
         },
         "id": 25,
         "interval": "2m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -434,12 +420,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -480,6 +466,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -532,7 +519,6 @@
         },
         "id": 26,
         "interval": "2m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -543,12 +529,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -589,6 +575,7 @@
               "axisLabel": "Partitions",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -641,7 +628,6 @@
           "y": 10
         },
         "id": 6,
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -652,12 +638,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -698,6 +684,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -759,11 +746,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -804,6 +792,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -865,11 +854,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -910,6 +900,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -971,11 +962,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -1016,6 +1008,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -1043,6 +1036,7 @@
             },
             "mappings": [],
             "min": 0,
+            "noValue": "N/A",
             "thresholds": {
               "mode": "absolute",
               "steps": [
@@ -1068,7 +1062,6 @@
         },
         "id": 7,
         "interval": "2m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -1079,12 +1072,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -1125,6 +1118,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -1152,6 +1146,7 @@
             },
             "mappings": [],
             "min": 0,
+            "noValue": "N/A",
             "thresholds": {
               "mode": "absolute",
               "steps": [
@@ -1177,7 +1172,6 @@
         },
         "id": 8,
         "interval": "2m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -1188,12 +1182,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -1234,6 +1228,7 @@
               "axisLabel": "Expands / Sec",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -1286,7 +1281,6 @@
         },
         "id": 10,
         "interval": "2m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -1297,12 +1291,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -1343,6 +1337,7 @@
               "axisLabel": "Shrinks / Sec",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -1395,7 +1390,6 @@
         },
         "id": 9,
         "interval": "2m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -1406,12 +1400,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -1452,6 +1446,7 @@
               "axisLabel": "Delayed Operations",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -1515,11 +1510,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -1560,6 +1556,7 @@
               "axisLabel": "Delayed Operations",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -1623,11 +1620,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -1668,6 +1666,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -1729,11 +1728,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -1774,6 +1774,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -1835,11 +1836,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -1924,7 +1926,7 @@
           },
           "showHeader": true
         },
-        "pluginVersion": "10.2.2",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -2010,6 +2012,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -2072,11 +2075,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -2134,8 +2138,9 @@
         "type": "timeseries"
       }
     ],
+    "preload": false,
     "refresh": "",
-    "schemaVersion": 38,
+    "schemaVersion": 40,
     "tags": [
       "Kafka",
       "AKD",
@@ -2145,19 +2150,17 @@
     "templating": {
       "list": [
         {
+          "allowCustomValue": false,
           "current": {
-            "selected": false,
-            "text": "EMS1",
-            "value": "EMS1"
+            "text": "Kafka-Kraft-Cluster",
+            "value": "Kafka-Kraft-Cluster"
           },
           "datasource": {
             "type": "prometheus",
             "uid": "fb5e0357-258c-4831-b447-565be35828b5"
           },
           "definition": "label_values(kafka_server_ControllerMutation_queue_size,job)",
-          "hide": 0,
           "includeAll": false,
-          "multi": false,
           "name": "Job",
           "options": [],
           "query": {
@@ -2167,22 +2170,22 @@
           },
           "refresh": 2,
           "regex": "",
-          "skipUrlSync": false,
           "sort": 1,
           "type": "query"
         },
         {
+          "allowCustomValue": false,
           "current": {
-            "selected": true,
-            "text": "localhost:11001",
-            "value": "localhost:11001"
+            "text": "All",
+            "value": [
+              "$__all"
+            ]
           },
           "datasource": {
             "type": "prometheus",
             "uid": "fb5e0357-258c-4831-b447-565be35828b5"
           },
           "definition": "label_values(kafka_server_ControllerMutation_queue_size{job=\"$Job\"},instance)",
-          "hide": 0,
           "includeAll": true,
           "label": "Broker",
           "multi": true,
@@ -2195,7 +2198,6 @@
           },
           "refresh": 2,
           "regex": "",
-          "skipUrlSync": false,
           "sort": 1,
           "type": "query"
         }
@@ -2205,40 +2207,16 @@
       "from": "now-30m",
       "to": "now"
     },
-    "timepicker": {
-      "refresh_intervals": [
-        "5s",
-        "10s",
-        "30s",
-        "1m",
-        "5m",
-        "15m",
-        "30m",
-        "1h",
-        "2h",
-        "1d"
-      ],
-      "time_options": [
-        "5m",
-        "15m",
-        "1h",
-        "6h",
-        "12h",
-        "24h",
-        "2d",
-        "7d",
-        "30d"
-      ]
-    },
+    "timepicker": {},
     "timezone": "browser",
     "title": "Broker Health",
     "uid": "a1e93fca-0144-4c34-8128-8904dbf2e1b7",
-    "version": 46,
+    "version": 4,
     "weekStart": ""
   },
   "folderId": 0,
   "meta": {
-    "folderId": 181,
+    "folderId": 134,
     "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
     "isStarred": false,
     "slug": "broker-health",

@@ -1,11 +1,11 @@
 {
   "description": "Number of partitions unavailable to applications due to a broker failure or restart.",
-  "folderId": 181,
-  "id": 12,
+  "folderId": 134,
+  "id": 27,
   "kind": 1,
   "meta": {
     "connectedDashboards": 11,
-    "created": "2024-02-12T10:10:23-06:00",
+    "created": "2025-04-02T15:17:23-05:00",
     "createdBy": {
       "folderId": "",
       "id": 1,
@@ -13,7 +13,7 @@
     },
     "folderName": "TIBCO Messaging Monitoring - Kafka",
     "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
-    "updated": "2024-02-12T13:53:00-06:00",
+    "updated": "2025-04-02T15:17:23-05:00",
     "updatedBy": {
       "folderId": "",
       "id": 1,
@@ -111,5 +111,5 @@
   "orgId": 1,
   "type": "stat",
   "uid": "c255e500-2a89-493c-897d-7e184c81358b",
-  "version": 2
+  "version": 1
 }

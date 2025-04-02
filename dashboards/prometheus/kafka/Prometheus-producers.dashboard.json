@@ -23,14 +23,9 @@
     "graphTooltip": 0,
     "id": null,
     "links": [],
-    "liveNow": false,
     "panels": [
       {
         "collapsed": false,
-        "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
-        },
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -39,15 +34,6 @@
         },
         "id": 10,
         "panels": [],
-        "targets": [
-          {
-            "datasource": {
-              "type": "datasource",
-              "uid": "grafana"
-            },
-            "refId": "A"
-          }
-        ],
         "title": "Key Statistics",
         "type": "row"
       },
@@ -137,10 +123,6 @@
       },
       {
         "collapsed": false,
-        "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
-        },
         "gridPos": {
           "h": 1,
           "w": 24,
@@ -150,16 +132,6 @@
         "id": 11,
         "panels": [],
         "repeat": "Instance",
-        "repeatDirection": "h",
-        "targets": [
-          {
-            "datasource": {
-              "type": "datasource",
-              "uid": "grafana"
-            },
-            "refId": "A"
-          }
-        ],
         "title": "$Instance",
         "type": "row"
       },
@@ -181,6 +153,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -233,7 +206,6 @@
         },
         "id": 5,
         "interval": "1m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -244,12 +216,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -290,6 +262,7 @@
               "axisLabel": "Responses Received / Sec",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -342,7 +315,6 @@
         },
         "id": 6,
         "interval": "1m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -353,12 +325,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -399,6 +371,7 @@
               "axisLabel": "Requests Sent / Sec",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -451,7 +424,6 @@
         },
         "id": 7,
         "interval": "1m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -462,12 +434,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -508,6 +480,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -560,7 +533,6 @@
         },
         "id": 16,
         "interval": "1m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -571,12 +543,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -617,6 +589,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -669,7 +642,6 @@
         },
         "id": 33,
         "interval": "1m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -680,12 +652,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -726,6 +698,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -778,7 +751,6 @@
         },
         "id": 35,
         "interval": "1m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -789,12 +761,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -835,6 +807,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -887,7 +860,6 @@
         },
         "id": 34,
         "interval": "1m",
-        "links": [],
         "options": {
           "legend": {
             "calcs": [
@@ -898,12 +870,12 @@
             "showLegend": false
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
-        "pluginVersion": "10.2.2",
-        "repeatDirection": "h",
+        "pluginVersion": "11.5.1",
         "targets": [
           {
             "datasource": {
@@ -927,8 +899,9 @@
         "type": "timeseries"
       }
     ],
+    "preload": false,
     "refresh": "1m",
-    "schemaVersion": 38,
+    "schemaVersion": 40,
     "tags": [
       "Kafka",
       "AKD",
@@ -938,19 +911,17 @@
     "templating": {
       "list": [
         {
+          "allowCustomValue": false,
           "current": {
-            "selected": false,
-            "text": "Kafka-Cluster",
-            "value": "Kafka-Cluster"
+            "text": "Kafka-Kraft-Cluster",
+            "value": "Kafka-Kraft-Cluster"
           },
           "datasource": {
             "type": "prometheus",
             "uid": "fb5e0357-258c-4831-b447-565be35828b5"
           },
           "definition": "label_values(kafka_server_ControllerMutation_queue_size,job)",
-          "hide": 0,
           "includeAll": false,
-          "multi": false,
           "name": "Job",
           "options": [],
           "query": {
@@ -960,18 +931,15 @@
           },
           "refresh": 2,
           "regex": "",
-          "skipUrlSync": false,
           "sort": 1,
           "type": "query"
         },
         {
+          "allowCustomValue": false,
           "current": {
-            "selected": true,
-            "text": [
-              "localhost:11009"
-            ],
+            "text": "All",
             "value": [
-              "localhost:11009"
+              "$__all"
             ]
           },
           "datasource": {
@@ -979,7 +947,6 @@
             "uid": "fb5e0357-258c-4831-b447-565be35828b5"
           },
           "definition": "label_values(kafka_producer_kafka_metrics_count_count{job=\"$Job\"},instance)",
-          "hide": 0,
           "includeAll": true,
           "label": "Producer",
           "multi": true,
@@ -992,7 +959,6 @@
           },
           "refresh": 2,
           "regex": "",
-          "skipUrlSync": false,
           "sort": 1,
           "type": "query"
         }
@@ -1002,40 +968,16 @@
       "from": "now-30m",
       "to": "now"
     },
-    "timepicker": {
-      "refresh_intervals": [
-        "5s",
-        "10s",
-        "30s",
-        "1m",
-        "5m",
-        "15m",
-        "30m",
-        "1h",
-        "2h",
-        "1d"
-      ],
-      "time_options": [
-        "5m",
-        "15m",
-        "1h",
-        "6h",
-        "12h",
-        "24h",
-        "2d",
-        "7d",
-        "30d"
-      ]
-    },
+    "timepicker": {},
     "timezone": "browser",
     "title": "Producers",
     "uid": "dfa52157-7494-49cd-ba15-cd44a5d903c8",
-    "version": 16,
+    "version": 2,
     "weekStart": ""
   },
   "folderId": 0,
   "meta": {
-    "folderId": 181,
+    "folderId": 134,
     "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
     "isStarred": false,
     "slug": "producers",

@@ -1,11 +1,11 @@
 {
   "description": "Number of detected Kafka brokers in the cluster.",
-  "folderId": 181,
-  "id": 8,
+  "folderId": 134,
+  "id": 26,
   "kind": 1,
   "meta": {
     "connectedDashboards": 11,
-    "created": "2024-02-12T10:08:08-06:00",
+    "created": "2025-04-02T15:17:23-05:00",
     "createdBy": {
       "folderId": "",
       "id": 1,
@@ -13,7 +13,7 @@
     },
     "folderName": "TIBCO Messaging Monitoring - Kafka",
     "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
-    "updated": "2024-02-12T13:52:15-06:00",
+    "updated": "2025-04-02T15:17:23-05:00",
     "updatedBy": {
       "folderId": "",
       "id": 1,
@@ -92,5 +92,5 @@
   "orgId": 1,
   "type": "stat",
   "uid": "ec98c483-806d-413d-b8ba-b7443a56c145",
-  "version": 2
+  "version": 1
 }

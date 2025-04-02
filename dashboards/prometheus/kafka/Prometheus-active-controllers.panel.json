@@ -1,11 +1,11 @@
 {
   "description": "Number of Kafka brokers with an active controller. This number should be 1.",
-  "folderId": 181,
-  "id": 9,
+  "folderId": 134,
+  "id": 25,
   "kind": 1,
   "meta": {
     "connectedDashboards": 11,
-    "created": "2024-02-12T10:08:18-06:00",
+    "created": "2025-04-02T15:17:23-05:00",
     "createdBy": {
       "folderId": "",
       "id": 1,
@@ -13,7 +13,7 @@
     },
     "folderName": "TIBCO Messaging Monitoring - Kafka",
     "folderUid": "aa49fb6a-cef1-4f25-95b1-95097cbf61c7",
-    "updated": "2024-02-12T13:52:28-06:00",
+    "updated": "2025-04-02T15:17:23-05:00",
     "updatedBy": {
       "folderId": "",
       "id": 1,
@@ -104,5 +104,5 @@
   "orgId": 1,
   "type": "stat",
   "uid": "e0947a95-06d4-4afa-b59e-68c232399795",
-  "version": 2
+  "version": 1
 }
