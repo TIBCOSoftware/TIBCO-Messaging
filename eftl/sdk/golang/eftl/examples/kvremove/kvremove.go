@@ -5,7 +5,7 @@
 // TIBCO Software Inc., Palo Alto, California, USA
 //
 
-// This is an example of a basic eFTL client which gets a key-value pair from a map.
+// This is an example of a basic eFTL client which removes a key-value pair from a map.
 
 package main
 
@@ -13,7 +13,7 @@ import (
 	"log"
 	"os"
 
-	"tibco.com/eftl"
+	"github.com/TIBCOSoftware/TIBCO-Messaging/eftl/sdk/golang/eftl"
 )
 
 var (
@@ -32,7 +32,7 @@ func main() {
 	if len(os.Args) > 1 {
 		url = os.Args[1]
 	}
-        log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
+	log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
 
 	// set connection options
 	opts := eftl.DefaultOptions()
@@ -52,12 +52,10 @@ func main() {
 	// get a key-value map
 	kv := conn.KVMap(mapName)
 
-	// get a key-value pair from the map
-	if val, err := kv.Get(keyName); err != nil {
-		log.Printf("key-value get failed: %s\n", err)
-	} else if val == nil {
-		log.Printf("key-value: not found\n")
+	// remove a key-value pair from the map
+	if err := kv.Remove(keyName); err != nil {
+		log.Printf("key-value remove failed: %s\n", err)
 	} else {
-		log.Printf("key-value: %s\n", val)
+		log.Printf("key-value removed\n")
 	}
 }

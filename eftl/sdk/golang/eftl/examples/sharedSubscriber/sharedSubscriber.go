@@ -5,8 +5,8 @@
 // TIBCO Software Inc., Palo Alto, California, USA
 //
 
-// This is an example of a basic eFTL client which uses a last-value durable
-// subscription to receives published messages.
+// This is an example of a basic eFTL client which uses a shared durable subscription
+// to receives published messages.
 
 package main
 
@@ -14,7 +14,7 @@ import (
 	"log"
 	"os"
 
-	"tibco.com/eftl"
+	"github.com/TIBCOSoftware/TIBCO-Messaging/eftl/sdk/golang/eftl"
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 const (
 	username = ""
 	password = ""
-	durable  = "sample-lastvalue-durable"
+	durable  = "sample-shared-durable"
 	count    = 10
 )
 
@@ -33,7 +33,7 @@ func main() {
 	if len(os.Args) > 1 {
 		url = os.Args[1]
 	}
-        log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
+	log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
 
 	// channel for receiving connection errors
 	errChan := make(chan error, 1)
@@ -64,8 +64,7 @@ func main() {
 
 	// create the subscription options
 	subOpts := eftl.SubscriptionOptions{
-		DurableType: "last-value",
-		DurableKey:  "type",
+		DurableType: "shared",
 	}
 
 	// create the subscription

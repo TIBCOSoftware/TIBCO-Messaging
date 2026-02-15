@@ -14,7 +14,7 @@ import (
 	"os"
 	"time"
 
-	"tibco.com/eftl"
+	"github.com/TIBCOSoftware/TIBCO-Messaging/eftl/sdk/golang/eftl"
 )
 
 var (
@@ -33,7 +33,7 @@ func main() {
 	if len(os.Args) > 1 {
 		url = os.Args[1]
 	}
-        log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
+	log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
 
 	// channel for receiving connection errors
 	errChan := make(chan error, 1)
