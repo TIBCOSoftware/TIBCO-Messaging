@@ -1,12 +1,11 @@
 //
-// Copyright (c) 2001-2021 TIBCO Software Inc.
+// Copyright (c) 2001-$Date: 2017-03-03 16:29:04 -0800 (Fri, 03 Mar 2017) $ TIBCO Software Inc.
 // Licensed under a BSD-style license. Refer to [LICENSE]
 // For more information, please contact:
 // TIBCO Software Inc., Palo Alto, California, USA
 //
 
-// This is an example of a basic eFTL client which uses a shared durable subscription
-// to receives published messages.
+// This is an example of a basic eFTL client subscriber.
 
 package main
 
@@ -14,7 +13,7 @@ import (
 	"log"
 	"os"
 
-	"tibco.com/eftl"
+	"github.com/TIBCOSoftware/TIBCO-Messaging/eftl/sdk/golang/eftl"
 )
 
 var (
@@ -22,10 +21,12 @@ var (
 )
 
 const (
-	username = ""
-	password = ""
-	durable  = "sample-shared-durable"
-	count    = 10
+	username  = ""
+	password  = ""
+	clientID  = "sample-go-client"
+	durable   = "sample-durable"
+	clientAck = false
+	count     = 10
 )
 
 func main() {
@@ -33,13 +34,18 @@ func main() {
 	if len(os.Args) > 1 {
 		url = os.Args[1]
 	}
-        log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
+	log.Printf("%s : TIBCO eFTL Version: %s\n", os.Args[0], eftl.Version)
+
+	// set the log level log file
+	eftl.SetLogLevel(eftl.LogLevelDebug)
+	eftl.SetLogFile("subscriber.log")
 
 	// channel for receiving connection errors
 	errChan := make(chan error, 1)
 
 	// set connection options
 	opts := eftl.DefaultOptions()
+	opts.ClientID = clientID
 	opts.Username = username
 	opts.Password = password
 
@@ -63,12 +69,18 @@ func main() {
 	matcher := "{\"type\":\"hello\"}"
 
 	// create the subscription options
-	subOpts := eftl.SubscriptionOptions{
-		DurableType: "shared",
+	subopts := eftl.SubscriptionOptions{}
+
+	if clientAck {
+		subopts.AcknowledgeMode = eftl.AcknowledgeModeClient
 	}
 
 	// create the subscription
-	err = conn.SubscribeWithOptionsAsync(matcher, durable, subOpts, msgChan, subChan)
+	//
+	// always set the client identifier when creating a durable subscription
+	// as durable subscriptions are mapped to the client identifier
+	//
+	err = conn.SubscribeWithOptionsAsync(matcher, durable, subopts, msgChan, subChan)
 	if err != nil {
 		log.Printf("subscribe failed: %s", err)
 		return
@@ -83,10 +95,17 @@ func main() {
 				log.Printf("subscribe operation failed: %s", sub.Error)
 				return
 			}
-			log.Printf("subscribed with matcher %s", sub.Matcher)
+			log.Printf("subscribed with matcher: %s", sub.Matcher)
+			// unsubscribe, this will permanently remove a durable subscription
+			defer conn.Unsubscribe(sub)
 		case msg := <-msgChan:
 			total++
 			log.Printf("received message: %s", msg)
+
+			if clientAck {
+				conn.Acknowledge(msg)
+			}
+
 			if total >= count {
 				return
 			}
